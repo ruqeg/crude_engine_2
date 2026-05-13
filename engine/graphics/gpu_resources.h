@@ -823,7 +823,7 @@ CRUDE_API void
 crude_gfx_descriptor_set_creation_add_acceleration_structure
 (
   _In_ crude_gfx_descriptor_set_creation                  *creation,
-  _In_ crude_gfx_rhi_acceleration_structure                acceleration_structure,
+  _In_ crude_gfx_rhi_acceleration_structure                rhi_acceleration_structure,
   _In_ uint16                                              binding
 );
 

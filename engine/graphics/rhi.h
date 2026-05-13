@@ -2,6 +2,7 @@
 
 #include <engine/core/alias.h>
 #include <engine/core/memory.h>
+#include <engine/core/math.h>
 #include <engine/graphics/graphics_config.h>
 
 #define CRUDE_GFX_RHI_TO_IMPLEMENTIT ___DOIT
@@ -1052,6 +1053,7 @@ typedef struct crude_gfx_rhi_buffer
 {
   VkBuffer                                                 vk_buffer;
   VmaAllocation                                            vma_allocation;
+  void                                                    *mapped_data;
 } crude_gfx_rhi_buffer;
 
 typedef struct crude_gfx_rhi_sampler
@@ -1086,6 +1088,8 @@ typedef struct crude_gfx_rhi_queue
   VkQueue                                                  vk_queue;
   uint32                                                   vk_queue_family;
 } crude_gfx_rhi_queue;
+  
+#define CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS       NULL
 
 typedef struct crude_gfx_rhi_device
 {
@@ -1095,6 +1099,26 @@ typedef struct crude_gfx_rhi_device
   crude_gfx_rhi_physical_device_optional_extensions        optional_extensions;
   crude_gfx_rhi_queue                                      main_queue;
   crude_gfx_rhi_queue                                      transfer_queue;
+
+  PFN_vkCmdDrawMeshTasksEXT                                vkCmdDrawMeshTasksEXT;
+  PFN_vkCmdDrawMeshTasksIndirectCountEXT                   vkCmdDrawMeshTasksIndirectCountEXT;
+
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+  PFN_vkCmdBeginDebugUtilsLabelEXT                         vkCmdBeginDebugUtilsLabelEXT;
+  PFN_vkSetDebugUtilsObjectNameEXT                         vkSetDebugUtilsObjectNameEXT;
+  PFN_vkCmdEndDebugUtilsLabelEXT                           vkCmdEndDebugUtilsLabelEXT;
+#endif
+
+#if CRUDE_GFX_RAY_TRACING_ENABLED
+  PFN_vkCmdTraceRaysKHR                                    vkCmdTraceRaysKHR;
+  PFN_vkGetRayTracingShaderGroupHandlesKHR                 vkGetRayTracingShaderGroupHandlesKHR;
+  PFN_vkCreateRayTracingPipelinesKHR                       vkCreateRayTracingPipelinesKHR;
+  PFN_vkGetAccelerationStructureBuildSizesKHR              vkGetAccelerationStructureBuildSizesKHR;
+  PFN_vkCreateAccelerationStructureKHR                     vkCreateAccelerationStructureKHR;
+  PFN_vkCmdBuildAccelerationStructuresKHR                  vkCmdBuildAccelerationStructuresKHR;
+  PFN_vkGetAccelerationStructureDeviceAddressKHR           vkGetAccelerationStructureDeviceAddressKHR;
+  PFN_vkDestroyAccelerationStructureKHR                    vkDestroyAccelerationStructureKHR;
+#endif
 } crude_gfx_rhi_device;
 
 typedef struct crude_gfx_rhi_swapchain
@@ -1558,12 +1582,6 @@ typedef struct crude_gfx_rhi_descriptor_set_layout_create_info
 typedef struct crude_gfx_rhi_swapchain_create_info
 {
   crude_gfx_rhi_surface                                    surface;
-  uint32                                                   min_images_count;
-  crude_gfx_rhi_format                                     image_format;
-  crude_gfx_rhi_color_space                                image_color_space;
-  XMFLOAT2                                                 image_extent;
-  crude_gfx_rhi_surface_transform_flag_bits                pre_transform;
-  crude_gfx_rhi_present_mode                               present_mode;
 } crude_gfx_rhi_swapchain_create_info;
 
 typedef struct crude_gfx_rhi_descriptor_set_create_info
@@ -1571,8 +1589,6 @@ typedef struct crude_gfx_rhi_descriptor_set_create_info
   crude_gfx_rhi_descriptor_pool                            descriptor_pool;
   crude_gfx_rhi_descriptor_set_layout                      descriptor_set_layout;
   bool                                                     bindless;
-  crude_gfx_rhi_write_descriptor_set                      *write_descripor_sets;
-  uint32                                                   write_descripor_sets_count;
 } crude_gfx_rhi_descriptor_set_create_info;
 
 typedef struct crude_gfx_rhi_command_pool_create_info
@@ -1592,8 +1608,20 @@ typedef struct crude_gfx_rhi_queru_pool_create_info
   crude_gfx_rhi_query_pipeline_statistics_flags            pipeline_statistics;
 } crude_gfx_rhi_queru_pool_create_info;
 
-crude_gfx_rhi_fence g_crude_gfx_rhi_empty_fence = { VK_NULL_HANDLE };
-crude_gfx_rhi_sampler g_crude_gfx_rhi_empty_sampler = { VK_NULL_HANDLE };
+CRUDE_API crude_gfx_rhi_fence
+crude_gfx_rhi_fence_empty
+(
+);
+
+CRUDE_API crude_gfx_rhi_sampler
+crude_gfx_rhi_sampler_empty
+(
+);
+
+CRUDE_API crude_gfx_rhi_queue
+crude_gfx_rhi_queue_empty
+(
+);
 
 CRUDE_API crude_gfx_rhi_image_copy
 crude_gfx_rhi_image_copy_empty
@@ -1640,34 +1668,6 @@ crude_gfx_rhi_rect_2d_to_vk_rect_2d
 (
   _In_ crude_gfx_rhi_rect_2d                               rect2d
 );
-
-struct
-{
-  VkAllocationCallbacks                                   *vk_allocation_callbacks;
-
-  PFN_vkCmdEndRenderingKHR                                 vkCmdEndRenderingKHR;
-  PFN_vkCmdBeginRenderingKHR                               vkCmdBeginRenderingKHR;
-  PFN_vkCmdDrawMeshTasksEXT                                vkCmdDrawMeshTasksEXT;
-  PFN_vkCmdDrawMeshTasksIndirectCountEXT                   vkCmdDrawMeshTasksIndirectCountEXT;
-  PFN_vkCmdPipelineBarrier2KHR                             vkCmdPipelineBarrier2KHR;
-  PFN_vkQueueSubmit2KHR                                    vkQueueSubmit2KHR;
-  PFN_vkGetBufferDeviceAddressKHR                          vkGetBufferDeviceAddressKHR;
-
-#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
-  PFN_vkCmdBeginDebugUtilsLabelEXT                         vkCmdBeginDebugUtilsLabelEXT;
-  PFN_vkSetDebugUtilsObjectNameEXT                         vkSetDebugUtilsObjectNameEXT;
-  PFN_vkCmdEndDebugUtilsLabelEXT                           vkCmdEndDebugUtilsLabelEXT;
-  
-  PFN_vkCreateDebugUtilsMessengerEXT                       vkCreateDebugUtilsMessengerEXT;
-  PFN_vkDestroyDebugUtilsMessengerEXT                      vkDestroyDebugUtilsMessengerEXT;
-#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
-
-#if CRUDE_GFX_RAY_TRACING_ENABLED
-  PFN_vkCmdTraceRaysKHR                                    vkCmdTraceRaysKHR;
-  PFN_vkGetRayTracingShaderGroupHandlesKHR                 vkGetRayTracingShaderGroupHandlesKHR;
-  PFN_vkCreateRayTracingPipelinesKHR                       vkCreateRayTracingPipelinesKHR;
-#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
-} g_pfn;
 
 #elif CRUDE_GFX_NAPI
 typedef enum crude_gfx_rhi_format
@@ -2625,7 +2625,11 @@ crude_gfx_rhi_create_swapchain
 (
   _In_ crude_gfx_rhi_device                               *device,
   _In_ crude_gfx_rhi_swapchain_create_info const          *creation,
-  _Out_ crude_gfx_rhi_swapchain                           *swapchain
+  _In_ crude_heap_allocator                               *allocator,
+  _Out_ crude_gfx_rhi_swapchain                           *swapchain,
+  _Out_ uint32                                            *swapchain_images_count,
+  _Out_ XMFLOAT2                                          *swapchain_extent,
+  _Out_ crude_gfx_rhi_image                                swapchain_images[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ]
 );
 
 CRUDE_API void
@@ -2670,6 +2674,22 @@ crude_gfx_rhi_set_descriptor_set_debug_name
 (
   _In_ crude_gfx_rhi_device                               *device,
   _In_ crude_gfx_rhi_descriptor_set                        descriptor_set,
+  _In_ char const                                         *name
+);
+
+CRUDE_API void
+crude_gfx_rhi_create_descriptor_pool
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ bool                                                bindless,
+  _Out_ crude_gfx_rhi_descriptor_pool                     *descriptor_pool
+);
+
+CRUDE_API void
+crude_gfx_rhi_set_descriptor_pool_debug_name
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_descriptor_pool                       descriptor_pool,
   _In_ char const                                         *name
 );
 
@@ -2719,16 +2739,37 @@ crude_gfx_rhi_set_command_buffer_debug_name
   _In_ char const                                         *name
 );
 
-CRUDE_API crude_gfx_rhi_queue*
+CRUDE_API crude_gfx_rhi_queue
 crude_gfx_rhi_device_get_graphics_queue
 (
   _In_ crude_gfx_rhi_device                               *device
 );
 
-CRUDE_API crude_gfx_rhi_queue*
+CRUDE_API crude_gfx_rhi_queue
 crude_gfx_rhi_device_get_transfer_queue
 (
   _In_ crude_gfx_rhi_device                               *device
+);
+
+CRUDE_API void
+crude_gfx_rhi_update_descriptor_set
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_descriptor_set                        descriptor_set,
+  _In_ crude_gfx_rhi_write_descriptor_set                 *write_descripor_sets,
+  _In_ uint32                                              write_descripor_sets_count
+);
+
+CRUDE_API crude_gfx_rhi_physical_device_optional_extensions const*
+crude_gfx_rhi_get_device_optional_extensions
+(
+  _In_ crude_gfx_rhi_device                               *device
+);
+
+CRUDE_API void*
+crude_gfx_rhi_get_buffer_mapped_data
+(
+  _In_ crude_gfx_rhi_buffer                                buffer
 );
 
 CRUDE_API void
@@ -2746,11 +2787,10 @@ crude_gfx_rhi_get_surface_extent
   _In_ crude_gfx_rhi_surface                               surface
 );
 
-CRUDE_API crude_gfx_rhi_surface_transform_flag_bits
-crude_gfx_rhi_get_surface_transform
+CRUDE_API float32
+crude_gfx_rhi_get_timestamp_period
 (
-  _In_ crude_gfx_rhi_device                               *device,
-  _In_ crude_gfx_rhi_surface                               surface
+  _In_ crude_gfx_rhi_device                               *device
 );
 
 CRUDE_API bool
@@ -2796,6 +2836,7 @@ CRUDE_API void
 crude_gfx_rhi_create_fence
 (
   _In_ crude_gfx_rhi_device                               *device,
+  _In_ bool                                                signaled,
   _Out_ crude_gfx_rhi_fence                               *fence
 );
 
@@ -2938,6 +2979,7 @@ crude_gfx_rhi_command_buffer_draw_indirect_count
 CRUDE_API void
 crude_gfx_rhi_command_buffer_draw_mesh_task
 (
+  _In_ crude_gfx_rhi_device                               *device,
   _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ uint32                                              group_count_x,
   _In_ uint32                                              group_count_y,
@@ -2947,6 +2989,7 @@ crude_gfx_rhi_command_buffer_draw_mesh_task
 CRUDE_API void
 crude_gfx_rhi_command_buffer_draw_mesh_task_indirect_count
 (
+  _In_ crude_gfx_rhi_device                               *device,
   _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_buffer                                argument_buffer,
   _In_ crude_gfx_rhi_device_size                           argument_buffer_offset,
@@ -3025,6 +3068,7 @@ crude_gfx_rhi_command_buffer_write_timestamp
 CRUDE_API void
 crude_gfx_rhi_command_buffer_begin_debug_utils_label
 (
+  _In_ crude_gfx_rhi_device                               *device,
   _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_debug_utils_label const              *debug_utils_label
 );
@@ -3032,6 +3076,7 @@ crude_gfx_rhi_command_buffer_begin_debug_utils_label
 CRUDE_API void
 crude_gfx_rhi_command_buffer_end_debug_utils_label
 (
+  _In_ crude_gfx_rhi_device                               *device,
   _In_ crude_gfx_rhi_command_buffer                        command_buffer
 );
 
@@ -3059,6 +3104,7 @@ crude_gfx_rhi_command_buffer_fill_buffer
 CRUDE_API void
 crude_gfx_rhi_command_buffer_trace_rays
 (
+  _In_ crude_gfx_rhi_device                               *device,
   _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_strided_device_address_region const  *raygen_shader_binding_table,
   _In_ crude_gfx_rhi_strided_device_address_region const  *miss_shader_binding_table,

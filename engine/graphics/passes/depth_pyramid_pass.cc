@@ -23,13 +23,13 @@ crude_gfx_depth_pyramid_pass_initialize
   pass->depth_pyramid_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
 
   sampler_creation = crude_gfx_sampler_creation_empty();
-  sampler_creation.address_mode_u = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-  sampler_creation.address_mode_v = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-  sampler_creation.address_mode_w = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-  sampler_creation.mag_filter = VK_FILTER_LINEAR;
-  sampler_creation.min_filter = VK_FILTER_LINEAR;
-  sampler_creation.mip_filter = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-  sampler_creation.reduction_mode = VK_SAMPLER_REDUCTION_MODE_MAX;
+  sampler_creation.address_mode_u = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_creation.address_mode_v = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_creation.address_mode_w = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_creation.mag_filter = CRUDE_GFX_RHI_FILTER_LINEAR;
+  sampler_creation.min_filter = CRUDE_GFX_RHI_FILTER_LINEAR;
+  sampler_creation.mip_filter = CRUDE_GFX_RHI_SAMPLER_MIPMAP_MODE_NEAREST;
+  sampler_creation.reduction_mode = CRUDE_GFX_RHI_SAMPLER_REDUCTION_MODE_MAX;
   sampler_creation.name = "depth_pyramid_sampler";
 
   pass->depth_pyramid_sampler = crude_gfx_create_sampler( pass->scene_renderer->gpu, &sampler_creation );
@@ -89,7 +89,7 @@ crude_gfx_depth_pyramid_pass_render
 
   for ( uint32 mip_index = 0; mip_index < depth_pyramid_texture->subresource.mip_level_count; ++mip_index )
   {
-    crude_gfx_cmd_add_image_barrier_ext2( primary_cmd, depth_pyramid_texture->vk_image, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, mip_index, 1u, false );
+    crude_gfx_cmd_add_image_barrier_ext2( primary_cmd, depth_pyramid_texture->rhi_image, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, mip_index, 1u, false );
     
     if ( mip_index == 0 )
     {
@@ -107,7 +107,7 @@ crude_gfx_depth_pyramid_pass_render
     group_y = ( height + 7 ) / 8;
     crude_gfx_cmd_dispatch( primary_cmd, group_x, group_y, 1 );
     
-    crude_gfx_cmd_add_image_barrier_ext2( primary_cmd, depth_pyramid_texture->vk_image, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, mip_index, 1u, false );
+    crude_gfx_cmd_add_image_barrier_ext2( primary_cmd, depth_pyramid_texture->rhi_image, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, mip_index, 1u, false );
     
     width = width / 2;
     height = height / 2;
@@ -163,7 +163,7 @@ crude_gfx_depth_pyramid_pass_on_resize
   crude_gfx_link_texture_sampler( pass->scene_renderer->gpu, pass->depth_pyramid_texture_handle, pass->depth_pyramid_sampler );
 
   depth_pyramid_view_creation = crude_gfx_texture_view_creation_empty( );
-  depth_pyramid_view_creation.view_type = VK_IMAGE_VIEW_TYPE_2D;
+  depth_pyramid_view_creation.view_type = CRUDE_GFX_RHI_IMAGE_VIEW_TYPE_2D;
   depth_pyramid_view_creation.parent_texture_handle = pass->depth_pyramid_texture_handle;
   depth_pyramid_view_creation.name = "depth_pyramid_view";
   for ( uint32 i = 0; i < pass->depth_pyramid_levels; ++i )

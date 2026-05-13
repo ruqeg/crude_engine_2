@@ -47,7 +47,7 @@ typedef struct crude_gfx_asynchronous_loader
   int32                                                    file_load_requests_rpos;
   int32                                                    upload_requests_rpos;
 
-  VkFence                                                  vk_transfer_completed_fence;
+  crude_gfx_rhi_fence                                      rhi_transfer_completed_fence;
   
   crude_gfx_memory_allocation                              staging_allocation;
 

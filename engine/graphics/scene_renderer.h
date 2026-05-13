@@ -209,7 +209,8 @@ typedef struct crude_gfx_scene_renderer
    * Ray Tracing CPU & GPU Data
    **********************/
 #if CRUDE_GFX_RAY_TRACING_ENABLED
-  VkAccelerationStructureKHR                               vk_tlas;
+  
+  crude_gfx_rhi_acceleration_structure                     rhi_tlas;
   crude_gfx_memory_allocation                              tlas_hga;
   crude_gfx_memory_allocation                              tlas_instances_hga;
   crude_gfx_memory_allocation                              tlas_scratch_hga;

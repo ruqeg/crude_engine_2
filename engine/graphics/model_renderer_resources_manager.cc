@@ -657,58 +657,58 @@ crude_gfx_model_renderer_resources_manager_gltf_load_samplers_
     switch ( sampler->min_filter )
     {
     case cgltf_filter_type_nearest:
-      creation.min_filter = VK_FILTER_NEAREST;
+      creation.min_filter = CRUDE_GFX_RHI_FILTER_NEAREST;
       break;
     case cgltf_filter_type_linear:
-      creation.min_filter = VK_FILTER_LINEAR;
+      creation.min_filter = CRUDE_GFX_RHI_FILTER_LINEAR;
       break;
     case cgltf_filter_type_linear_mipmap_nearest:
-      creation.min_filter = VK_FILTER_LINEAR;
-      creation.mip_filter = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+      creation.min_filter = CRUDE_GFX_RHI_FILTER_LINEAR;
+      creation.mip_filter = CRUDE_GFX_RHI_SAMPLER_MIPMAP_MODE_NEAREST;
       break;
     case cgltf_filter_type_linear_mipmap_linear:
-      creation.min_filter = VK_FILTER_LINEAR;
-      creation.mip_filter = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+      creation.min_filter = CRUDE_GFX_RHI_FILTER_LINEAR;
+      creation.mip_filter = CRUDE_GFX_RHI_SAMPLER_MIPMAP_MODE_LINEAR;
       break;
     case cgltf_filter_type_nearest_mipmap_nearest:
-      creation.min_filter = VK_FILTER_NEAREST;
-      creation.mip_filter = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+      creation.min_filter = CRUDE_GFX_RHI_FILTER_NEAREST;
+      creation.mip_filter = CRUDE_GFX_RHI_SAMPLER_MIPMAP_MODE_NEAREST;
       break;
     case cgltf_filter_type_nearest_mipmap_linear:
-      creation.min_filter = VK_FILTER_NEAREST;
-      creation.mip_filter = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+      creation.min_filter = CRUDE_GFX_RHI_FILTER_NEAREST;
+      creation.mip_filter = CRUDE_GFX_RHI_SAMPLER_MIPMAP_MODE_LINEAR;
       break;
     }
     
-    creation.mag_filter = sampler->mag_filter == cgltf_filter_type_linear ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+    creation.mag_filter = ( sampler->mag_filter == cgltf_filter_type_linear ) ? CRUDE_GFX_RHI_FILTER_LINEAR : CRUDE_GFX_RHI_FILTER_NEAREST;
     
     switch ( sampler->wrap_s )
     {
       case cgltf_wrap_mode_clamp_to_edge:
-        creation.address_mode_u = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        creation.address_mode_u = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         break;
       case cgltf_wrap_mode_mirrored_repeat:
-        creation.address_mode_u = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+        creation.address_mode_u = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
         break;
       case cgltf_wrap_mode_repeat:
-        creation.address_mode_u = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        creation.address_mode_u = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_REPEAT;
         break;
     }
     
     switch ( sampler->wrap_t )
     {
     case cgltf_wrap_mode_clamp_to_edge:
-      creation.address_mode_v = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+      creation.address_mode_v = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
       break;
     case cgltf_wrap_mode_mirrored_repeat:
-      creation.address_mode_v = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+      creation.address_mode_v = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
       break;
     case cgltf_wrap_mode_repeat:
-      creation.address_mode_v = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+      creation.address_mode_v = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_REPEAT;
       break;
     }
 
-    creation.address_mode_w = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    creation.address_mode_w = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_REPEAT;
     
     creation.name = "";
     
@@ -1957,7 +1957,7 @@ crude_gfx_model_renderer_resources_manager_create_bottom_level_acceleration_stru
     vk_acceleration_structure_geometries[ i ].geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
     vk_acceleration_structure_geometries[ i ].flags = ( mesh->flags & CRUDE_MESH_DRAW_FLAGS_TRANSLUCENT_MASK ) ? 0 : VK_GEOMETRY_OPAQUE_BIT_KHR;
     vk_acceleration_structure_geometries[ i ].geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
-    vk_acceleration_structure_geometries[ i ].geometry.triangles.vertexFormat = CRUDE_GFX_RHI_FORMAT_R32G32B32_SFLOAT;
+    vk_acceleration_structure_geometries[ i ].geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
     vk_acceleration_structure_geometries[ i ].geometry.triangles.vertexData.deviceAddress = manager->meshlets_vertices_positions_hga.gpu_address;
     vk_acceleration_structure_geometries[ i ].geometry.triangles.vertexStride = sizeof( crude_gfx_vertex_position );
     vk_acceleration_structure_geometries[ i ].geometry.triangles.maxVertex = max_primitives_count;
@@ -1981,17 +1981,17 @@ crude_gfx_model_renderer_resources_manager_create_bottom_level_acceleration_stru
     
     vk_acceleration_structure_build_sizes_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildSizesInfoKHR );
     vk_acceleration_structure_build_sizes_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
-    manager->gpu->vkGetAccelerationStructureBuildSizesKHR( manager->gpu->vk_device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &vk_acceleration_build_geometry_infos[ i ], &max_primitives_count, &vk_acceleration_structure_build_sizes_info );
+    manager->gpu->rhi_device.vkGetAccelerationStructureBuildSizesKHR( manager->gpu->rhi_device.vk_device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &vk_acceleration_build_geometry_infos[ i ], &max_primitives_count, &vk_acceleration_structure_build_sizes_info );
   
     model_renderer_resources->blases_hga[ i ] = crude_gfx_memory_allocate_with_pname( manager->gpu, vk_acceleration_structure_build_sizes_info.accelerationStructureSize, CRUDE_GFX_MEMORY_TYPE_GPU, "blas_hga", VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR );
   
     vk_acceleration_structure_create_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureCreateInfoKHR );
     vk_acceleration_structure_create_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
-    vk_acceleration_structure_create_info.buffer = crude_gfx_access_buffer( manager->gpu, model_renderer_resources->blases_hga[ i ].buffer_handle )->vk_buffer;
+    vk_acceleration_structure_create_info.buffer = crude_gfx_access_buffer( manager->gpu, model_renderer_resources->blases_hga[ i ].buffer_handle )->rhi_buffer.vk_buffer;
     vk_acceleration_structure_create_info.offset = 0;
     vk_acceleration_structure_create_info.size = vk_acceleration_structure_build_sizes_info.accelerationStructureSize;
     vk_acceleration_structure_create_info.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
-    CRUDE_GFX_HANDLE_VULKAN_RESULT( manager->gpu->vkCreateAccelerationStructureKHR( manager->gpu->vk_device, &vk_acceleration_structure_create_info, manager->gpu->vk_allocation_callbacks, &model_renderer_resources->vk_blases[ i ] ), "Can't create acceleration structure" );
+    CRUDE_GFX_HANDLE_VULKAN_RESULT( manager->gpu->rhi_device.vkCreateAccelerationStructureKHR( manager->gpu->rhi_device.vk_device, &vk_acceleration_structure_create_info, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &model_renderer_resources->vk_blases[ i ] ), "Can't create acceleration structure" );
     
     // TODO maybe we can use only one scratch buffer? idk for now
     blas_scratch_buffers_hga[ i ] = crude_gfx_memory_allocate_with_pname( manager->gpu, vk_acceleration_structure_build_sizes_info.buildScratchSize, CRUDE_GFX_MEMORY_TYPE_GPU, "blas_scratch_hga", VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR );
@@ -2002,7 +2002,7 @@ crude_gfx_model_renderer_resources_manager_create_bottom_level_acceleration_stru
   
   cmd_instant = crude_gfx_access_cmd_buffer( manager->gpu, manager->gpu->immediate_transfer_cmd_buffer );
   crude_gfx_cmd_begin_primary( cmd_instant );
-  manager->gpu->vkCmdBuildAccelerationStructuresKHR( cmd_instant->vk_cmd_buffer, CRUDE_ARRAY_LENGTH( vk_acceleration_build_geometry_infos ), vk_acceleration_build_geometry_infos, vk_acceleration_structure_build_range_infos );
+  manager->gpu->rhi_device.vkCmdBuildAccelerationStructuresKHR( cmd_instant->rhi_cmd_buffer.vk_command_buffer, CRUDE_ARRAY_LENGTH( vk_acceleration_build_geometry_infos ), vk_acceleration_build_geometry_infos, vk_acceleration_structure_build_range_infos );
   crude_gfx_submit_immediate( cmd_instant );
   
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( blas_scratch_buffers_hga ); ++i )

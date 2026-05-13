@@ -529,7 +529,7 @@ crude_gfx_render_graph_compile
           {
             render_pass_creation.color_formats[ render_pass_creation.num_render_targets ] = info->texture.format;
             render_pass_creation.color_operations[ render_pass_creation.num_render_targets ] = info->texture.load_op;
-            render_pass_creation.color_final_layouts[ render_pass_creation.num_render_targets ] = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            render_pass_creation.color_final_layouts[ render_pass_creation.num_render_targets ] = CRUDE_GFX_RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
             ++render_pass_creation.num_render_targets;
           }
         }
@@ -552,7 +552,7 @@ crude_gfx_render_graph_compile
           {
             render_pass_creation.color_formats[ render_pass_creation.num_render_targets ] = info->texture.format;
             render_pass_creation.color_operations[ render_pass_creation.num_render_targets ] = CRUDE_GFX_RENDER_PASS_OPERATION_LOAD;
-            render_pass_creation.color_final_layouts[ render_pass_creation.num_render_targets ] = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            render_pass_creation.color_final_layouts[ render_pass_creation.num_render_targets ] = CRUDE_GFX_RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
             ++render_pass_creation.num_render_targets;
           }
         }
@@ -770,7 +770,7 @@ crude_gfx_render_graph_render
       crude_gfx_cmd_set_viewport( gpu_commands, &dev_viewport );
       
       crude_gfx_render_graph_render_pass_container_pre_render( node->render_graph_pass_container, gpu_commands );
-      crude_gfx_cmd_bind_render_pass( gpu_commands, node->render_pass, node->framebuffer, false );
+      crude_gfx_cmd_bind_render_pass( gpu_commands, node->render_pass, node->framebuffer );
       crude_gfx_render_graph_render_pass_container_render( node->render_graph_pass_container, gpu_commands );
       crude_gfx_cmd_end_render_pass( gpu_commands );
       crude_gfx_render_graph_render_pass_container_post_render( node->render_graph_pass_container, gpu_commands );

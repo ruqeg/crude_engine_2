@@ -1,6 +1,6 @@
 #include <engine/graphics/graphics_config.h>
 
-#if CRUDE_GFX_USE_NSIGHT_AFTERMATH
+#if CRUDE_GFX_NSIGHT_AFTERMATH
 
 #include <engine/core/assert.h>
 #include <engine/core/array.h>
@@ -279,7 +279,7 @@ crude_gfx_gpu_crash_tracker_initialize
   CRUDE_GFX_AFTERMATH_CHECK_ERROR( GFSDK_Aftermath_EnableGpuCrashDumps(
     GFSDK_Aftermath_Version_API,
     GFSDK_Aftermath_GpuCrashDumpWatchedApiFlags_Vulkan,
-    GFSDK_Aftermath_GpuCrashDumpFeatureFlags_DeferDebugInfoCallbacks,
+    GFSDK_Aftermath_GpuCrashDumpFeatureFlags_Default, //GFSDK_Aftermath_GpuCrashDumpFeatureFlags_DeferDebugInfoCallbacks,
     crude_gfx_gpu_device_crash_dump_callback_,
     crude_gfx_gpu_crash_tracker_shader_debug_info_callback_,
     crude_gfx_gpu_crash_tracker_crash_dump_description_callback_,
@@ -306,6 +306,8 @@ crude_gfx_gpu_crash_tracker_handle_device_lost
   int64                                                    start_time;
   GFSDK_Aftermath_CrashDump_Status                         gfsdk_status;
 
+  CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "crude_gfx_gpu_crash_tracker_handle_device_lost" );
+
   start_time = crude_time_now( );
 
   gfsdk_status = GFSDK_Aftermath_CrashDump_Status_Unknown;
@@ -318,10 +320,6 @@ crude_gfx_gpu_crash_tracker_handle_device_lost
     crude_time_delta_seconds( start_time, crude_time_now( ) ) < 3.f 
   )
   {
-    timespec                                               timespec;
-    timespec.tv_sec = 0.05;
-    thrd_sleep( &timespec, NULL );
-
     CRUDE_GFX_AFTERMATH_CHECK_ERROR( GFSDK_Aftermath_GetCrashDumpStatus( &gfsdk_status) );
   }
   

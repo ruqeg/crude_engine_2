@@ -335,7 +335,7 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_instances_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_scratch_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_hga );
-  scene_renderer->gpu->vkDestroyAccelerationStructureKHR( scene_renderer->gpu->vk_device, scene_renderer->vk_tlas, scene_renderer->gpu->vk_allocation_callbacks );
+  scene_renderer->gpu->rhi_device.vkDestroyAccelerationStructureKHR( scene_renderer->gpu->rhi_device.vk_device, scene_renderer->rhi_tlas.vk_acceleration_structure, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
 
   crude_gfx_destroy_descriptor_set( scene_renderer->gpu, scene_renderer->acceleration_stucture_ds );
   crude_gfx_destroy_descriptor_set_layout( scene_renderer->gpu, scene_renderer->acceleration_stucture_dsl );
@@ -446,7 +446,7 @@ crude_gfx_scene_renderer_update_instances_from_node
       crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_hga );
       crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_instances_hga );
       crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_scratch_hga );
-      scene_renderer->gpu->vkDestroyAccelerationStructureKHR( scene_renderer->gpu->vk_device, scene_renderer->vk_tlas, scene_renderer->gpu->vk_allocation_callbacks );
+      scene_renderer->gpu->rhi_device.vkDestroyAccelerationStructureKHR( scene_renderer->gpu->rhi_device.vk_device, scene_renderer->rhi_tlas.vk_acceleration_structure, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
     }
 
     crude_gfx_cmd_buffer *cmd = crude_gfx_access_cmd_buffer( scene_renderer->gpu, scene_renderer->gpu->immediate_transfer_cmd_buffer );
@@ -1307,7 +1307,7 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
           vk_acceleration_structure_address_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
           vk_acceleration_structure_address_info.accelerationStructure = model_renderer_resources->vk_blases[ node->meshes[ mesh_index ] ];
 
-          vk_blas_address = scene_renderer->gpu->vkGetAccelerationStructureDeviceAddressKHR( scene_renderer->gpu->vk_device, &vk_acceleration_structure_address_info );
+          vk_blas_address = scene_renderer->gpu->rhi_device.vkGetAccelerationStructureDeviceAddressKHR( scene_renderer->gpu->rhi_device.vk_device, &vk_acceleration_structure_address_info );
     
           vk_acceleration_structure_instance = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureInstanceKHR );
           vk_acceleration_structure_instance.mask = 0xff;
@@ -1355,7 +1355,7 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
   
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
 
-  scene_renderer->gpu->vkGetAccelerationStructureBuildSizesKHR( scene_renderer->gpu->vk_device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &vk_acceleration_build_geometry_info, &max_instance_count, &vk_acceleration_structure_build_sizes_info );
+  scene_renderer->gpu->rhi_device.vkGetAccelerationStructureBuildSizesKHR( scene_renderer->gpu->rhi_device.vk_device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &vk_acceleration_build_geometry_info, &max_instance_count, &vk_acceleration_structure_build_sizes_info );
   
   scene_renderer->tlas_hga = crude_gfx_memory_allocate_with_pname(
     scene_renderer->gpu,
@@ -1366,11 +1366,11 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
   
   vk_acceleration_structure_create_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureCreateInfoKHR );
   vk_acceleration_structure_create_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
-  vk_acceleration_structure_create_info.buffer = crude_gfx_access_buffer( scene_renderer->gpu, scene_renderer->tlas_hga.buffer_handle )->vk_buffer;
+  vk_acceleration_structure_create_info.buffer = crude_gfx_access_buffer( scene_renderer->gpu, scene_renderer->tlas_hga.buffer_handle )->rhi_buffer.vk_buffer;
   vk_acceleration_structure_create_info.size = vk_acceleration_structure_build_sizes_info.accelerationStructureSize;
   vk_acceleration_structure_create_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
 
-  scene_renderer->gpu->vkCreateAccelerationStructureKHR( scene_renderer->gpu->vk_device, &vk_acceleration_structure_create_info, scene_renderer->gpu->vk_allocation_callbacks, &scene_renderer->vk_tlas );
+  scene_renderer->gpu->rhi_device.vkCreateAccelerationStructureKHR( scene_renderer->gpu->rhi_device.vk_device, &vk_acceleration_structure_create_info, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &scene_renderer->rhi_tlas.vk_acceleration_structure );
 
   scene_renderer->tlas_scratch_hga = crude_gfx_memory_allocate_with_pname(
     scene_renderer->gpu, 
@@ -1384,7 +1384,7 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
   vk_acceleration_build_geometry_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
   vk_acceleration_build_geometry_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DATA_ACCESS_KHR | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
   vk_acceleration_build_geometry_info.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
-  vk_acceleration_build_geometry_info.dstAccelerationStructure = scene_renderer->vk_tlas;
+  vk_acceleration_build_geometry_info.dstAccelerationStructure = scene_renderer->rhi_tlas.vk_acceleration_structure;
   vk_acceleration_build_geometry_info.geometryCount = 1;
   vk_acceleration_build_geometry_info.pGeometries = &vk_acceleration_structure_geometry;
   vk_acceleration_build_geometry_info.scratchData.deviceAddress = scene_renderer->tlas_scratch_hga.gpu_address;
@@ -1401,7 +1401,7 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
   
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
 
-  scene_renderer->gpu->vkCmdBuildAccelerationStructuresKHR( primary_cmd->vk_cmd_buffer, 1, &vk_acceleration_build_geometry_info, tlas_ranges );
+  scene_renderer->gpu->rhi_device.vkCmdBuildAccelerationStructuresKHR( primary_cmd->rhi_cmd_buffer.vk_command_buffer, 1, &vk_acceleration_build_geometry_info, tlas_ranges );
   
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
 
@@ -1495,7 +1495,7 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
         vk_acceleration_structure_address_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
         vk_acceleration_structure_address_info.accelerationStructure = model_renderer_resources->vk_blases[ node->meshes[ mesh_index ] ];
       
-        vk_blas_address = scene_renderer->gpu->vkGetAccelerationStructureDeviceAddressKHR( scene_renderer->gpu->vk_device, &vk_acceleration_structure_address_info );
+        vk_blas_address = scene_renderer->gpu->rhi_device.vkGetAccelerationStructureDeviceAddressKHR( scene_renderer->gpu->rhi_device.vk_device, &vk_acceleration_structure_address_info );
       
         vk_acceleration_structure_instance = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureInstanceKHR );
         vk_acceleration_structure_instance.mask = 0xff;
@@ -1528,8 +1528,8 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
   vk_acceleration_build_geometry_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
   vk_acceleration_build_geometry_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DATA_ACCESS_KHR | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
   vk_acceleration_build_geometry_info.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR;
-  vk_acceleration_build_geometry_info.dstAccelerationStructure = scene_renderer->vk_tlas;
-  vk_acceleration_build_geometry_info.srcAccelerationStructure = scene_renderer->vk_tlas;
+  vk_acceleration_build_geometry_info.dstAccelerationStructure = scene_renderer->rhi_tlas.vk_acceleration_structure;
+  vk_acceleration_build_geometry_info.srcAccelerationStructure = scene_renderer->rhi_tlas.vk_acceleration_structure;
   vk_acceleration_build_geometry_info.geometryCount = 1;
   vk_acceleration_build_geometry_info.pGeometries = &vk_acceleration_structure_geometry;
   vk_acceleration_build_geometry_info.scratchData.deviceAddress = scene_renderer->tlas_scratch_hga.gpu_address;
@@ -1546,7 +1546,7 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
   
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
 
-  scene_renderer->gpu->vkCmdBuildAccelerationStructuresKHR( primary_cmd->vk_cmd_buffer, 1, &vk_acceleration_build_geometry_info, tlas_ranges );
+  scene_renderer->gpu->rhi_device.vkCmdBuildAccelerationStructuresKHR( primary_cmd->rhi_cmd_buffer.vk_command_buffer, 1, &vk_acceleration_build_geometry_info, tlas_ranges );
   
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
 
@@ -1591,7 +1591,7 @@ crude_gfx_scene_renderer_create_acceleration_stucture_ds_
   ds_creation.layout = scene_renderer->acceleration_stucture_dsl;
   ds_creation.name = "acceleration_stucture_dsl";
 
-  crude_gfx_descriptor_set_creation_add_acceleration_structure( &ds_creation, scene_renderer->vk_tlas, 0u );
+  crude_gfx_descriptor_set_creation_add_acceleration_structure( &ds_creation, scene_renderer->rhi_tlas, 0u );
     
   scene_renderer->acceleration_stucture_ds = crude_gfx_create_descriptor_set( scene_renderer->gpu, &ds_creation );
 }

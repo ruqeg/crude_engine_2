@@ -418,7 +418,7 @@ crude_gfx_cmd_draw_mesh_task
   _In_ uint32                                              group_count_z
 )
 {
-  crude_gfx_rhi_command_buffer_draw_mesh_task( cmd->rhi_cmd_buffer, group_count_x, group_count_y, group_count_z );
+  crude_gfx_rhi_command_buffer_draw_mesh_task( &cmd->gpu->rhi_device, cmd->rhi_cmd_buffer, group_count_x, group_count_y, group_count_z );
 }
 
 void
@@ -436,7 +436,7 @@ crude_gfx_cmd_draw_mesh_task_indirect_count
   crude_gfx_buffer *argument_buffer = crude_gfx_access_buffer( cmd->gpu, argument_buffer_handle );
   crude_gfx_buffer *count_buffer = crude_gfx_access_buffer( cmd->gpu, count_buffer_handle );
   
-  crude_gfx_rhi_command_buffer_draw_mesh_task_indirect_count( cmd->rhi_cmd_buffer, argument_buffer->rhi_buffer, argument_offset, count_buffer->rhi_buffer, count_offset, max_draws, stride );
+  crude_gfx_rhi_command_buffer_draw_mesh_task_indirect_count( &cmd->gpu->rhi_device, cmd->rhi_cmd_buffer, argument_buffer->rhi_buffer, argument_offset, count_buffer->rhi_buffer, count_offset, max_draws, stride );
 }
 
 void
@@ -529,13 +529,13 @@ crude_gfx_cmd_add_image_barrier_ext
   _In_ uint32                                              base_mip_level,
   _In_ uint32                                              mip_count,
   _In_ bool                                                is_depth,
-  _In_ uint32                                              source_queue_family,
-  _In_ uint32                                              destination_family,
+  _In_ crude_gfx_rhi_queue                                 source_queue,
+  _In_ crude_gfx_rhi_queue                                 destination_queue,
   _In_ crude_gfx_rhi_queue_type                            source_queue_type,
   _In_ crude_gfx_rhi_queue_type                            destination_queue_type
 )
 {
-  crude_gfx_cmd_add_image_barrier_ext3( cmd, texture->rhi_image, texture->state, new_state, base_mip_level, mip_count, is_depth, source_queue_family, destination_family, source_queue_type, destination_queue_type );
+  crude_gfx_cmd_add_image_barrier_ext3( cmd, texture->rhi_image, texture->state, new_state, base_mip_level, mip_count, is_depth, source_queue, destination_queue, source_queue_type, destination_queue_type );
   texture->state = new_state;
 }
 
@@ -551,7 +551,7 @@ crude_gfx_cmd_add_image_barrier_ext2
   _In_ bool                                                is_depth
 )
 {
-  crude_gfx_cmd_add_image_barrier_ext3( cmd, rhi_image, old_state, new_state, base_mip_level, mip_count, is_depth, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS );
+  crude_gfx_cmd_add_image_barrier_ext3( cmd, rhi_image, old_state, new_state, base_mip_level, mip_count, is_depth, crude_gfx_rhi_queue_empty( ), crude_gfx_rhi_queue_empty( ), CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS );
 }
 
 void
@@ -564,13 +564,13 @@ crude_gfx_cmd_add_image_barrier_ext3
   _In_ uint32                                              base_mip_level,
   _In_ uint32                                              mip_count,
   _In_ bool                                                is_depth,
-  _In_ uint32                                              source_queue_family,
-  _In_ uint32                                              destination_family,
+  _In_ crude_gfx_rhi_queue                                 source_queue,
+  _In_ crude_gfx_rhi_queue                                 destination_queue,
   _In_ crude_gfx_rhi_queue_type                            source_queue_type,
   _In_ crude_gfx_rhi_queue_type                            destination_queue_type
 )
 {
-  crude_gfx_cmd_add_image_barrier_ext5( cmd, rhi_image, old_state, new_state, base_mip_level, mip_count, 0u, 1u, is_depth, source_queue_family, destination_family, source_queue_type, destination_queue_type );
+  crude_gfx_cmd_add_image_barrier_ext5( cmd, rhi_image, old_state, new_state, base_mip_level, mip_count, 0u, 1u, is_depth, source_queue.vk_queue_family, destination_queue.vk_queue_family, source_queue_type, destination_queue_type );
 }
 
 void
@@ -614,8 +614,8 @@ crude_gfx_cmd_add_image_barrier_ext5
   //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Transitioning Texture %s from %s to %s", texture->name, crude_gfx_resource_state_to_name( texture->state ), crude_gfx_resource_state_to_name( new_state ) );
   CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, rhi_image.vk_image, "Can't add image barrier to the image! image is VK_NULL_HANDLE!" );
   
-  crude_gfx_rhi_access_flags src_access_mask = crude_gfx_rhi_resource_state_to_access_flags( old_state );
-  crude_gfx_rhi_access_flags dst_access_mask = crude_gfx_rhi_resource_state_to_access_flags( new_state );
+  src_access_mask = crude_gfx_rhi_resource_state_to_access_flags( old_state );
+  dst_access_mask = crude_gfx_rhi_resource_state_to_access_flags( new_state );
 
   image_memory_barrier.src_stage_mask = crude_gfx_rhi_determine_pipeline_stage_flags( src_access_mask, source_queue_type );
   image_memory_barrier.src_access_mask = src_access_mask;
@@ -676,7 +676,7 @@ crude_gfx_cmd_memory_copy_to_texture
   
   crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, 0, 1, false );
   crude_gfx_rhi_command_buffer_copy_buffer_to_image( cmd->rhi_cmd_buffer, buffer->rhi_buffer, texture->rhi_image, &region );
-  crude_gfx_cmd_add_image_barrier_ext( cmd, texture, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_SOURCE, 0, 1, false, cmd->gpu->vk_transfer_queue_family, cmd->gpu->vk_main_queue_family, CRUDE_GFX_RHI_QUEUE_TYPE_COPY_TRANSFER, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS );
+  crude_gfx_cmd_add_image_barrier_ext( cmd, texture, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_SOURCE, 0, 1, false, cmd->gpu->rhi_transfer_queue, cmd->gpu->rhi_main_queue, CRUDE_GFX_RHI_QUEUE_TYPE_COPY_TRANSFER, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS );
 }
 
 void
@@ -736,10 +736,10 @@ crude_gfx_cmd_push_marker
   label.color[ 1 ] = 1.0f;
   label.color[ 2 ] = 1.0f;
   label.color[ 3 ] = 1.0f;
-  crude_gfx_rhi_command_buffer_begin_debug_utils_label( cmd->rhi_cmd_buffer, &label );
+  crude_gfx_rhi_command_buffer_begin_debug_utils_label( &cmd->gpu->rhi_device, cmd->rhi_cmd_buffer, &label );
 #endif
   
-#if CRUDE_GFX_USE_NSIGHT_AFTERMATH
+#if CRUDE_GFX_NSIGHT_AFTERMATH
     //// A helper for setting a checkpoint marker
     //auto setCheckpointMarker = [this](vk::CommandBuffer commandBuffer, const std::string& markerData)
     //{
@@ -798,7 +798,7 @@ crude_gfx_cmd_pop_marker
 #endif
 
 #if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
-  crude_gfx_rhi_command_buffer_end_debug_utils_label( cmd->rhi_cmd_buffer );
+  crude_gfx_rhi_command_buffer_end_debug_utils_label( &cmd->gpu->rhi_device, cmd->rhi_cmd_buffer );
 #endif
 }
 
@@ -863,7 +863,7 @@ crude_gfx_cmd_trace_rays
 
   callable_table = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_strided_device_address_region );
   
-  crude_gfx_rhi_command_buffer_trace_rays( cmd->rhi_cmd_buffer, &raygen_table, &miss_table, &hit_table, &callable_table, width, height, depth );
+  crude_gfx_rhi_command_buffer_trace_rays( &cmd->gpu->rhi_device, cmd->rhi_cmd_buffer, &raygen_table, &miss_table, &hit_table, &callable_table, width, height, depth );
 #else
   CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, false, "Can proccess crude_gfx_cmd_trace_rays, CRUDE_GFX_RAY_TRACING_ENABLED wasn't enabled" );
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */

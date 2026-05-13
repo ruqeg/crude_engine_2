@@ -101,15 +101,15 @@ crude_engine_commands_manager_update
 //    }
     case CRUDE_ENGINE_COMMANDS_MANAGER_QUEUE_COMMAND_TYPE_LOAD_NODE:
     {
-      vkDeviceWaitIdle( manager->engine->gpu.vk_device );
+      crude_gfx_rhi_wait_idle( &manager->engine->gpu.rhi_device );
 
       crude_node_manager_clear( &manager->engine->node_manager );
       crude_physics_shapes_manager_clear( &manager->engine->physics_shapes_manager );
       crude_gfx_texture_manager_clear( &manager->engine->texture_manager );
       crude_gfx_model_renderer_resources_manager_clear( &manager->engine->model_renderer_resources_manager );
       crude_entity_destroy_hierarchy( manager->engine->world, manager->engine->main_node );
-
-      vkDeviceWaitIdle( manager->engine->gpu.vk_device );
+      
+      crude_gfx_rhi_wait_idle( &manager->engine->gpu.rhi_device );
       
       manager->engine->main_node = crude_node_manager_create_node( &manager->engine->node_manager, manager->commands_queue[ i ].load_node.relative_filepath, manager->engine->world );
       

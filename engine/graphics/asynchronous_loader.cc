@@ -68,7 +68,7 @@ crude_gfx_asynchronous_loader_initialize
 
     cmd_pool_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_cmd_pool_creation );
     cmd_pool_creation.profiler.enabled = false;
-    cmd_pool_creation.queue_family_index = gpu->vk_transfer_queue_family;
+    cmd_pool_creation.queue = gpu->rhi_transfer_queue;
     asynloader->transfer_cmd_pools[ i ] = crude_gfx_create_cmd_pool( asynloader->gpu, &cmd_pool_creation );
     
     cmd_buffer_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_cmd_buffer_creation );
@@ -87,12 +87,8 @@ crude_gfx_asynchronous_loader_initialize
 
   asynloader->staging_allocation = crude_gfx_memory_allocate( asynloader->gpu, 64 * 1024 * 1024, CRUDE_GFX_MEMORY_TYPE_CPU_GPU, 0 );
 
-  {
-    VkFenceCreateInfo fence_info = CRUDE_COMPOUNT_EMPTY( VkFenceCreateInfo );
-    fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateFence( gpu->vk_device, &fence_info, gpu->vk_allocation_callbacks, &asynloader->vk_transfer_completed_fence ), "Failed to create fence" );
-    crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_FENCE, CRUDE_CAST( uint64, asynloader->vk_transfer_completed_fence ), "transfer_completed_fence" );
-  }
+  crude_gfx_rhi_create_fence( &gpu->rhi_device, false, &asynloader->rhi_transfer_completed_fence );
+  crude_gfx_rhi_set_fence_debug_name( &gpu->rhi_device, asynloader->rhi_transfer_completed_fence, "rhi_transfer_completed_fence" );
 }
 
 void
@@ -102,8 +98,8 @@ crude_gfx_asynchronous_loader_deinitialize
 )
 {
   mtx_destroy( &asynloader->request_mutex );
-
-  vkDestroyFence( asynloader->gpu->vk_device, asynloader->vk_transfer_completed_fence, asynloader->gpu->vk_allocation_callbacks );
+  
+  crude_gfx_rhi_destroy_fence( &asynloader->gpu->rhi_device, asynloader->rhi_transfer_completed_fence );
   
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( asynloader->file_load_requests ); ++i )
   {
@@ -278,24 +274,23 @@ crude_gfx_asynchronous_loader_update
     crude_gfx_cmd_end( cmd );
 
     {
-      VkCommandBufferSubmitInfo command_buffers[] = {
-        { VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR, NULL, cmd->vk_cmd_buffer, 0 },
-      };
-      
-      VkSubmitInfo2 submit_info = CRUDE_COMPOUNT_EMPTY( VkSubmitInfo2 );
-      submit_info.sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR;
-      submit_info.commandBufferInfoCount   = CRUDE_COUNTOF( command_buffers );
-      submit_info.pCommandBufferInfos      = command_buffers;
+      crude_gfx_rhi_command_buffer_submit_info             rhi_command_buffers;
+      crude_gfx_rhi_submit_info                            rhi_submit_info;
+
+      rhi_command_buffers = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_command_buffer_submit_info );
+      rhi_command_buffers.command_buffer = cmd->rhi_cmd_buffer;
+      rhi_command_buffers.device_mask = 0;
+
+      rhi_submit_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_submit_info );
+      rhi_submit_info.command_buffer_infos = &rhi_command_buffers;
+      rhi_submit_info.command_buffer_info_count = 1u;
     
-      crude_gfx_device_queue_submit( asynloader->gpu, asynloader->gpu->vk_transfer_queue, &submit_info, asynloader->vk_transfer_completed_fence );
+      crude_gfx_device_queue_submit( asynloader->gpu, asynloader->gpu->rhi_transfer_queue, &rhi_submit_info, asynloader->rhi_transfer_completed_fence );
       //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Transfer queue submitted" );
     }
     
-    if ( vkGetFenceStatus( asynloader->gpu->vk_device, asynloader->vk_transfer_completed_fence ) != VK_SUCCESS )
-    {
-      vkWaitForFences( asynloader->gpu->vk_device, 1u, &asynloader->vk_transfer_completed_fence, VK_TRUE, UINT64_MAX );
-    }
-    vkResetFences( asynloader->gpu->vk_device, 1u, &asynloader->vk_transfer_completed_fence );
+    crude_gfx_rhi_wait_for_fence( &asynloader->gpu->rhi_device, asynloader->rhi_transfer_completed_fence );
+    crude_gfx_rhi_reset_fence( &asynloader->gpu->rhi_device, &asynloader->rhi_transfer_completed_fence );
     //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Transfer queue done" );
 
     if ( CRUDE_RESOURCE_HANDLE_IS_VALID( request.texture ) )

@@ -65,19 +65,19 @@ crude_gfx_pointlight_shadow_pass_initialize
 
   render_pass_creation = crude_gfx_render_pass_creation_empty( );
   render_pass_creation.name = "tetrahedron_render_pass";
-  render_pass_creation.depth_stencil_final_layout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+  render_pass_creation.depth_stencil_final_layout = CRUDE_GFX_RHI_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
   render_pass_creation.depth_stencil_format = texture_creation.format;
   render_pass_creation.depth_operation = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
   pass->tetrahedron_render_pass_handle = crude_gfx_create_render_pass( scene_renderer->gpu, &render_pass_creation );
 
   sampler_creation = crude_gfx_sampler_creation_empty();
-  sampler_creation.address_mode_u = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-  sampler_creation.address_mode_v = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-  sampler_creation.address_mode_w = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-  sampler_creation.mag_filter = VK_FILTER_LINEAR;
-  sampler_creation.min_filter = VK_FILTER_LINEAR;
-  sampler_creation.mip_filter = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-  sampler_creation.reduction_mode = VK_SAMPLER_REDUCTION_MODE_MAX;
+  sampler_creation.address_mode_u = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_creation.address_mode_v = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_creation.address_mode_w = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_creation.mag_filter = CRUDE_GFX_RHI_FILTER_LINEAR;
+  sampler_creation.min_filter = CRUDE_GFX_RHI_FILTER_LINEAR;
+  sampler_creation.mip_filter = CRUDE_GFX_RHI_SAMPLER_MIPMAP_MODE_NEAREST;
+  sampler_creation.reduction_mode = CRUDE_GFX_RHI_SAMPLER_REDUCTION_MODE_MAX;
   sampler_creation.name = "tetrahedron_shadow_sampler";
 
   pass->tetrahedron_shadow_sampler = crude_gfx_create_sampler( scene_renderer->gpu, &sampler_creation );
@@ -334,7 +334,7 @@ crude_gfx_pointlight_shadow_pass_render
 
     crude_gfx_cmd_add_image_barrier( primary_cmd, crude_gfx_access_texture( gpu, pass->tetrahedron_shadow_texture ), CRUDE_GFX_RHI_RESOURCE_STATE_DEPTH_WRITE, 0u, 1u, true );
   
-    crude_gfx_cmd_bind_render_pass( primary_cmd, pass->tetrahedron_render_pass_handle, pass->tetrahedron_framebuffer_handle, false );
+    crude_gfx_cmd_bind_render_pass( primary_cmd, pass->tetrahedron_render_pass_handle, pass->tetrahedron_framebuffer_handle );
     crude_gfx_cmd_bind_pipeline( primary_cmd, pointshadow_pipeline );
   
     push_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_pointshadow_pass_push_constant_ );

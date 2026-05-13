@@ -60,7 +60,7 @@
 
 #define CRUDE_GFX_SAMPLE_COUNT                             ( CRUDE_GFX_RHI_SAMPLE_COUNT_16_BIT )
 #define CRUDE_GFX_SAMPLE_RATE_SHADING                      1
-#define CRUDE_GFX_USE_NSIGHT_AFTERMATH                     0
+#define CRUDE_GFX_NSIGHT_AFTERMATH                         1
 #if CRUDE_PRODUCTION
 #define CRUDE_GFX_SYNCHRONIZATION_VALIDATION_ENABLE        0
 #define CRUDE_GFX_GPU_AV_ENABLE                            0

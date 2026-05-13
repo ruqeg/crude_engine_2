@@ -365,7 +365,7 @@ crude_gui_gpu_visual_profiler_queue_draw
     uint64                                                 memory_used, memory_allocated;
 
     crude_memory_set(gpu_memory_heap_budgets, 0u, sizeof(gpu_memory_heap_budgets));
-    vmaGetHeapBudgets( profiler->gpu->vma_allocator, gpu_memory_heap_budgets);
+    vmaGetHeapBudgets( profiler->gpu->rhi_device.vma_allocator, gpu_memory_heap_budgets);
 
     memory_used = memory_allocated = 0;
     for ( uint32 i = 0; i < VK_MAX_MEMORY_HEAPS; ++i )
@@ -374,7 +374,7 @@ crude_gui_gpu_visual_profiler_queue_draw
       memory_allocated += gpu_memory_heap_budgets[i].budget;
     }
 
-    vkGetPhysicalDeviceProperties( profiler->gpu->vk_physical_device, &vk_physical_properties );
+    vkGetPhysicalDeviceProperties( profiler->gpu->rhi_device.vk_physical_device, &vk_physical_properties );
 
     ImGui::Text( "GPU used: %s", vk_physical_properties.deviceName ? vk_physical_properties.deviceName : "Unknown" );
     ImGui::Text( "GPU Memory Used: %lluMB, Total: %lluMB", memory_used / ( 1024 * 1024 ), memory_allocated / ( 1024 * 1024 ) );

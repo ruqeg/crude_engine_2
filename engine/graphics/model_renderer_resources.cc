@@ -76,7 +76,7 @@ crude_gfx_model_renderer_resources_deinitialize
     
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources->meshes ); ++i )
     {
-      gpu->vkDestroyAccelerationStructureKHR( gpu->vk_device, model_renderer_resources->vk_blases[ i ], gpu->vk_allocation_callbacks );
+      gpu->rhi_device.vkDestroyAccelerationStructureKHR( gpu->rhi_device.vk_device, model_renderer_resources->vk_blases[ i ], CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
     }
     CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->vk_blases );
   }

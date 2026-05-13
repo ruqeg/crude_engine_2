@@ -64,12 +64,12 @@ crude_gfx_indirect_light_pass_initialize
   pass->probe_grid_visibility_texture_handle = crude_gfx_create_texture( pass->scene_renderer->gpu, &texture_creation );
   
   sampler_creation = crude_gfx_sampler_creation_empty( );
-  sampler_creation.address_mode_u = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-  sampler_creation.address_mode_v = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-  sampler_creation.address_mode_w = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-  sampler_creation.mag_filter = VK_FILTER_LINEAR;
-  sampler_creation.min_filter = VK_FILTER_LINEAR;
-  sampler_creation.mip_filter = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+  sampler_creation.address_mode_u = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_creation.address_mode_v = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_creation.address_mode_w = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_creation.mag_filter = CRUDE_GFX_RHI_FILTER_LINEAR;
+  sampler_creation.min_filter = CRUDE_GFX_RHI_FILTER_LINEAR;
+  sampler_creation.mip_filter = CRUDE_GFX_RHI_SAMPLER_MIPMAP_MODE_NEAREST;
   pass->probe_grid_sampler_handle = crude_gfx_create_sampler( pass->scene_renderer->gpu, &sampler_creation );
 
   crude_gfx_link_texture_sampler( pass->scene_renderer->gpu, pass->probe_grid_irradiance_texture_handle, pass->probe_grid_sampler_handle );

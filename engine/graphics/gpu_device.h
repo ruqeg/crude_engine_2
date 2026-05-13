@@ -103,7 +103,7 @@ typedef struct crude_gfx_device
   /*
    * 
    */
-#if CRUDE_GFX_USE_NSIGHT_AFTERMATH
+#if CRUDE_GFX_NSIGHT_AFTERMATH
   crude_gfx_gpu_crash_tracker                              crash_tracker;
 #endif
   crude_gfx_rhi_instance                                   rhi_instance;
@@ -116,13 +116,14 @@ typedef struct crude_gfx_device
   crude_gfx_rhi_semaphore                                  rhi_rendering_finished_semaphore[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
   crude_gfx_rhi_semaphore                                  rhi_swapchain_updated_semaphore[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
   crude_gfx_rhi_descriptor_pool                            rhi_descriptor_pool;
-  crude_gfx_rhi_queue                                     *rhi_main_queue;
-  crude_gfx_rhi_queue                                     *rhi_transfer_queue;
+  crude_gfx_rhi_queue                                      rhi_main_queue;
+  crude_gfx_rhi_queue                                      rhi_transfer_queue;
+  bool                                                     mesh_shaders_extension_present;
 
   /**
    * Additional data related to the swapchain.
    */
-  crude_gfx_rhi_image                                      swapchain_images[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
+  crude_gfx_rhi_image                                      rhi_swapchain_images[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
   uint32                                                   swapchain_images_count;
   XMFLOAT2                                                 swapchain_size;
   uint32                                                   swapchain_image_index;
@@ -163,12 +164,6 @@ typedef struct crude_gfx_device
 
 #if CRUDE_GFX_RAY_TRACING_ENABLED
   VkPhysicalDeviceRayTracingPipelinePropertiesKHR          ray_tracing_pipeline_properties;
-
-  PFN_vkGetAccelerationStructureBuildSizesKHR              vkGetAccelerationStructureBuildSizesKHR;
-  PFN_vkCreateAccelerationStructureKHR                     vkCreateAccelerationStructureKHR;
-  PFN_vkCmdBuildAccelerationStructuresKHR                  vkCmdBuildAccelerationStructuresKHR;
-  PFN_vkGetAccelerationStructureDeviceAddressKHR           vkGetAccelerationStructureDeviceAddressKHR;
-  PFN_vkDestroyAccelerationStructureKHR                    vkDestroyAccelerationStructureKHR;
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 } crude_gfx_device;                                
 

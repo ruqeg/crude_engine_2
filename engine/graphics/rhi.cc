@@ -74,21 +74,10 @@ static VkValidationFeatureEnableEXT const vk_features_requested[ ] =
 static char const *const crude_gfx_rhi_vk_device_required_extensions[] = 
 { 
   VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-  VK_KHR_MAINTENANCE_1_EXTENSION_NAME,
-  VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
-  VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
-  VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
-  VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
-  VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME,
-  VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME,
-  VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME,
-  VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
-  VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME,
-  VK_KHR_RELAXED_BLOCK_LAYOUT_EXTENSION_NAME,
-#if CRUDE_GFX_USE_NSIGHT_AFTERMATH
+#if CRUDE_GFX_NSIGHT_AFTERMATH
   VK_NV_DEVICE_DIAGNOSTIC_CHECKPOINTS_EXTENSION_NAME,
   VK_NV_DEVICE_DIAGNOSTICS_CONFIG_EXTENSION_NAME,
-#endif /* CRUDE_GFX_USE_NSIGHT_AFTERMATH */
+#endif /* CRUDE_GFX_NSIGHT_AFTERMATH */
 #if CRUDE_GFX_RAY_TRACING_ENABLED
   VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
   VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
@@ -148,6 +137,35 @@ crude_gfx_rhi_vk_check_support_required_features_
 (
   _In_ VkPhysicalDevice                                    vk_physical_device
 );
+
+crude_gfx_rhi_fence
+crude_gfx_rhi_fence_empty
+(
+)
+{
+  crude_gfx_rhi_fence                                      empty_fence;
+  empty_fence.vk_fence = VK_NULL_HANDLE;
+  return empty_fence;
+}
+
+crude_gfx_rhi_sampler
+crude_gfx_rhi_sampler_empty
+(
+)
+{
+  crude_gfx_rhi_sampler                                    empty_sampler;
+  empty_sampler.vk_sampler = VK_NULL_HANDLE;
+  return empty_sampler;
+}
+
+crude_gfx_rhi_queue
+crude_gfx_rhi_queue_empty
+(
+)
+{
+  crude_gfx_rhi_queue queue = { VK_NULL_HANDLE, VK_QUEUE_FAMILY_IGNORED };
+  return queue;
+}
 
 crude_gfx_rhi_image_copy
 crude_gfx_rhi_image_copy_empty
@@ -260,7 +278,7 @@ crude_gfx_rhi_rect_2d_to_vk_rect_2d
 }
 
 crude_gfx_rhi_access_flags
-crude_gfx_resource_state_to_access_flags
+crude_gfx_rhi_resource_state_to_access_flags
 (
   _In_ crude_gfx_rhi_resource_state                        state
 )
@@ -314,7 +332,7 @@ crude_gfx_resource_state_to_access_flags
 }
 
 crude_gfx_rhi_image_layout
-crude_gfx_resource_state_to_image_layout
+crude_gfx_rhi_resource_state_to_image_layout
 (
   _In_ crude_gfx_rhi_resource_state                        state
 )
@@ -332,7 +350,7 @@ crude_gfx_resource_state_to_image_layout
 }
 
 crude_gfx_rhi_pipeline_stage_flags
-crude_gfx_determine_pipeline_stage_flags
+crude_gfx_rhi_determine_pipeline_stage_flags
 (
   _In_ crude_gfx_rhi_access_flags                          access_flags,
   _In_ crude_gfx_rhi_queue_type                            queue_type
@@ -481,7 +499,7 @@ crude_gfx_rhi_queue_submit
   vk_submit_info.signalSemaphoreInfoCount = submit_info->signal_semaphore_info_count;
   vk_submit_info.pSignalSemaphoreInfos    = vk_signal_semaphores;
 
-  vk_result = g_pfn.vkQueueSubmit2KHR( queue.vk_queue, 1u, &vk_submit_info, fence.vk_fence );
+  vk_result = vkQueueSubmit2( queue.vk_queue, 1u, &vk_submit_info, fence.vk_fence );
   return vk_result != VK_ERROR_DEVICE_LOST && vk_result != VK_ERROR_OUT_OF_DEVICE_MEMORY && vk_result != VK_ERROR_UNKNOWN;
 }
 
@@ -564,7 +582,7 @@ crude_gfx_rhi_get_buffer_device_address
   VkBufferDeviceAddressInfo device_address_info = CRUDE_COMPOUNT_EMPTY( VkBufferDeviceAddressInfo );
   device_address_info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
   device_address_info.buffer = buffer.vk_buffer;
-  return g_pfn.vkGetBufferDeviceAddressKHR( device->vk_device, &device_address_info );
+  return vkGetBufferDeviceAddress( device->vk_device, &device_address_info );
 }
 
 void
@@ -575,7 +593,7 @@ crude_gfx_rhi_create_surface
   _Out_ crude_gfx_rhi_surface                             *surface
 )
 {
-  if ( !SDL_Vulkan_CreateSurface( window, instance.vk_instance, g_pfn.vk_allocation_callbacks, &surface->vk_surface ) )
+  if ( !SDL_Vulkan_CreateSurface( window, instance.vk_instance, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &surface->vk_surface ) )
   {
     CRUDE_ABORT( CRUDE_CHANNEL_GRAPHICS, "failed to create vk_surface: %s", SDL_GetError() );
   }
@@ -588,7 +606,7 @@ crude_gfx_rhi_destroy_surface
   _In_ crude_gfx_rhi_surface                               surface
 )
 {
-  vkDestroySurfaceKHR( instance.vk_instance, surface.vk_surface, g_pfn.vk_allocation_callbacks );
+  vkDestroySurfaceKHR( instance.vk_instance, surface.vk_surface, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
 }
 
 void
@@ -635,7 +653,7 @@ crude_gfx_rhi_create_descriptor_set_layout
     vk_creation.bindingCount = creation->binding_count;
     vk_creation.pBindings = vk_bindings;
 
-    CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateDescriptorSetLayout( device->vk_device, &vk_creation, g_pfn.vk_allocation_callbacks, &layout->vk_descriptor_set_layout ), "Failed create descriptor set layout" );
+    CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateDescriptorSetLayout( device->vk_device, &vk_creation, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &layout->vk_descriptor_set_layout ), "Failed create descriptor set layout" );
   }
   else
   {
@@ -643,7 +661,7 @@ crude_gfx_rhi_create_descriptor_set_layout
     vk_creation.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     vk_creation.bindingCount = creation->binding_count;
     vk_creation.pBindings = vk_bindings;
-    CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateDescriptorSetLayout( device->vk_device, &vk_creation, g_pfn.vk_allocation_callbacks, &layout->vk_descriptor_set_layout ), "Failed to create descriptor set layout" );
+    CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateDescriptorSetLayout( device->vk_device, &vk_creation, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &layout->vk_descriptor_set_layout ), "Failed to create descriptor set layout" );
   }
 }
 
@@ -654,7 +672,7 @@ crude_gfx_rhi_destroy_descriptor_set_layout
   _In_ crude_gfx_rhi_descriptor_set_layout                 layout
 )
 {
-  vkDestroyDescriptorSetLayout( device->vk_device, layout.vk_descriptor_set_layout, g_pfn.vk_allocation_callbacks );
+  vkDestroyDescriptorSetLayout( device->vk_device, layout.vk_descriptor_set_layout, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
 }
 
 void
@@ -665,12 +683,6 @@ crude_gfx_rhi_create_descriptor_set
   _Out_ crude_gfx_rhi_descriptor_set                      *descriptor_set
 )
 {
-#if CRUDE_GFX_RAY_TRACING_ENABLED
-  VkWriteDescriptorSetAccelerationStructureKHR             vk_acceleration_structure_info[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
-#endif
-  VkWriteDescriptorSet                                     vk_descriptor_write[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
-  VkDescriptorBufferInfo                                   vk_buffer_info[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
-  VkDescriptorImageInfo                                    vk_image_info[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
   VkDescriptorSetAllocateInfo                              vk_descriptor_info;
   VkDescriptorSetVariableDescriptorCountAllocateInfoEXT    vk_count_info;
   uint32                                                   max_binding;
@@ -693,55 +705,6 @@ crude_gfx_rhi_create_descriptor_set
   }
 
   CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkAllocateDescriptorSets( device->vk_device, &vk_descriptor_info, &descriptor_set->vk_descriptor_set ), "Failed to allocate descriptor set" );
-
-  for ( uint32 i = 0; i < creation->write_descripor_sets_count; i++ )
-  {
-    vk_descriptor_write[ i ] = CRUDE_COMPOUNT_EMPTY( VkWriteDescriptorSet );
-    vk_descriptor_write[ i ].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    vk_descriptor_write[ i ].pNext = NULL;
-    vk_descriptor_write[ i ].dstSet = descriptor_set->vk_descriptor_set;
-    vk_descriptor_write[ i ].dstBinding = creation->write_descripor_sets[ i ].dst_binding;
-    vk_descriptor_write[ i ].dstArrayElement = creation->write_descripor_sets[ i ].dst_array_element;
-    vk_descriptor_write[ i ].descriptorCount = creation->write_descripor_sets[ i ].descriptor_count;
-    vk_descriptor_write[ i ].descriptorType = CRUDE_CAST( VkDescriptorType, creation->write_descripor_sets[ i ].descriptor_type );
-    vk_descriptor_write[ i ].pImageInfo = NULL;
-    vk_descriptor_write[ i ].pBufferInfo = NULL;
-    vk_descriptor_write[ i ].pTexelBufferView = NULL;
-
-    if ( creation->write_descripor_sets[ i ].image_info )
-    {
-      vk_image_info[ i ].imageLayout = CRUDE_CAST( VkImageLayout, creation->write_descripor_sets[ i ].image_info->image_layout );
-      vk_image_info[ i ].imageView = creation->write_descripor_sets[ i ].image_info->image_view.vk_image_view;
-      vk_image_info[ i ].sampler = creation->write_descripor_sets[ i ].image_info->sampler.vk_sampler;
-      
-      vk_descriptor_write[ i ].pImageInfo = &vk_image_info[ i ];
-    }
-    
-    if ( creation->write_descripor_sets[ i ].buffer_info )
-    {
-      vk_buffer_info[ i ].buffer = creation->write_descripor_sets[ i ].buffer_info->buffer.vk_buffer;
-      vk_buffer_info[ i ].offset = creation->write_descripor_sets[ i ].buffer_info->offset;
-      vk_buffer_info[ i ].range = creation->write_descripor_sets[ i ].buffer_info->range;
-      
-      vk_descriptor_write[ i ].pBufferInfo = &vk_buffer_info[ i ];
-    }
-
-#if CRUDE_GFX_RAY_TRACING_ENABLED
-    if ( creation->write_descripor_sets[ i ].acceleration_info )
-    {
-      vk_descriptor_write[ i ].descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
-      
-      vk_acceleration_structure_info[ i ] = CRUDE_COMPOUNT_EMPTY( VkWriteDescriptorSetAccelerationStructureKHR );
-      vk_acceleration_structure_info[ i ].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
-      vk_acceleration_structure_info[ i ].accelerationStructureCount = 1;
-      vk_acceleration_structure_info[ i ].pAccelerationStructures = &creation->write_descripor_sets[ i ].acceleration_info->acceleration_sturcture.vk_acceleration_structure;
-
-      vk_descriptor_write[ i ].pNext = &vk_acceleration_structure_info[ i ];
-#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
-    }
-  }
-
-  vkUpdateDescriptorSets( device->vk_device, creation->write_descripor_sets_count, vk_descriptor_write, 0, NULL );
 }
 
 void
@@ -753,6 +716,70 @@ crude_gfx_rhi_set_descriptor_set_debug_name
 )
 {
   crude_gfx_rhi_set_debug_utils_object_name( device, CRUDE_GFX_RHI_OBJECT_TYPE_DESCRIPTOR_SET, CRUDE_CAST( uint64, descriptor_set.vk_descriptor_set ), name );
+}
+
+void
+crude_gfx_rhi_create_descriptor_pool
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ bool                                                bindless,
+  _Out_ crude_gfx_rhi_descriptor_pool                     *descriptor_pool
+)
+{
+  VkDescriptorPoolSize vk_pool_sizes_bindless[ ] =
+  {
+    { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT },
+    { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT }
+  };
+  VkDescriptorPoolSize vk_pool_sizes[] =
+  {
+    { VK_DESCRIPTOR_TYPE_SAMPLER, 100 },
+    { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 },
+    { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 100 },
+    { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 100 },
+    { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 100 },
+    { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 100 },
+    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100 },
+    { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 11000 },
+    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 100 },
+    { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 100 },
+    { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 11000 },
+#if CRUDE_GFX_RAY_TRACING_ENABLED
+    { VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 100 },
+#endif
+  };
+  VkDescriptorPoolCreateInfo                               vk_creation;
+
+  if ( bindless )
+  {
+    vk_creation = CRUDE_COMPOUNT_EMPTY( VkDescriptorPoolCreateInfo );
+    vk_creation.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    vk_creation.flags         = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT | VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    vk_creation.maxSets       = CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT * CRUDE_COUNTOF( vk_pool_sizes_bindless );
+    vk_creation.poolSizeCount = CRUDE_COUNTOF( vk_pool_sizes_bindless );
+    vk_creation.pPoolSizes    = vk_pool_sizes_bindless;
+  }
+  else
+  {
+    vk_creation = CRUDE_COMPOUNT_EMPTY( VkDescriptorPoolCreateInfo );
+    vk_creation.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    vk_creation.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    vk_creation.maxSets = 4096;
+    vk_creation.poolSizeCount = CRUDE_COUNTOF( vk_pool_sizes );
+    vk_creation.pPoolSizes = vk_pool_sizes;
+  }
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateDescriptorPool( device->vk_device, &vk_creation, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &descriptor_pool->vk_descriptor_pool ), "Failed create descriptor pool" );
+}
+
+void
+crude_gfx_rhi_set_descriptor_pool_debug_name
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_descriptor_pool                       descriptor_pool,
+  _In_ char const                                         *name
+)
+{
+  crude_gfx_rhi_set_debug_utils_object_name( device, CRUDE_GFX_RHI_OBJECT_TYPE_DESCRIPTOR_POOL, CRUDE_CAST( uint64, descriptor_pool.vk_descriptor_pool ), name );
 }
 
 void
@@ -769,7 +796,7 @@ crude_gfx_rhi_create_command_pool
   vk_cmd_pool_creation.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
   vk_cmd_pool_creation.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
   vk_cmd_pool_creation.queueFamilyIndex = creation->queue.vk_queue_family;
-  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateCommandPool( device->vk_device, &vk_cmd_pool_creation, g_pfn.vk_allocation_callbacks, &command_pool->vk_command_pool ), "Failed create command pool" );
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateCommandPool( device->vk_device, &vk_cmd_pool_creation, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &command_pool->vk_command_pool ), "Failed create command pool" );
 }
 
 void
@@ -779,7 +806,7 @@ crude_gfx_rhi_destroy_command_pool
   _In_ crude_gfx_rhi_command_pool                          command_pool
 )
 {
-  vkDestroyCommandPool( device->vk_device, command_pool.vk_command_pool, g_pfn.vk_allocation_callbacks );
+  vkDestroyCommandPool( device->vk_device, command_pool.vk_command_pool, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
 }
 
 void
@@ -797,7 +824,7 @@ crude_gfx_rhi_create_query_pool
   vk_creation.queryType = CRUDE_CAST( VkQueryType, creation->query_type );
   vk_creation.queryCount = creation->query_count;
   vk_creation.pipelineStatistics = creation->pipeline_statistics;
-  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateQueryPool( device->vk_device, &vk_creation, g_pfn.vk_allocation_callbacks, &query_pool->vk_query_pool ), "Failed create query pool" );     
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateQueryPool( device->vk_device, &vk_creation, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &query_pool->vk_query_pool ), "Failed create query pool" );     
 }
 
 void
@@ -807,7 +834,7 @@ crude_gfx_rhi_destroy_query_pool
   _In_ crude_gfx_rhi_query_pool                            query_pool
 )
 {
-  vkDestroyQueryPool( device->vk_device, query_pool.vk_query_pool, g_pfn.vk_allocation_callbacks );
+  vkDestroyQueryPool( device->vk_device, query_pool.vk_query_pool, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
 }
 
 void
@@ -853,9 +880,9 @@ crude_gfx_rhi_create_device
   char const                                              *vk_device_extensions[ 64 ];
   void                                                    *vk_next_feature;
   VkDeviceQueueCreateInfo                                  vk_queue_create_infos[ 2 ];
-#if CRUDE_GFX_USE_NSIGHT_AFTERMATH
-  VkPhysicalDeviceDiagnosticsConfigFeaturesNV              physical_device_diagnostics_config_features_nv;
-#endif /* CRUDE_GFX_USE_NSIGHT_AFTERMATH */
+#if CRUDE_GFX_NSIGHT_AFTERMATH
+  VkPhysicalDeviceDiagnosticsConfigFeaturesNV              vk_physical_device_diagnostics_config_features_nv;
+#endif /* CRUDE_GFX_NSIGHT_AFTERMATH */
 #if CRUDE_GFX_RAY_TRACING_ENABLED
 #if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   VkPhysicalDeviceRayTracingValidationFeaturesNV           vk_physical_device_ray_tracing_validation_features_nv;
@@ -876,7 +903,7 @@ crude_gfx_rhi_create_device
   VkPhysicalDeviceMeshShaderFeaturesEXT                    vk_device_features_mesh;
   VkDeviceCreateInfo                                       vk_device_creation;
   VmaAllocatorCreateInfo                                   vma_creation;
-  uint32                                                   vk_queue_family_count, vk_main_queue_index, vk_transfer_queue_index, vk_compute_queue_index, vk_present_queue_index;
+  uint32                                                   vk_queue_family_count, vk_compute_queue_index, vk_present_queue_index;
   uint32                                                   vk_device_extensions_count;
 
   crude_gfx_rhi_vk_pick_physical_device_( instance.vk_instance, surface.vk_surface, allocator, &device->vk_physical_device, &device->optional_extensions );
@@ -887,8 +914,8 @@ crude_gfx_rhi_create_device
   CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( vk_queue_families, vk_queue_family_count, crude_heap_allocator_pack( allocator ) );
   vkGetPhysicalDeviceQueueFamilyProperties( device->vk_physical_device, &vk_queue_family_count, vk_queue_families );
   
-  vk_main_queue_index = UINT32_MAX;
-  vk_transfer_queue_index = UINT32_MAX;
+  device->main_queue.vk_queue_family = UINT32_MAX;
+  device->transfer_queue.vk_queue_family = UINT32_MAX;
   vk_compute_queue_index = UINT32_MAX;
   vk_present_queue_index = UINT32_MAX;
 
@@ -905,12 +932,12 @@ crude_gfx_rhi_create_device
     
     if ( ( vk_queue_family.queueFlags & ( VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT ) ) == ( VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT  ) )
     {
-      vk_main_queue_index = family_index;
+      device->main_queue.vk_queue_family = family_index;
     }
 
     if ( ( vk_queue_family.queueFlags & VK_QUEUE_COMPUTE_BIT ) == 0 && ( vk_queue_family.queueFlags & VK_QUEUE_TRANSFER_BIT ) )
     {
-      vk_transfer_queue_index = family_index;
+      device->transfer_queue.vk_queue_family = family_index;
     }
   }
 
@@ -918,15 +945,15 @@ crude_gfx_rhi_create_device
 
   vk_queue_create_infos[ 0 ] = CRUDE_COMPOUNT_EMPTY( VkDeviceQueueCreateInfo );
   vk_queue_create_infos[ 0 ].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-  vk_queue_create_infos[ 0 ].queueFamilyIndex = vk_main_queue_index;
+  vk_queue_create_infos[ 0 ].queueFamilyIndex = device->main_queue.vk_queue_family;
   vk_queue_create_infos[ 0 ].queueCount = 1;
   vk_queue_create_infos[ 0 ].pQueuePriorities = queue_priority;
   
-  if ( vk_transfer_queue_index < vk_queue_family_count )
+  if ( device->transfer_queue.vk_queue_family < vk_queue_family_count )
   {
     vk_queue_create_infos[ 1 ] = CRUDE_COMPOUNT_EMPTY( VkDeviceQueueCreateInfo );
     vk_queue_create_infos[ 1 ].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    vk_queue_create_infos[ 1 ].queueFamilyIndex = vk_transfer_queue_index;
+    vk_queue_create_infos[ 1 ].queueFamilyIndex = device->transfer_queue.vk_queue_family;
     vk_queue_create_infos[ 1 ].queueCount = 1;
     vk_queue_create_infos[ 1 ].pQueuePriorities = queue_priority;
   }
@@ -972,16 +999,16 @@ crude_gfx_rhi_create_device
 
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 
-#if CRUDE_GFX_USE_NSIGHT_AFTERMATH
-  physical_device_diagnostics_config_features_nv = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceDiagnosticsConfigFeaturesNV );
-  physical_device_diagnostics_config_features_nv.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV;
-  physical_device_diagnostics_config_features_nv.pNext = next_feature;
-  physical_device_diagnostics_config_features_nv.diagnosticsConfig = 
+#if CRUDE_GFX_NSIGHT_AFTERMATH
+  vk_physical_device_diagnostics_config_features_nv = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceDiagnosticsConfigFeaturesNV );
+  vk_physical_device_diagnostics_config_features_nv.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV;
+  vk_physical_device_diagnostics_config_features_nv.pNext = vk_next_feature;
+  vk_physical_device_diagnostics_config_features_nv.diagnosticsConfig = 
     VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_RESOURCE_TRACKING_BIT_NV |
     VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_AUTOMATIC_CHECKPOINTS_BIT_NV |
     VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_SHADER_DEBUG_INFO_BIT_NV |
     VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_SHADER_ERROR_REPORTING_BIT_NV;
-  next_feature = &physical_device_diagnostics_config_features_nv;
+  vk_next_feature = &vk_physical_device_diagnostics_config_features_nv;
 #endif
   
   if ( device->optional_extensions.shader_relaxed_extended_instruction_extension_present )
@@ -1045,7 +1072,7 @@ crude_gfx_rhi_create_device
 #endif
   vkGetPhysicalDeviceFeatures2( device->vk_physical_device, &vk_physical_features2 );
 
-  CRUDE_ASSERT( CRUDE_COUNTOF( vk_device_extensions ) < 10 + CRUDE_COUNTOF( crude_gfx_rhi_vk_device_required_extensions ) );
+  CRUDE_ASSERT( ( 10 + CRUDE_COUNTOF( crude_gfx_rhi_vk_device_required_extensions ) < CRUDE_COUNTOF( vk_device_extensions ) ) );
 
   vk_device_extensions_count = 0u;
   for ( uint32 i = 0; i < CRUDE_COUNTOF( crude_gfx_rhi_vk_device_required_extensions ); ++i )
@@ -1077,7 +1104,7 @@ crude_gfx_rhi_create_device
   vk_device_creation.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
   vk_device_creation.pNext = &vk_physical_features2;
   vk_device_creation.flags = 0;
-  vk_device_creation.queueCreateInfoCount = CRUDE_STATIC_CAST( uint32, vk_transfer_queue_index < vk_queue_family_count ? 2 : 1 );
+  vk_device_creation.queueCreateInfoCount = CRUDE_STATIC_CAST( uint32, device->transfer_queue.vk_queue_family < vk_queue_family_count ? 2 : 1 );
   vk_device_creation.pQueueCreateInfos = vk_queue_create_infos;
 #if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   vk_device_creation.enabledLayerCount = CRUDE_COUNTOF( vk_required_debug_layers );
@@ -1087,32 +1114,27 @@ crude_gfx_rhi_create_device
   vk_device_creation.ppEnabledExtensionNames = vk_device_extensions;
   vk_device_creation.pEnabledFeatures = NULL;
 
-  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateDevice( device->vk_physical_device, &vk_device_creation, g_pfn.vk_allocation_callbacks, &device->vk_device ), "Failed to create logic device!" );
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateDevice( device->vk_physical_device, &vk_device_creation, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &device->vk_device ), "Failed to create logic device!" );
   
-  gpu->vkCmdDrawMeshTasksIndirectCountEXT = ( PFN_vkCmdDrawMeshTasksIndirectCountEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdDrawMeshTasksIndirectCountEXT" );
-  gpu->vkCmdDrawMeshTasksEXT = ( PFN_vkCmdDrawMeshTasksEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdDrawMeshTasksEXT" );
-  gpu->vkCmdBeginRenderingKHR = ( PFN_vkCmdBeginRenderingKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdBeginRenderingKHR" );
-  gpu->vkCmdEndRenderingKHR = ( PFN_vkCmdEndRenderingKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdEndRenderingKHR" );
-  gpu->vkSetDebugUtilsObjectNameEXT = ( PFN_vkSetDebugUtilsObjectNameEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkSetDebugUtilsObjectNameEXT" );
-  gpu->vkCmdPipelineBarrier2KHR = ( PFN_vkCmdPipelineBarrier2KHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdPipelineBarrier2KHR" );
-  gpu->vkQueueSubmit2KHR = ( PFN_vkQueueSubmit2KHR )vkGetDeviceProcAddr( gpu->vk_device, "vkQueueSubmit2KHR" );
-  gpu->vkGetBufferDeviceAddressKHR = ( PFN_vkGetBufferDeviceAddressKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkGetBufferDeviceAddressKHR" );
+  
+  device->vkCmdDrawMeshTasksIndirectCountEXT = ( PFN_vkCmdDrawMeshTasksIndirectCountEXT )vkGetDeviceProcAddr( device->vk_device, "vkCmdDrawMeshTasksIndirectCountEXT" );
+  device->vkCmdDrawMeshTasksEXT = ( PFN_vkCmdDrawMeshTasksEXT )vkGetDeviceProcAddr( device->vk_device, "vkCmdDrawMeshTasksEXT" );
 
 #if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
-  gpu->vkCmdBeginDebugUtilsLabelEXT = ( PFN_vkCmdBeginDebugUtilsLabelEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdBeginDebugUtilsLabelEXT" );
-  gpu->vkCmdEndDebugUtilsLabelEXT = ( PFN_vkCmdEndDebugUtilsLabelEXT )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdEndDebugUtilsLabelEXT" );
+  device->vkSetDebugUtilsObjectNameEXT = ( PFN_vkSetDebugUtilsObjectNameEXT )vkGetDeviceProcAddr( device->vk_device, "vkSetDebugUtilsObjectNameEXT" );
+  device->vkCmdBeginDebugUtilsLabelEXT = ( PFN_vkCmdBeginDebugUtilsLabelEXT )vkGetDeviceProcAddr( device->vk_device, "vkCmdBeginDebugUtilsLabelEXT" );
+  device->vkCmdEndDebugUtilsLabelEXT = ( PFN_vkCmdEndDebugUtilsLabelEXT )vkGetDeviceProcAddr( device->vk_device, "vkCmdEndDebugUtilsLabelEXT" );
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
 
 #if CRUDE_GFX_RAY_TRACING_ENABLED
-  gpu->vkGetAccelerationStructureBuildSizesKHR = ( PFN_vkGetAccelerationStructureBuildSizesKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkGetAccelerationStructureBuildSizesKHR" );
-  gpu->vkCreateAccelerationStructureKHR = ( PFN_vkCreateAccelerationStructureKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCreateAccelerationStructureKHR" );
-  gpu->vkCmdBuildAccelerationStructuresKHR = ( PFN_vkCmdBuildAccelerationStructuresKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdBuildAccelerationStructuresKHR" );
-  gpu->vkGetAccelerationStructureDeviceAddressKHR = ( PFN_vkGetAccelerationStructureDeviceAddressKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkGetAccelerationStructureDeviceAddressKHR" );
-  gpu->vkCreateRayTracingPipelinesKHR = ( PFN_vkCreateRayTracingPipelinesKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCreateRayTracingPipelinesKHR" );
-  gpu->vkGetRayTracingShaderGroupHandlesKHR = ( PFN_vkGetRayTracingShaderGroupHandlesKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkGetRayTracingShaderGroupHandlesKHR" );
-  gpu->vkCmdTraceRaysKHR = ( PFN_vkCmdTraceRaysKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkCmdTraceRaysKHR" );
-  gpu->vkDestroyAccelerationStructureKHR = ( PFN_vkDestroyAccelerationStructureKHR )vkGetDeviceProcAddr( gpu->vk_device, "vkDestroyAccelerationStructureKHR" );
-  
+  device->vkGetAccelerationStructureBuildSizesKHR = ( PFN_vkGetAccelerationStructureBuildSizesKHR )vkGetDeviceProcAddr( device->vk_device, "vkGetAccelerationStructureBuildSizesKHR" );
+  device->vkCreateAccelerationStructureKHR = ( PFN_vkCreateAccelerationStructureKHR )vkGetDeviceProcAddr( device->vk_device, "vkCreateAccelerationStructureKHR" );
+  device->vkCmdBuildAccelerationStructuresKHR = ( PFN_vkCmdBuildAccelerationStructuresKHR )vkGetDeviceProcAddr( device->vk_device, "vkCmdBuildAccelerationStructuresKHR" );
+  device->vkGetAccelerationStructureDeviceAddressKHR = ( PFN_vkGetAccelerationStructureDeviceAddressKHR )vkGetDeviceProcAddr( device->vk_device, "vkGetAccelerationStructureDeviceAddressKHR" );
+  device->vkCreateRayTracingPipelinesKHR = ( PFN_vkCreateRayTracingPipelinesKHR )vkGetDeviceProcAddr( device->vk_device, "vkCreateRayTracingPipelinesKHR" );
+  device->vkGetRayTracingShaderGroupHandlesKHR = ( PFN_vkGetRayTracingShaderGroupHandlesKHR )vkGetDeviceProcAddr( device->vk_device, "vkGetRayTracingShaderGroupHandlesKHR" );
+  device->vkCmdTraceRaysKHR = ( PFN_vkCmdTraceRaysKHR )vkGetDeviceProcAddr( device->vk_device, "vkCmdTraceRaysKHR" );
+  device->vkDestroyAccelerationStructureKHR = ( PFN_vkDestroyAccelerationStructureKHR )vkGetDeviceProcAddr( device->vk_device, "vkDestroyAccelerationStructureKHR" );
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
   
   vma_creation = CRUDE_COMPOUNT_EMPTY( VmaAllocatorCreateInfo );
@@ -1122,10 +1144,11 @@ crude_gfx_rhi_create_device
   vma_creation.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
   CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vmaCreateAllocator( &vma_creation, &device->vma_allocator ), "Failed to create vma allocator" );
   
-  vkGetDeviceQueue( device->vk_device, vk_main_queue_index, 0u, &device->main_queue.vk_queue );
-  if ( vk_transfer_queue_index < vk_queue_family_count )
+  vkGetDeviceQueue( device->vk_device, device->main_queue.vk_queue_family, 0u, &device->main_queue.vk_queue );
+
+  if ( device->transfer_queue.vk_queue_family < vk_queue_family_count )
   {
-    vkGetDeviceQueue( device->vk_device, vk_transfer_queue_index, 0u, &device->transfer_queue.vk_queue );
+    vkGetDeviceQueue( device->vk_device, device->transfer_queue.vk_queue_family, 0u, &device->transfer_queue.vk_queue );
   }
   else
   {
@@ -1142,12 +1165,8 @@ crude_gfx_rhi_destroy_device
   _In_ crude_gfx_rhi_instance                              instance
 )
 {
-#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
-  g_pfn.vkDestroyDebugUtilsMessengerEXT( instance.vk_instance, instance.vk_debug_utils_messenger, g_pfn.vk_allocation_callbacks );
-#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
-
   vmaDestroyAllocator( device->vma_allocator );
-  vkDestroyDevice( device->vk_device, g_pfn.vk_allocation_callbacks );
+  vkDestroyDevice( device->vk_device, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
 }
 
 void
@@ -1156,6 +1175,9 @@ crude_gfx_rhi_create_instance
   _Out_ crude_gfx_rhi_instance                            *instance
 )
 {
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+  PFN_vkCreateDebugUtilsMessengerEXT                       vkCreateDebugUtilsMessengerEXT;
+#endif
   VkInstanceCreateInfo                                     vk_instance_creation;
   VkApplicationInfo                                        vk_application;
   VkDebugUtilsMessengerCreateInfoEXT                       vk_debug_creation;
@@ -1171,8 +1193,7 @@ crude_gfx_rhi_create_instance
 #endif
 
   surface_extensions_array = SDL_Vulkan_GetInstanceExtensions( &surface_extensions_count );
-
-  CRUDE_ASSERT( CRUDE_COUNTOF( instance_enabled_extensions ) < surface_extensions_count + debug_extensions_count );
+  CRUDE_ASSERT( ( surface_extensions_count + debug_extensions_count ) < CRUDE_COUNTOF( instance_enabled_extensions ) );
 
   instance_enabled_extension_index = 0u;
   for ( uint32 i = 0; i < surface_extensions_count; ++i )
@@ -1232,16 +1253,12 @@ crude_gfx_rhi_create_instance
 #endif /* VK_EXT_debug_utils */
 
 #endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
-  
-  g_pfn.vk_allocation_callbacks = NULL;
 
-  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateInstance( &vk_instance_creation, g_pfn.vk_allocation_callbacks, &instance->vk_instance ), "Failed to create instance" );
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateInstance( &vk_instance_creation, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &instance->vk_instance ), "Failed to create instance" );
   
 #if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
-  g_pfn.vkCreateDebugUtilsMessengerEXT = ( PFN_vkCreateDebugUtilsMessengerEXT )vkGetInstanceProcAddr( instance->vk_instance, "vkCreateDebugUtilsMessengerEXT" );
-  g_pfn.vkDestroyDebugUtilsMessengerEXT = ( PFN_vkDestroyDebugUtilsMessengerEXT )vkGetInstanceProcAddr( instance->vk_instance, "vkDestroyDebugUtilsMessengerEXT" );
-
-  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( g_pfn.vkCreateDebugUtilsMessengerEXT( instance->vk_instance, &vk_debug_creation, g_pfn.vk_allocation_callbacks, &instance->vk_debug_utils_messenger ), "Failed to create debug utils messenger" );
+  vkCreateDebugUtilsMessengerEXT = ( PFN_vkCreateDebugUtilsMessengerEXT )vkGetInstanceProcAddr( instance->vk_instance, "vkCreateDebugUtilsMessengerEXT" );
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateDebugUtilsMessengerEXT( instance->vk_instance, &vk_debug_creation, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &instance->vk_debug_utils_messenger ), "Failed to create debug utils messenger" );
 #endif
 }
 
@@ -1251,7 +1268,15 @@ crude_gfx_rhi_destroy_instance
   _In_ crude_gfx_rhi_instance                              instance
 )
 {
-  vkDestroyInstance( instance.vk_instance, g_pfn.vk_allocation_callbacks );
+
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+  PFN_vkDestroyDebugUtilsMessengerEXT                      vkDestroyDebugUtilsMessengerEXT;
+  
+  vkDestroyDebugUtilsMessengerEXT = ( PFN_vkDestroyDebugUtilsMessengerEXT )vkGetInstanceProcAddr( instance.vk_instance, "vkDestroyDebugUtilsMessengerEXT" );
+  vkDestroyDebugUtilsMessengerEXT( instance.vk_instance, instance.vk_debug_utils_messenger, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
+#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
+
+  vkDestroyInstance( instance.vk_instance, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
 }
 
 void
@@ -1289,6 +1314,11 @@ crude_gfx_rhi_create_buffer
   }
   
   CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vmaCreateBuffer( device->vma_allocator, &vk_creation, &vma_creation, &buffer->vk_buffer, &buffer->vma_allocation, &vma_allocation_info ),  "Failed to create buffer" );
+  
+  if ( creation->persistent )
+  {
+    buffer->mapped_data = vma_allocation_info.pMappedData;
+  }
 }
 
 void
@@ -1434,7 +1464,7 @@ crude_gfx_rhi_create_image_view
   vk_creation.subresourceRange.layerCount = creation->subresource_range.layer_count;
   vk_creation.subresourceRange.levelCount = creation->subresource_range.level_count;
   
-  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateImageView( device->vk_device, &vk_creation, g_pfn.vk_allocation_callbacks, &image_view->vk_image_view ), "Failed to create image view!" );
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateImageView( device->vk_device, &vk_creation, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &image_view->vk_image_view ), "Failed to create image view!" );
 }
 
 void
@@ -1444,7 +1474,7 @@ crude_gfx_rhi_destroy_image_view
   _In_ crude_gfx_rhi_image_view                            image_view
 )
 {
-  vkDestroyImageView( device->vk_device, image_view.vk_image_view, g_pfn.vk_allocation_callbacks );
+  vkDestroyImageView( device->vk_device, image_view.vk_image_view, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
 }
 
 void
@@ -1492,7 +1522,7 @@ crude_gfx_rhi_create_sampler
     vk_sampler_create_info.pNext = &create_info_reduction;
   }
 
-  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateSampler( device->vk_device, &vk_sampler_create_info, g_pfn.vk_allocation_callbacks, &sampler->vk_sampler ), "Failed vkCreateSampler" );  
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateSampler( device->vk_device, &vk_sampler_create_info, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &sampler->vk_sampler ), "Failed vkCreateSampler" );  
 }
 
 void
@@ -1502,7 +1532,7 @@ crude_gfx_rhi_destroy_sampler
   _In_ crude_gfx_rhi_sampler                               sampler
 )
 {
-  vkDestroySampler( device->vk_device, sampler.vk_sampler, g_pfn.vk_allocation_callbacks );
+  vkDestroySampler( device->vk_device, sampler.vk_sampler, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
 }
 
 void
@@ -1533,7 +1563,7 @@ crude_gfx_rhi_create_shader_module
   vk_creation.pCode = creation->code;
   vk_creation.codeSize = creation->code_size;
 
-  vk_result = vkCreateShaderModule( device->vk_device, &vk_creation, g_pfn.vk_allocation_callbacks, &shader_module->vk_shader_module );
+  vk_result = vkCreateShaderModule( device->vk_device, &vk_creation, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &shader_module->vk_shader_module );
   return vk_result == VK_SUCCESS;
 }
 
@@ -1544,7 +1574,7 @@ crude_gfx_rhi_destroy_shader_module
   _In_ crude_gfx_rhi_shader_module                         shader_module
 )
 {
-  vkDestroyShaderModule( device->vk_device, shader_module.vk_shader_module, g_pfn.vk_allocation_callbacks );
+  vkDestroyShaderModule( device->vk_device, shader_module.vk_shader_module, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
 }
 
 void
@@ -1587,7 +1617,7 @@ crude_gfx_rhi_create_pipeline_layout
   vk_creation.pSetLayouts = vk_layouts;
   vk_creation.pushConstantRangeCount = creation->has_push_constant_range ? 1 : 0;
   vk_creation.pPushConstantRanges = &vk_push_constant;
-  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreatePipelineLayout( device->vk_device, &vk_creation, g_pfn.vk_allocation_callbacks, &pipeline_layout->vk_pipeline_layout ), "Failed to create pipeline layout" );
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreatePipelineLayout( device->vk_device, &vk_creation, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &pipeline_layout->vk_pipeline_layout ), "Failed to create pipeline layout" );
 }
 
 void
@@ -1597,7 +1627,7 @@ crude_gfx_rhi_destroy_pipeline_layout
   _In_ crude_gfx_rhi_pipeline_layout                       pipeline_layout
 )
 {
-  vkDestroyPipelineLayout( device->vk_device, pipeline_layout.vk_pipeline_layout, g_pfn.vk_allocation_callbacks );
+  vkDestroyPipelineLayout( device->vk_device, pipeline_layout.vk_pipeline_layout, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
 }
 
 void
@@ -1767,7 +1797,7 @@ crude_gfx_rhi_create_graphics_pipeline
   vk_pipeline_info.layout = creation->pipeline_layout.vk_pipeline_layout;
   vk_pipeline_info.renderPass = NULL;
     
-  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateGraphicsPipelines( device->vk_device, VK_NULL_HANDLE, 1, &vk_pipeline_info, g_pfn.vk_allocation_callbacks, &pipeline->vk_pipeline ), "Failed to create graphics pipeline" );
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateGraphicsPipelines( device->vk_device, VK_NULL_HANDLE, 1, &vk_pipeline_info, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &pipeline->vk_pipeline ), "Failed to create graphics pipeline" );
 }
 
 void
@@ -1782,12 +1812,13 @@ crude_gfx_rhi_create_compute_pipeline
   
   vk_pipeline_info = CRUDE_COMPOUNT_EMPTY( VkComputePipelineCreateInfo );
   vk_pipeline_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+  vk_pipeline_info.stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
   vk_pipeline_info.stage.pName = creation->stage.name;
   vk_pipeline_info.stage.module = creation->stage.rhi_module.vk_shader_module;
   vk_pipeline_info.stage.stage = CRUDE_CAST( VkShaderStageFlagBits, creation->stage.stage );
   vk_pipeline_info.layout = creation->pipeline_layout.vk_pipeline_layout;
   
-  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateComputePipelines( device->vk_device, VK_NULL_HANDLE, 1u, &vk_pipeline_info, g_pfn.vk_allocation_callbacks, &pipeline->vk_pipeline ), "Failed to create copmute pipeline" );
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateComputePipelines( device->vk_device, VK_NULL_HANDLE, 1u, &vk_pipeline_info, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &pipeline->vk_pipeline ), "Failed to create copmute pipeline" );
 }
 
 void
@@ -1834,7 +1865,7 @@ crude_gfx_rhi_create_ray_tracing_pipeline
   vk_pipeline_info.maxPipelineRayRecursionDepth = creation->max_pipeline_ray_recursion_depth;
   vk_pipeline_info.layout = creation->pipeline_layout.vk_pipeline_layout;
   
-  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( g_pfn.vkCreateRayTracingPipelinesKHR( device->vk_device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &vk_pipeline_info, g_pfn.vk_allocation_callbacks, &pipeline->vk_pipeline ), "Failed to create pipeline" );
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( device->vkCreateRayTracingPipelinesKHR( device->vk_device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &vk_pipeline_info, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &pipeline->vk_pipeline ), "Failed to create pipeline" );
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 }
 
@@ -1845,7 +1876,7 @@ crude_gfx_rhi_destroy_pipeline
   _In_ crude_gfx_rhi_pipeline                              pipeline
 )
 {
-  vkDestroyPipeline( device->vk_device, pipeline.vk_pipeline, g_pfn.vk_allocation_callbacks );
+  vkDestroyPipeline( device->vk_device, pipeline.vk_pipeline, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
 }
 
 void
@@ -1859,7 +1890,7 @@ crude_gfx_rhi_get_ray_tracing_shader_group_handles
   _Out_ void                                              *data
 )
 {
-  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( g_pfn.vkGetRayTracingShaderGroupHandlesKHR( device->vk_device, pipeline.vk_pipeline, first_group, group_count, data_size, data ), "Failed to get ray tracing shader group handles" );
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( device->vkGetRayTracingShaderGroupHandlesKHR( device->vk_device, pipeline.vk_pipeline, first_group, group_count, data_size, data ), "Failed to get ray tracing shader group handles" );
 }
 
 void
@@ -1878,32 +1909,122 @@ crude_gfx_rhi_create_swapchain
 (
   _In_ crude_gfx_rhi_device                               *device,
   _In_ crude_gfx_rhi_swapchain_create_info const          *creation,
-  _Out_ crude_gfx_rhi_swapchain                           *swapchain
+  _In_ crude_heap_allocator                               *allocator,
+  _Out_ crude_gfx_rhi_swapchain                           *swapchain,
+  _Out_ uint32                                            *swapchain_images_count,
+  _Out_ XMFLOAT2                                          *swapchain_extent,
+  _Out_ crude_gfx_rhi_image                                swapchain_images[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ]
 )
 {
+  VkPresentModeKHR                                        *vk_available_present_modes;
+  VkSurfaceFormatKHR                                      *vk_available_formats;
+  VkImage                                                  vk_swapchain_images[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ];
   VkSwapchainCreateInfoKHR                                 vk_swapchain_creation;
+  VkSurfaceCapabilitiesKHR                                 vk_surface_capabilities;
+  VkPresentModeKHR                                         vk_selected_present_mode;
+  VkSurfaceFormatKHR                                       vk_surface_format;
+  VkExtent2D                                               vk_swapchain_extent;
+  bool                                                     vk_surface_format_found;
+  uint32                                                   vk_available_formats_count, vk_available_present_modes_count, vk_image_count;
+  uint32                                                   vk_queue_family_indices;
 
-  vk_swapchain_creation = CRUDE_COMPOUNT_EMPTY( VkSwapchainCreateInfoKHR );
-  vk_swapchain_creation.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-  vk_swapchain_creation.pNext = NULL;
-  vk_swapchain_creation.surface = creation->surface.vk_surface;
-  vk_swapchain_creation.minImageCount = creation->min_images_count;
-  vk_swapchain_creation.imageFormat = CRUDE_CAST( VkFormat, creation->image_format );
-  vk_swapchain_creation.imageColorSpace = CRUDE_CAST( VkColorSpaceKHR, creation->image_color_space );
-  vk_swapchain_creation.imageExtent.width = creation->image_extent.x;
-  vk_swapchain_creation.imageExtent.height = creation->image_extent.y;
-  vk_swapchain_creation.imageArrayLayers = 1;
-  vk_swapchain_creation.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-  vk_swapchain_creation.imageSharingMode = VK_SHARING_MODE_CONCURRENT; // MAYBE VK_SHARING_MODE_EXCLUSIVE ?;
-  vk_swapchain_creation.queueFamilyIndexCount = 1u;
-  vk_swapchain_creation.pQueueFamilyIndices = &device->main_queue.vk_queue_family;
-  vk_swapchain_creation.preTransform = CRUDE_CAST( VkSurfaceTransformFlagBitsKHR, creation->pre_transform );
-  vk_swapchain_creation.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-  vk_swapchain_creation.presentMode = CRUDE_CAST( VkPresentModeKHR, creation->present_mode );
-  vk_swapchain_creation.clipped = VK_TRUE;
-  vk_swapchain_creation.oldSwapchain = VK_NULL_HANDLE;
+  vkGetPhysicalDeviceSurfaceCapabilitiesKHR( device->vk_physical_device, creation->surface.vk_surface, &vk_surface_capabilities );
   
-  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateSwapchainKHR( device->vk_device, &vk_swapchain_creation, g_pfn.vk_allocation_callbacks, &swapchain->vk_swapchain ), "Failed to create swapchain!" );
+  vk_swapchain_extent = vk_surface_capabilities.currentExtent;
+  if ( vk_swapchain_extent.width == UINT32_MAX )
+  {
+    vk_swapchain_extent.width = CRUDE_CLAMP( vk_swapchain_extent.width, vk_surface_capabilities.minImageExtent.width, vk_surface_capabilities.maxImageExtent.width );
+    vk_swapchain_extent.height = CRUDE_CLAMP( vk_swapchain_extent.height, vk_surface_capabilities.minImageExtent.height, vk_surface_capabilities.maxImageExtent.height );
+  }
+  
+  vk_available_formats_count;
+  vkGetPhysicalDeviceSurfaceFormatsKHR( device->vk_physical_device, creation->surface.vk_surface, &vk_available_formats_count, NULL );
+
+  if ( vk_available_formats_count == 0u )
+  {
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Can't find available surface format! (available_formats_count == 0u)" );
+  }
+
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( vk_available_formats, vk_available_formats_count, crude_heap_allocator_pack( allocator ) );
+  vkGetPhysicalDeviceSurfaceFormatsKHR( device->vk_physical_device, creation->surface.vk_surface, &vk_available_formats_count, vk_available_formats );
+
+  vk_surface_format_found = false;
+  for ( uint32 i = 0; i < vk_available_formats_count; ++i )
+  {
+    CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Available surface formats: format %i color_space: %i", vk_available_formats[ i ].format, vk_available_formats[ i ].colorSpace );
+    if ( vk_available_formats[ i ].format == VK_FORMAT_R8G8B8A8_UNORM && vk_available_formats[ i ].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR )
+    {
+      vk_surface_format = vk_available_formats[ i ];
+      vk_surface_format_found = true;
+    }
+  }
+
+  if ( !vk_surface_format_found )
+  {
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Can't find requested surface format" );
+    CRUDE_ARRAY_DEINITIALIZE( vk_available_formats );
+  }
+  
+  vk_available_present_modes_count;
+  vkGetPhysicalDeviceSurfacePresentModesKHR( device->vk_physical_device, creation->surface.vk_surface, &vk_available_present_modes_count, NULL );
+  if ( vk_available_present_modes_count == 0u ) 
+  {
+    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Can't find available surface present_mode" );
+    CRUDE_ARRAY_DEINITIALIZE( vk_available_formats );
+  }
+  
+  
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( vk_available_present_modes, vk_available_present_modes_count, crude_heap_allocator_pack( allocator ) );
+  vkGetPhysicalDeviceSurfacePresentModesKHR( device->vk_physical_device, creation->surface.vk_surface, &vk_available_present_modes_count, vk_available_present_modes );
+
+  vk_selected_present_mode = VK_PRESENT_MODE_FIFO_KHR;
+  for ( uint32 i = 0; i < vk_available_present_modes_count; ++i )
+  {
+    if ( vk_available_present_modes[ i ] == VK_PRESENT_MODE_MAILBOX_KHR )
+    {
+      vk_selected_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
+      break;
+    }
+  }
+
+  vk_image_count = ( vk_selected_present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR ? 2 : 3 );
+  vk_queue_family_indices = device->main_queue.vk_queue_family;
+  
+  vk_swapchain_creation = CRUDE_COMPOUNT_EMPTY( VkSwapchainCreateInfoKHR );
+  vk_swapchain_creation.sType                  = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+  vk_swapchain_creation.pNext                  = NULL;
+  vk_swapchain_creation.surface                = creation->surface.vk_surface;
+  vk_swapchain_creation.minImageCount          = vk_image_count;
+  vk_swapchain_creation.imageFormat            = vk_surface_format.format;
+  vk_swapchain_creation.imageColorSpace        = vk_surface_format.colorSpace;
+  vk_swapchain_creation.imageExtent            = vk_swapchain_extent;
+  vk_swapchain_creation.imageArrayLayers       = 1;
+  vk_swapchain_creation.imageUsage             = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+  vk_swapchain_creation.imageSharingMode       = VK_SHARING_MODE_EXCLUSIVE; // VK_SHARING_MODE_CONCURRENT use if multiple queues
+  vk_swapchain_creation.queueFamilyIndexCount  = 1u;  // VK_SHARING_MODE_CONCURRENT use if multiple queues
+  vk_swapchain_creation.pQueueFamilyIndices    = &vk_queue_family_indices;
+  vk_swapchain_creation.preTransform           = vk_surface_capabilities.currentTransform;
+  vk_swapchain_creation.compositeAlpha         = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+  vk_swapchain_creation.presentMode            = vk_selected_present_mode;
+  vk_swapchain_creation.clipped                = true;
+  vk_swapchain_creation.oldSwapchain           = VK_NULL_HANDLE;
+  
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateSwapchainKHR( device->vk_device, &vk_swapchain_creation, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &swapchain->vk_swapchain ), "Failed to create swapchain!" );
+
+  vkGetSwapchainImagesKHR( device->vk_device, swapchain->vk_swapchain, swapchain_images_count, NULL );
+  vkGetSwapchainImagesKHR( device->vk_device, swapchain->vk_swapchain, swapchain_images_count, vk_swapchain_images );
+  
+  swapchain_extent->x = vk_swapchain_extent.width;
+  swapchain_extent->y = vk_swapchain_extent.height;
+
+  for ( uint32 i = 0; i < CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT; ++i )
+  {
+    swapchain_images[ i ].vk_image = vk_swapchain_images[ i ];
+    swapchain_images[ i ].vma_allocation = NULL;
+  }
+
+  CRUDE_ARRAY_DEINITIALIZE( vk_available_present_modes );
+  CRUDE_ARRAY_DEINITIALIZE( vk_available_formats );
 }
 
 void
@@ -1913,35 +2034,109 @@ crude_gfx_rhi_destroy_swapchain
   _In_ crude_gfx_rhi_swapchain                             swapchain
 )
 {
-  vkDestroySwapchainKHR( device->vk_device, swapchain.vk_swapchain, g_pfn.vk_allocation_callbacks );
+  vkDestroySwapchainKHR( device->vk_device, swapchain.vk_swapchain, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
 }
 
-void
-crude_gfx_rhi_destroy_surface
-(
-  _In_ crude_gfx_rhi_instance                              instance,
-  _In_ crude_gfx_rhi_surface                               surface
-)
-{
-  vkDestroySurfaceKHR( instance.vk_instance, surface.vk_surface, g_pfn.vk_allocation_callbacks );
-}
-
-crude_gfx_rhi_queue*
+crude_gfx_rhi_queue
 crude_gfx_rhi_device_get_graphics_queue
 (
   _In_ crude_gfx_rhi_device                               *device
 )
 {
-  return &device->main_queue;
+  return device->main_queue;
 }
 
-crude_gfx_rhi_queue*
+crude_gfx_rhi_queue
 crude_gfx_rhi_device_get_transfer_queue
 (
   _In_ crude_gfx_rhi_device                               *device
 )
 {
-  return &device->transfer_queue;
+  return device->transfer_queue;
+}
+
+void
+crude_gfx_rhi_update_descriptor_set
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_descriptor_set                        descriptor_set,
+  _In_ crude_gfx_rhi_write_descriptor_set                 *write_descripor_sets,
+  _In_ uint32                                              write_descripor_sets_count
+)
+{
+#if CRUDE_GFX_RAY_TRACING_ENABLED
+  VkWriteDescriptorSetAccelerationStructureKHR             vk_acceleration_structure_info[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
+#endif
+  VkWriteDescriptorSet                                     vk_descriptor_write[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
+  VkDescriptorBufferInfo                                   vk_buffer_info[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
+  VkDescriptorImageInfo                                    vk_image_info[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
+
+  for ( uint32 i = 0; i < write_descripor_sets_count; i++ )
+  {
+    vk_descriptor_write[ i ] = CRUDE_COMPOUNT_EMPTY( VkWriteDescriptorSet );
+    vk_descriptor_write[ i ].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    vk_descriptor_write[ i ].pNext = NULL;
+    vk_descriptor_write[ i ].dstSet = descriptor_set.vk_descriptor_set;
+    vk_descriptor_write[ i ].dstBinding = write_descripor_sets[ i ].dst_binding;
+    vk_descriptor_write[ i ].dstArrayElement = write_descripor_sets[ i ].dst_array_element;
+    vk_descriptor_write[ i ].descriptorCount = write_descripor_sets[ i ].descriptor_count;
+    vk_descriptor_write[ i ].descriptorType = CRUDE_CAST( VkDescriptorType, write_descripor_sets[ i ].descriptor_type );
+    vk_descriptor_write[ i ].pImageInfo = NULL;
+    vk_descriptor_write[ i ].pBufferInfo = NULL;
+    vk_descriptor_write[ i ].pTexelBufferView = NULL;
+
+    if ( write_descripor_sets[ i ].image_info )
+    {
+      vk_image_info[ i ].imageLayout = CRUDE_CAST( VkImageLayout, write_descripor_sets[ i ].image_info->image_layout );
+      vk_image_info[ i ].imageView = write_descripor_sets[ i ].image_info->image_view.vk_image_view;
+      vk_image_info[ i ].sampler = write_descripor_sets[ i ].image_info->sampler.vk_sampler;
+      
+      vk_descriptor_write[ i ].pImageInfo = &vk_image_info[ i ];
+    }
+    
+    if ( write_descripor_sets[ i ].buffer_info )
+    {
+      vk_buffer_info[ i ].buffer = write_descripor_sets[ i ].buffer_info->buffer.vk_buffer;
+      vk_buffer_info[ i ].offset = write_descripor_sets[ i ].buffer_info->offset;
+      vk_buffer_info[ i ].range = write_descripor_sets[ i ].buffer_info->range;
+      
+      vk_descriptor_write[ i ].pBufferInfo = &vk_buffer_info[ i ];
+    }
+
+#if CRUDE_GFX_RAY_TRACING_ENABLED
+    if ( write_descripor_sets[ i ].acceleration_info )
+    {
+      vk_descriptor_write[ i ].descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+      
+      vk_acceleration_structure_info[ i ] = CRUDE_COMPOUNT_EMPTY( VkWriteDescriptorSetAccelerationStructureKHR );
+      vk_acceleration_structure_info[ i ].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
+      vk_acceleration_structure_info[ i ].accelerationStructureCount = 1;
+      vk_acceleration_structure_info[ i ].pAccelerationStructures = &write_descripor_sets[ i ].acceleration_info->acceleration_sturcture.vk_acceleration_structure;
+
+      vk_descriptor_write[ i ].pNext = &vk_acceleration_structure_info[ i ];
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
+    }
+  }
+
+  vkUpdateDescriptorSets( device->vk_device, write_descripor_sets_count, vk_descriptor_write, 0, NULL );
+}
+
+crude_gfx_rhi_physical_device_optional_extensions const*
+crude_gfx_rhi_get_device_optional_extensions
+(
+  _In_ crude_gfx_rhi_device                               *device
+)
+{
+  return &device->optional_extensions;
+}
+
+void*
+crude_gfx_rhi_get_buffer_mapped_data
+(
+  _In_ crude_gfx_rhi_buffer                                buffer
+)
+{
+  return buffer.mapped_data;
 }
 
 void
@@ -1981,15 +2176,17 @@ crude_gfx_rhi_get_surface_extent
   return swapchain_extent;
 }
 
-crude_gfx_rhi_surface_transform_flag_bits
-crude_gfx_rhi_get_surface_transform
+float32
+crude_gfx_rhi_get_timestamp_period
 (
-  _In_ crude_gfx_rhi_device                               *device,
-  _In_ crude_gfx_rhi_surface                               surface
+  _In_ crude_gfx_rhi_device                               *device
 )
 {
-  vkGetPhysicalDeviceSurfaceCapabilitiesKHR( device->vk_physical_device, surface.vk_surface, &vk_surface_capabilities );
-  return CRUDE_CAST( crude_gfx_rhi_surface_transform_flag_bits, surface_capabilities.currentTransform );
+  VkPhysicalDeviceProperties                               vk_physical_properties;
+
+  vkGetPhysicalDeviceProperties( device->vk_physical_device, &vk_physical_properties );
+
+  return vk_physical_properties.limits.timestampPeriod;
 }
 
 bool
@@ -2027,16 +2224,19 @@ crude_gfx_rhi_create_semaphore
 {
   VkSemaphoreCreateInfo                                    vk_semaphore_info;
   VkSemaphoreTypeCreateInfo                                vk_semaphore_type_info;
-  
-  vk_semaphore_type_info = CRUDE_COMPOUNT_EMPTY( VkSemaphoreTypeCreateInfo );
-  vk_semaphore_type_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
-  vk_semaphore_type_info.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
 
   vk_semaphore_info = CRUDE_COMPOUNT_EMPTY( VkSemaphoreCreateInfo );
   vk_semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-  vk_semaphore_info.pNext = &vk_semaphore_type_info;
 
-  vkCreateSemaphore( device->vk_device, &vk_semaphore_info, g_pfn.vk_allocation_callbacks, &semaphore->vk_semaphore );
+  if ( timeline )
+  {
+    vk_semaphore_type_info = CRUDE_COMPOUNT_EMPTY( VkSemaphoreTypeCreateInfo );
+    vk_semaphore_type_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
+    vk_semaphore_type_info.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
+    vk_semaphore_info.pNext = &vk_semaphore_type_info;
+  }
+
+  vkCreateSemaphore( device->vk_device, &vk_semaphore_info, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &semaphore->vk_semaphore );
 }
 
 void
@@ -2046,7 +2246,7 @@ crude_gfx_rhi_destroy_semaphore
   _In_ crude_gfx_rhi_semaphore                             semaphore
 )
 {
-  vkDestroySemaphore( device->vk_device, semaphore.vk_semaphore, g_pfn.vk_allocation_callbacks );
+  vkDestroySemaphore( device->vk_device, semaphore.vk_semaphore, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
 }
 
 void
@@ -2064,13 +2264,14 @@ void
 crude_gfx_rhi_create_fence
 (
   _In_ crude_gfx_rhi_device                               *device,
+  _In_ bool                                                signaled,
   _Out_ crude_gfx_rhi_fence                               *fence
 )
 {
   VkFenceCreateInfo fence_info = CRUDE_COMPOUNT_EMPTY( VkFenceCreateInfo );
   fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-  fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-  vkCreateFence( device->vk_device, &fence_info, g_pfn.vk_allocation_callbacks, &fence->vk_fence );
+  fence_info.flags = signaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
+  vkCreateFence( device->vk_device, &fence_info, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &fence->vk_fence );
 }
   
 void
@@ -2080,7 +2281,7 @@ crude_gfx_rhi_destroy_fence
   _In_ crude_gfx_rhi_fence                                 fence
 )
 {
-  vkDestroyFence( device->vk_device, fence.vk_fence, g_pfn.vk_allocation_callbacks );
+  vkDestroyFence( device->vk_device, fence.vk_fence, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
 }
 
 void
@@ -2113,14 +2314,14 @@ crude_gfx_rhi_set_debug_utils_object_name
   _In_ char const                                         *object_name
 )
 {
-  if ( g_pfn.vkSetDebugUtilsObjectNameEXT )
+  if ( device->vkSetDebugUtilsObjectNameEXT )
   {
     VkDebugUtilsObjectNameInfoEXT vk_name_info = CRUDE_COMPOUNT_EMPTY( VkDebugUtilsObjectNameInfoEXT );
     vk_name_info.sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
     vk_name_info.objectType   = CRUDE_CAST( VkObjectType, object_type );
     vk_name_info.objectHandle = object_handle;
     vk_name_info.pObjectName  = object_name;
-    g_pfn.vkSetDebugUtilsObjectNameEXT( device->vk_device, &vk_name_info );
+    device->vkSetDebugUtilsObjectNameEXT( device->vk_device, &vk_name_info );
   }
 }
 
@@ -2131,7 +2332,7 @@ crude_gfx_rhi_destroy_descriptor_pool
   _Out_ crude_gfx_rhi_descriptor_pool                     *descriptor_pool
 )
 {
-  vkDestroyDescriptorPool( device->vk_device, descriptor_pool->vk_descriptor_pool, g_pfn.vk_allocation_callbacks );
+  vkDestroyDescriptorPool( device->vk_device, descriptor_pool->vk_descriptor_pool, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
 }
 
 void
@@ -2223,7 +2424,7 @@ crude_gfx_rhi_command_buffer_begin_rendering
   vk_rendering_info.pDepthAttachment = rendering_info->has_depth_attachment ? &vk_depth_attachment : 0;
   vk_rendering_info.flags = rendering_info->flags;
   
-  g_pfn.vkCmdBeginRenderingKHR( command_buffer.vk_command_buffer, &vk_rendering_info );
+  vkCmdBeginRendering( command_buffer.vk_command_buffer, &vk_rendering_info );
 }
 
 void
@@ -2232,7 +2433,7 @@ crude_gfx_rhi_command_buffer_end_rendering
   _In_ crude_gfx_rhi_command_buffer                        command_buffer
 )
 {
-  g_pfn.vkCmdEndRenderingKHR( command_buffer.vk_command_buffer );
+  vkCmdEndRendering( command_buffer.vk_command_buffer );
 }
 
 void
@@ -2244,41 +2445,6 @@ crude_gfx_rhi_command_buffer_bind_pipeline
 )
 {
   vkCmdBindPipeline( command_buffer.vk_command_buffer, CRUDE_CAST( VkPipelineBindPoint, pipeline_bind_point ), pipeline.vk_pipeline );
-}
-
-void
-crude_gfx_rhi_command_buffer_copy_image
-(
-  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
-  _In_ crude_gfx_rhi_image                                 src_image,
-  _In_ crude_gfx_rhi_image_layout                          src_image_layout,
-  _In_ crude_gfx_rhi_image                                 dst_image,
-  _In_ crude_gfx_rhi_image_layout                          dst_image_layout,
-  _In_ crude_gfx_rhi_image_copy const                     *image_copy
-)
-{
-  VkImageCopy                                              region;
-
-  region = CRUDE_COMPOUNT_EMPTY( VkImageCopy );
-  region.srcSubresource.aspectMask = image_copy->src_subresource.aspect_mask;
-  region.srcSubresource.mipLevel = image_copy->src_subresource.mip_level;
-  region.srcSubresource.baseArrayLayer = image_copy->src_subresource.base_array_layer;
-  region.srcSubresource.layerCount = image_copy->src_subresource.layer_count;
-  region.srcOffset.x = image_copy->src_offset.x;
-  region.srcOffset.y = image_copy->src_offset.y;
-  region.srcOffset.z = image_copy->src_offset.z;
-  region.dstSubresource.aspectMask = image_copy->dst_subresource.aspect_mask;
-  region.dstSubresource.mipLevel = image_copy->dst_subresource.mip_level;
-  region.dstSubresource.baseArrayLayer = image_copy->dst_subresource.base_array_layer;
-  region.dstSubresource.layerCount = image_copy->dst_subresource.layer_count;
-  region.dstOffset.x = image_copy->dst_offset.x;
-  region.dstOffset.y = image_copy->dst_offset.y;
-  region.dstOffset.z = image_copy->dst_offset.z;
-  region.extent.width = image_copy->extent.x;
-  region.extent.height = image_copy->extent.y;
-  region.extent.depth = image_copy->extent.z;
-
-  vkCmdCopyImage( command_buffer.vk_command_buffer, src_image.vk_image, CRUDE_CAST( VkImageLayout, src_image_layout ), dst_image.vk_image, CRUDE_CAST( VkImageLayout, dst_image_layout ), 1u, &region );
 }
 
 void
@@ -2361,18 +2527,20 @@ crude_gfx_rhi_command_buffer_draw_indirect_count
 void
 crude_gfx_rhi_command_buffer_draw_mesh_task
 (
+  _In_ crude_gfx_rhi_device                               *device,
   _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ uint32                                              group_count_x,
   _In_ uint32                                              group_count_y,
   _In_ uint32                                              group_count_z
 )
 {
-  g_pfn.vkCmdDrawMeshTasksEXT( command_buffer.vk_command_buffer, group_count_x, group_count_y, group_count_z );
+  device->vkCmdDrawMeshTasksEXT( command_buffer.vk_command_buffer, group_count_x, group_count_y, group_count_z );
 }
 
 void
 crude_gfx_rhi_command_buffer_draw_mesh_task_indirect_count
 (
+  _In_ crude_gfx_rhi_device                               *device,
   _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_buffer                                argument_buffer,
   _In_ crude_gfx_rhi_device_size                           argument_buffer_offset,
@@ -2382,7 +2550,7 @@ crude_gfx_rhi_command_buffer_draw_mesh_task_indirect_count
   _In_ uint32                                              stride
 )
 {
-  g_pfn.vkCmdDrawMeshTasksIndirectCountEXT( command_buffer.vk_command_buffer, argument_buffer.vk_buffer, argument_buffer_offset, count_buffer.vk_buffer, count_buffer_offset, max_draw_count, stride );
+  device->vkCmdDrawMeshTasksIndirectCountEXT( command_buffer.vk_command_buffer, argument_buffer.vk_buffer, argument_buffer_offset, count_buffer.vk_buffer, count_buffer_offset, max_draw_count, stride );
 }
 
 void
@@ -2449,7 +2617,7 @@ crude_gfx_rhi_command_buffer_pipeline_image_barrier
   vk_dependency_info.imageMemoryBarrierCount = 1u;
   vk_dependency_info.pImageMemoryBarriers = &vk_image_barrier;
  
-  g_pfn.vkCmdPipelineBarrier2KHR( command_buffer.vk_command_buffer, &vk_dependency_info );
+  vkCmdPipelineBarrier2( command_buffer.vk_command_buffer, &vk_dependency_info );
 }
 
 void
@@ -2480,7 +2648,7 @@ crude_gfx_rhi_command_buffer_pipeline_buffer_barrier
   vk_dependency_info.bufferMemoryBarrierCount = 1u;
   vk_dependency_info.pBufferMemoryBarriers = &vk_buffer_barrier;
  
-  g_pfn.vkCmdPipelineBarrier2KHR( command_buffer.vk_command_buffer, &vk_dependency_info );
+  vkCmdPipelineBarrier2( command_buffer.vk_command_buffer, &vk_dependency_info );
 }
 
 void
@@ -2504,7 +2672,7 @@ crude_gfx_rhi_command_buffer_pipeline_global_barrier
   vk_dependency_info.memoryBarrierCount = 1;
   vk_dependency_info.pMemoryBarriers = &vk_barrier;
   
-  g_pfn.vkCmdPipelineBarrier2KHR( command_buffer.vk_command_buffer, &vk_dependency_info );
+  vkCmdPipelineBarrier2( command_buffer.vk_command_buffer, &vk_dependency_info );
 }
 
 void
@@ -2570,6 +2738,7 @@ crude_gfx_rhi_command_buffer_write_timestamp
 void
 crude_gfx_rhi_command_buffer_begin_debug_utils_label
 (
+  _In_ crude_gfx_rhi_device                               *device,
   _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_debug_utils_label const              *debug_utils_label
 )
@@ -2583,16 +2752,17 @@ crude_gfx_rhi_command_buffer_begin_debug_utils_label
   vk_label.color[ 1 ] = debug_utils_label->color[ 1 ];
   vk_label.color[ 2 ] = debug_utils_label->color[ 2 ];
   vk_label.color[ 3 ] = debug_utils_label->color[ 3 ];
-  g_pfn.vkCmdBeginDebugUtilsLabelEXT( command_buffer.vk_command_buffer, &vk_label );
+  device->vkCmdBeginDebugUtilsLabelEXT( command_buffer.vk_command_buffer, &vk_label );
 }
 
 void
 crude_gfx_rhi_command_buffer_end_debug_utils_label
 (
+  _In_ crude_gfx_rhi_device                               *device,
   _In_ crude_gfx_rhi_command_buffer                        command_buffer
 )
 {
-  g_pfn.vkCmdEndDebugUtilsLabelEXT( command_buffer.vk_command_buffer );
+  device->vkCmdEndDebugUtilsLabelEXT( command_buffer.vk_command_buffer );
 }
 
 void
@@ -2625,6 +2795,7 @@ crude_gfx_rhi_command_buffer_fill_buffer
 void
 crude_gfx_rhi_command_buffer_trace_rays
 (
+  _In_ crude_gfx_rhi_device                               *device,
   _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_strided_device_address_region const  *raygen_shader_binding_table,
   _In_ crude_gfx_rhi_strided_device_address_region const  *miss_shader_binding_table,
@@ -2654,7 +2825,7 @@ crude_gfx_rhi_command_buffer_trace_rays
 
   vk_callable_table = CRUDE_COMPOUNT_EMPTY( VkStridedDeviceAddressRegionKHR );
   
-  g_pfn.vkCmdTraceRaysKHR( command_buffer.vk_command_buffer, &vk_raygen_table, &vk_miss_table, &vk_hit_table, &vk_callable_table, width, height, depth );
+  device->vkCmdTraceRaysKHR( command_buffer.vk_command_buffer, &vk_raygen_table, &vk_miss_table, &vk_hit_table, &vk_callable_table, width, height, depth );
 }
 
 void
@@ -2766,8 +2937,8 @@ crude_gfx_rhi_command_buffer_blit_image
   blit_region.dstOffsets[ 0 ].y = region->dst_offsets[ 0 ].y;
   blit_region.dstOffsets[ 0 ].z = region->dst_offsets[ 0 ].z;
   blit_region.dstOffsets[ 1 ].x = region->dst_offsets[ 1 ].x;
-  blit_region.srcOffsets[ 1 ].y = region->src_offsets[ 1 ].y;
-  blit_region.srcOffsets[ 1 ].z = region->src_offsets[ 1 ].z;
+  blit_region.dstOffsets[ 1 ].y = region->dst_offsets[ 1 ].y;
+  blit_region.dstOffsets[ 1 ].z = region->dst_offsets[ 1 ].z;
 
   vkCmdBlitImage( command_buffer.vk_command_buffer,
     src_image.vk_image, CRUDE_CAST( VkImageLayout, src_image_layout ),

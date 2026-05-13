@@ -2,7 +2,7 @@
 
 #include <engine/graphics/graphics_config.h>
 
-#if CRUDE_GFX_USE_NSIGHT_AFTERMATH
+#if CRUDE_GFX_NSIGHT_AFTERMATH
 
 #include <threads.h>
 

@@ -27,12 +27,12 @@ crude_gfx_ssr_pass_initialize
   pass->radiance_hierarchy_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
 
   sampler_creation = crude_gfx_sampler_creation_empty();
-  sampler_creation.address_mode_u = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-  sampler_creation.address_mode_v = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-  sampler_creation.address_mode_w = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-  sampler_creation.mag_filter = VK_FILTER_LINEAR;
-  sampler_creation.min_filter = VK_FILTER_LINEAR;
-  sampler_creation.mip_filter = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+  sampler_creation.address_mode_u = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_creation.address_mode_v = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_creation.address_mode_w = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_creation.mag_filter = CRUDE_GFX_RHI_FILTER_LINEAR;
+  sampler_creation.min_filter = CRUDE_GFX_RHI_FILTER_LINEAR;
+  sampler_creation.mip_filter = CRUDE_GFX_RHI_SAMPLER_MIPMAP_MODE_LINEAR;
   sampler_creation.name = "radiance_hierarchy_sampler";
 
   pass->radiance_hierarchy_sampler = crude_gfx_create_sampler( pass->scene_renderer->gpu, &sampler_creation );
@@ -152,7 +152,7 @@ crude_gfx_ssr_pass_render
         mip_width = mip_width / 2;
         mip_height = mip_height / 2;
       
-        crude_gfx_cmd_add_image_barrier_ext2( primary_cmd, radiance_hierarchy_texture->vk_image, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, mip_index, 1u, false );
+        crude_gfx_cmd_add_image_barrier_ext2( primary_cmd, radiance_hierarchy_texture->rhi_image, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, mip_index, 1u, false );
         
         pust_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_convolve_pass_push_constant_ );
         pust_constant.dst_texture_index = pass->radiance_hierarchy_views_handles[ mip_index ].index;
@@ -163,7 +163,7 @@ crude_gfx_ssr_pass_render
         
         crude_gfx_cmd_dispatch( primary_cmd, ( mip_width + 7 ) / 8, ( mip_height + 7 ) / 8, 1 );
         
-        crude_gfx_cmd_add_image_barrier_ext2( primary_cmd, radiance_hierarchy_texture->vk_image, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, mip_index, 1u, false );
+        crude_gfx_cmd_add_image_barrier_ext2( primary_cmd, radiance_hierarchy_texture->rhi_image, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, mip_index, 1u, false );
       }
 
       radiance_hierarchy_texture->state = CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE; 
@@ -257,7 +257,7 @@ crude_gfx_ssr_pass_on_resize
   crude_gfx_link_texture_sampler( pass->scene_renderer->gpu, pass->radiance_hierarchy_texture_handle, pass->radiance_hierarchy_sampler );
 
   radiance_hierarchy_view_creation = crude_gfx_texture_view_creation_empty( );
-  radiance_hierarchy_view_creation.view_type = VK_IMAGE_VIEW_TYPE_2D;
+  radiance_hierarchy_view_creation.view_type = CRUDE_GFX_RHI_IMAGE_VIEW_TYPE_2D;
   radiance_hierarchy_view_creation.parent_texture_handle = pass->radiance_hierarchy_texture_handle;
   radiance_hierarchy_view_creation.name = "radiance_hierarchy_view";
   for ( uint32 i = 0; i < pass->radiance_hierarchy_levels; ++i )

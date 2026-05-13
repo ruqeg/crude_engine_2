@@ -32,14 +32,13 @@
  * 
  ***********************************************/
 static void
-vk_create_swapchain_
+crude_gfx_create_swapchain_internal_
 ( 
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ crude_allocator_container                           temporary_allocator
+  _In_ crude_gfx_device                                   *gpu
 );
 
 static void
-vk_create_descriptor_pool_
+crude_gfx_create_descriptor_pool_internal_
 (
   _In_ crude_gfx_device                                   *gpu
 );
@@ -62,7 +61,7 @@ crude_gfx_create_texture_view_internal_
 );
 
 static void
-vk_resize_swapchain_
+crude_gfx_resize_swapchain_internal_
 (
   _In_ crude_gfx_device                                   *gpu
 );
@@ -108,13 +107,7 @@ crude_gfx_device_initialize
   _In_ crude_gfx_device_creation                          *creation
 )
 {
-  crude_allocator_container                                temporary_allocator;
-  uint32                                                   temporary_allocator_mark;
-  
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Initialize Device" );
-
-  temporary_allocator = crude_stack_allocator_pack( creation->temporary_allocator );
-  temporary_allocator_mark = crude_stack_allocator_get_marker( creation->temporary_allocator );
 
   gpu->sdl_window = creation->sdl_window;
   gpu->allocator = creation->allocator;
@@ -139,7 +132,7 @@ crude_gfx_device_initialize
   gpu->rhi_main_queue = crude_gfx_rhi_device_get_graphics_queue( &gpu->rhi_device );
   gpu->rhi_transfer_queue = crude_gfx_rhi_device_get_transfer_queue( &gpu->rhi_device );
 
-#if CRUDE_GFX_USE_NSIGHT_AFTERMATH
+#if CRUDE_GFX_NSIGHT_AFTERMATH
   crude_gfx_gpu_crash_tracker_initialize( &gpu->crash_tracker, gpu->allocator );
 #endif
 
@@ -157,10 +150,7 @@ crude_gfx_device_initialize
   crude_resource_pool_initialize( &gpu->cmd_buffers, gpu->allocator_container, 16, sizeof( crude_gfx_cmd_buffer ) );
   
   {
-    VkPhysicalDeviceProperties                               vk_physical_properties;
-    vkGetPhysicalDeviceProperties( gpu->vk_physical_device, &vk_physical_properties );
-
-    gpu->gpu_timestamp_frequency = vk_physical_properties.limits.timestampPeriod / ( 1000 * 1000 );
+    gpu->gpu_timestamp_frequency = crude_gfx_rhi_get_timestamp_period( &gpu->rhi_device ) / ( 1000 * 1000 );
     gpu->gpu_time_queries_per_frame = 32;
     gpu->num_threads = 1u;
 
@@ -175,7 +165,7 @@ crude_gfx_device_initialize
       crude_gfx_cmd_pool_creation                          cmd_pool_creation;
       
       cmd_pool_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_cmd_pool_creation );
-      cmd_pool_creation.queue_family_index = gpu->vk_main_queue_family;
+      cmd_pool_creation.queue = gpu->rhi_main_queue;
       cmd_pool_creation.profiler.enabled = true;
       cmd_pool_creation.profiler.time_queries_trees = &gpu->gpu_time_queries_manager->query_trees[ i ];;
       cmd_pool_creation.profiler.time_queries_per_frame = gpu->gpu_time_queries_per_frame;
@@ -187,7 +177,7 @@ crude_gfx_device_initialize
       crude_gfx_cmd_pool_creation                          cmd_pool_creation;
       
       cmd_pool_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_cmd_pool_creation );
-      cmd_pool_creation.queue_family_index = gpu->vk_main_queue_family;
+      cmd_pool_creation.queue = gpu->rhi_main_queue;
       cmd_pool_creation.profiler.enabled = false;
       gpu->immediate_transfer_cmd_pool = crude_gfx_create_cmd_pool( gpu, &cmd_pool_creation );
 
@@ -208,7 +198,7 @@ crude_gfx_device_initialize
     crude_gfx_rhi_set_semaphore_debug_name( &gpu->rhi_device, gpu->rhi_rendering_finished_semaphore[ i ], "rendering_finished_semaphore" );
   }
   
-  crude_gfx_rhi_create_fence( &gpu->rhi_device, &gpu->rhi_immediate_fence );
+  crude_gfx_rhi_create_fence( &gpu->rhi_device, true, &gpu->rhi_immediate_fence );
   crude_gfx_rhi_set_fence_debug_name( &gpu->rhi_device, gpu->rhi_immediate_fence, "immediate_fence" );
   
   crude_gfx_rhi_create_semaphore( &gpu->rhi_device, true, &gpu->rhi_graphics_semaphore );
@@ -219,9 +209,8 @@ crude_gfx_device_initialize
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gpu->resource_deletion_queue, 16, gpu->allocator_container );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gpu->texture_to_update_bindless, 16, gpu->allocator_container );
   
-  vk_create_swapchain_( gpu, temporary_allocator );
-  vk_create_descriptor_pool_( gpu );
-  crude_stack_allocator_free_marker( creation->temporary_allocator, temporary_allocator_mark );
+  crude_gfx_create_swapchain_internal_( gpu );
+  crude_gfx_create_descriptor_pool_internal_( gpu );
   
   {
     crude_gfx_sampler_creation default_sampler_creation = crude_gfx_sampler_creation_empty();
@@ -252,7 +241,7 @@ crude_gfx_device_initialize
     physical_device_properties_2.pNext = &gpu->ray_tracing_pipeline_properties;
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 
-    vkGetPhysicalDeviceProperties2( gpu->vk_physical_device, &physical_device_properties_2 );
+    vkGetPhysicalDeviceProperties2( gpu->rhi_device.vk_physical_device, &physical_device_properties_2 );
   }
 
   gpu->swapchain_output.depth_stencil_format = CRUDE_GFX_RHI_FORMAT_D32_SFLOAT;
@@ -271,7 +260,7 @@ crude_gfx_device_initialize
   gpu->num_textures_to_update = 0;
   mtx_init( &gpu->texture_update_mutex, mtx_plain );
 
-  crude_stack_allocator_free_marker( creation->temporary_allocator, temporary_allocator_mark );
+  gpu->mesh_shaders_extension_present = crude_gfx_rhi_get_device_optional_extensions( &gpu->rhi_device )->mesh_shaders_extension_present;
  }
 
 void
@@ -370,7 +359,7 @@ crude_gfx_device_deinitialize
 #endif
   CRUDE_ARRAY_DEINITIALIZE( gpu->thread_frame_pools );
   
-#if CRUDE_GFX_USE_NSIGHT_AFTERMATH
+#if CRUDE_GFX_NSIGHT_AFTERMATH
   crude_gfx_gpu_crash_tracker_deinitialize( &gpu->crash_tracker );
 #endif
 
@@ -403,7 +392,7 @@ crude_gfx_new_frame
     bool acquired = crude_gfx_rhi_acquire_next_image( &gpu->rhi_device, gpu->rhi_swapchain, UINT64_MAX, gpu->rhi_image_avalivable_semaphores[ gpu->current_frame ], &gpu->swapchain_image_index );
     if ( !acquired )
     {
-      vk_resize_swapchain_( gpu );
+      crude_gfx_resize_swapchain_internal_( gpu );
     }
     CRUDE_PROFILER_ZONE_END;
   }
@@ -425,43 +414,42 @@ crude_gfx_present
   crude_gfx_rhi_command_buffer                             enqueued_command_buffers[ 4 ];
   
   CRUDE_PROFILER_ZONE_NAME( "crude_gfx_present" );
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->queued_command_buffers ); ++i )
   {
-    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->queued_command_buffers ); ++i )
-    {
-      crude_gfx_cmd_buffer                                *cmd;
-      crude_gfx_cmd_pool                                  *cmd_pool;
-      
-      cmd = gpu->queued_command_buffers[ i ];
-      enqueued_command_buffers[ i ] = cmd->rhi_cmd_buffer;
+    crude_gfx_cmd_buffer                                *cmd;
+    crude_gfx_cmd_pool                                  *cmd_pool;
+    
+    cmd = gpu->queued_command_buffers[ i ];
+    enqueued_command_buffers[ i ] = cmd->rhi_cmd_buffer;
 #if CRUDE_GFX_GPU_PROFILER
-      cmd_pool = crude_gfx_access_cmd_pool( gpu, cmd->cmd_pool );
+    cmd_pool = crude_gfx_access_cmd_pool( gpu, cmd->cmd_pool );
 
-      if ( cmd_pool->profiler.enabled )
+    if ( cmd_pool->profiler.enabled )
+    {
+      if ( cmd_pool->profiler.time_queries_trees->allocated_time_query )
       {
-        if ( cmd_pool->profiler.time_queries_trees->allocated_time_query )
-        {
-          crude_gfx_rhi_command_buffer_end_query( cmd->rhi_cmd_buffer, cmd_pool->profiler.rhi_pipeline_stats_query_pool, 0 );
-        }
+        crude_gfx_rhi_command_buffer_end_query( cmd->rhi_cmd_buffer, cmd_pool->profiler.rhi_pipeline_stats_query_pool, 0 );
       }
-#endif
-      crude_gfx_cmd_end_render_pass( cmd );
-      crude_gfx_cmd_end( cmd );
     }
+#endif
+    crude_gfx_cmd_end_render_pass( cmd );
+    crude_gfx_cmd_end( cmd );
   }
 
   {
+    crude_gfx_descriptor_set                              *bindless_descriptor_set;
     crude_gfx_rhi_write_descriptor_set                     bindless_descriptor_writes[ CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT ];
+    crude_gfx_rhi_descriptor_image_info                    bindless_image_infos[ CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT ];
     uint32                                                 current_write_index;
+    
+    bindless_descriptor_set = crude_gfx_access_descriptor_set( gpu, gpu->bindless_descriptor_set_handle );
 
     current_write_index = 0;
     for ( int32 i = CRUDE_ARRAY_LENGTH( gpu->texture_to_update_bindless ) - 1; i >= 0; --i )
     {
-      crude_gfx_descriptor_set                            *bindless_descriptor_set;
-      crude_gfx_rhi_write_descriptor_set                  *descriptor_write;
       crude_gfx_resource_update                           *texture_to_update;
       crude_gfx_texture                                   *texture;
       
-      bindless_descriptor_set = crude_gfx_access_descriptor_set( gpu, gpu->bindless_descriptor_set_handle );
       texture_to_update = &gpu->texture_to_update_bindless[ i ];
       texture = crude_gfx_access_texture( gpu, CRUDE_COMPOUNT( crude_gfx_texture_handle, { texture_to_update->handle } ) );
       
@@ -469,28 +457,27 @@ crude_gfx_present
       {
         continue;
       }
-
-      descriptor_write = &bindless_descriptor_writes[ current_write_index ];
-      *descriptor_write = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_write_descriptor_set );
-      descriptor_write->descriptor_count = 1;
-      descriptor_write->dst_array_element = texture_to_update->handle;
-      descriptor_write->descriptor_type = CRUDE_GFX_RHI_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-      descriptor_write->descriptor_set = bindless_descriptor_set->rhi_descriptor_set;
-      descriptor_write->dst_binding = CRUDE_BINDLESS_TEXTURE_BINDING;
       
       CRUDE_ASSERT( texture->format != CRUDE_GFX_RHI_FORMAT_UNDEFINED );
 
+      bindless_descriptor_writes[ current_write_index ] = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_write_descriptor_set );
+      bindless_descriptor_writes[ current_write_index ].descriptor_count = 1;
+      bindless_descriptor_writes[ current_write_index ].dst_array_element = texture_to_update->handle;
+      bindless_descriptor_writes[ current_write_index ].descriptor_type = CRUDE_GFX_RHI_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+      bindless_descriptor_writes[ current_write_index ].dst_binding = CRUDE_BINDLESS_TEXTURE_BINDING;
+      bindless_descriptor_writes[ current_write_index ].image_info = &bindless_image_infos[ current_write_index ];
+      
+      bindless_image_infos[ current_write_index ].image_view = texture->rhi_image_view;
+      bindless_image_infos[ current_write_index ].image_layout = CRUDE_GFX_RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
       if ( texture->sampler )
       {
-        descriptor_write->image_info.sampler = texture->sampler->rhi_sampler;
+        bindless_image_infos[ current_write_index ].sampler = texture->sampler->rhi_sampler;
       }
       else
       {
         crude_gfx_sampler *default_sampler = crude_gfx_access_sampler( gpu, gpu->default_sampler );
-        descriptor_write->image_info.sampler = default_sampler->rhi_sampler;
+        bindless_image_infos[ current_write_index ].sampler = default_sampler->rhi_sampler;
       }
-      descriptor_write->image_info.image_view = texture->rhi_image_view;
-      descriptor_write->image_info.image_layout = CRUDE_GFX_RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
       
       CRUDE_ARRAY_DELSWAP( gpu->texture_to_update_bindless, i );
 
@@ -501,18 +488,16 @@ crude_gfx_present
       {
         has_compute_mask |= crude_gfx_access_texture( gpu, texture->parent_texture_handle )->flags & CRUDE_GFX_TEXTURE_MASK_COMPUTE;
       }
+
       if ( has_compute_mask )
       {
-        crude_gfx_rhi_write_descriptor_set                *descriptor_write_image;
-        
-        descriptor_write_image = &bindless_descriptor_writes[ current_write_index ];
+        bindless_image_infos[ current_write_index ] = bindless_image_infos[ current_write_index - 1 ];
+        bindless_image_infos[ current_write_index ].image_layout = CRUDE_GFX_RHI_IMAGE_LAYOUT_GENERAL;
 
-        *descriptor_write_image = *descriptor_write;
-
-        descriptor_write_image->image_info.image_layout = CRUDE_GFX_RHI_IMAGE_LAYOUT_GENERAL;
-
-        descriptor_write_image->dst_binding = CRUDE_BINDLESS_IMAGE_BINDING;
-        descriptor_write_image->descriptor_type = CRUDE_GFX_RHI_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        bindless_descriptor_writes[ current_write_index ] = bindless_descriptor_writes[ current_write_index - 1 ];
+        bindless_descriptor_writes[ current_write_index ].dst_binding = CRUDE_BINDLESS_IMAGE_BINDING;
+        bindless_descriptor_writes[ current_write_index ].descriptor_type = CRUDE_GFX_RHI_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        bindless_descriptor_writes[ current_write_index ].image_info = &bindless_image_infos[ current_write_index ];
 
         ++current_write_index;
       }
@@ -520,7 +505,7 @@ crude_gfx_present
 
     if ( current_write_index )
     {
-      crude_gfx_rhi_update_descriptor_sets( &gpu->rhi_device, current_write_index, bindless_descriptor_writes );
+      crude_gfx_rhi_update_descriptor_set( &gpu->rhi_device, bindless_descriptor_set->rhi_descriptor_set, bindless_descriptor_writes, current_write_index );
     }
   }
   
@@ -548,7 +533,7 @@ crude_gfx_present
     submit_info.signal_semaphore_info_count = CRUDE_COUNTOF( signal_semaphores );
     submit_info.signal_semaphore_infos      = signal_semaphores;
     
-    crude_gfx_device_queue_submit( gpu, gpu->rhi_main_queue, &submit_info, g_crude_gfx_rhi_empty_fence );
+    crude_gfx_device_queue_submit( gpu, gpu->rhi_main_queue, &submit_info, crude_gfx_rhi_fence_empty( ) );
   }
  
   {
@@ -572,9 +557,9 @@ crude_gfx_present
     crude_gfx_cmd_begin_primary( cmd );
 
     crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
-    crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->swapchain_images[ gpu->swapchain_image_index ], CRUDE_GFX_RHI_RESOURCE_STATE_PRESENT, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, 0, 1, false );
-    crude_gfx_rhi_command_buffer_copy_image( cmd->rhi_cmd_buffer, texture->rhi_image, CRUDE_GFX_RHI_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, gpu->swapchain_images[ gpu->swapchain_image_index ], CRUDE_GFX_RHI_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &region );
-    crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->swapchain_images[ gpu->swapchain_image_index ], CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RHI_RESOURCE_STATE_PRESENT, 0, 1, false );
+    crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->rhi_swapchain_images[ gpu->swapchain_image_index ], CRUDE_GFX_RHI_RESOURCE_STATE_PRESENT, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, 0, 1, false );
+    crude_gfx_rhi_command_buffer_copy_image( cmd->rhi_cmd_buffer, texture->rhi_image, CRUDE_GFX_RHI_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, gpu->rhi_swapchain_images[ gpu->swapchain_image_index ], CRUDE_GFX_RHI_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &region );
+    crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->rhi_swapchain_images[ gpu->swapchain_image_index ], CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RHI_RESOURCE_STATE_PRESENT, 0, 1, false );
     
     crude_gfx_cmd_end( cmd );
   
@@ -601,7 +586,7 @@ crude_gfx_present
       submit_info.signal_semaphore_info_count = CRUDE_COUNTOF( signal_semaphores );
       submit_info.signal_semaphore_infos      = signal_semaphores;
     
-      crude_gfx_device_queue_submit( gpu, gpu->rhi_main_queue, &submit_info, g_crude_gfx_rhi_empty_fence );
+      crude_gfx_device_queue_submit( gpu, gpu->rhi_main_queue, &submit_info, crude_gfx_rhi_fence_empty( ) );
     }
   }
   
@@ -614,7 +599,7 @@ crude_gfx_present
     gpu->swapchain_resized_last_frame = false;
     if ( !successful )
     {
-      vk_resize_swapchain_( gpu );
+      crude_gfx_resize_swapchain_internal_( gpu );
       crude_gfx_update_frame_counters_( gpu );
       return;
     }
@@ -989,7 +974,7 @@ crude_gfx_device_queue_submit
 
   if ( !successful )
   {
-#if CRUDE_GFX_USE_NSIGHT_AFTERMATH
+#if CRUDE_GFX_NSIGHT_AFTERMATH
     crude_gfx_gpu_crash_tracker_handle_device_lost( &gpu->crash_tracker );
 #endif
   }
@@ -1048,9 +1033,13 @@ crude_gfx_generate_mipmaps
     blit_region.src_subresource.mip_level = mip_index - 1;
     blit_region.src_subresource.base_array_layer = 0;
     blit_region.src_subresource.layer_count = 1;
-
-    blit_region.src_offsets[ 0 ] = { 0, 0, 0 };
-    blit_region.src_offsets[ 1 ] = { w, h, 1 };
+    
+    blit_region.src_offsets[ 0 ].x = 0;
+    blit_region.src_offsets[ 0 ].y = 0;
+    blit_region.src_offsets[ 0 ].z = 0;
+    blit_region.src_offsets[ 1 ].x = w;
+    blit_region.src_offsets[ 1 ].y = h;
+    blit_region.src_offsets[ 1 ].z = 1;
 
     w /= 2;
     h /= 2;
@@ -1060,8 +1049,12 @@ crude_gfx_generate_mipmaps
     blit_region.dst_subresource.base_array_layer = 0;
     blit_region.dst_subresource.layer_count = 1;
 
-    blit_region.dst_offsets[ 0 ] = { 0, 0, 0 };
-    blit_region.dst_offsets[ 1 ] = { w, h, 1 };
+    blit_region.dst_offsets[ 0 ].x = 0;
+    blit_region.dst_offsets[ 0 ].y = 0;
+    blit_region.dst_offsets[ 0 ].z = 0;
+    blit_region.dst_offsets[ 1 ].x = w;
+    blit_region.dst_offsets[ 1 ].y = h;
+    blit_region.dst_offsets[ 1 ].z = 1;
 
     crude_gfx_rhi_command_buffer_blit_image( cmd_buffer->rhi_cmd_buffer, texture->rhi_image, CRUDE_GFX_RHI_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture->rhi_image, CRUDE_GFX_RHI_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &blit_region, CRUDE_GFX_RHI_FILTER_LINEAR );
 
@@ -1142,7 +1135,7 @@ crude_gfx_add_texture_update_commands
   {
     crude_gfx_texture *texture = crude_gfx_access_texture( gpu, gpu->textures_to_update[ i ] );
     CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "crude_gfx_add_texture_update_commands %s", texture->name );
-    crude_gfx_cmd_add_image_barrier_ext3( cmd, texture->rhi_image, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RHI_RESOURCE_STATE_SHADER_RESOURCE, 0, 1, false, gpu->vk_transfer_queue_family, gpu->vk_main_queue_family, CRUDE_GFX_RHI_QUEUE_TYPE_COPY_TRANSFER, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS );
+    crude_gfx_cmd_add_image_barrier_ext3( cmd, texture->rhi_image, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RHI_RESOURCE_STATE_SHADER_RESOURCE, 0, 1, false, gpu->rhi_transfer_queue, gpu->rhi_main_queue, CRUDE_GFX_RHI_QUEUE_TYPE_COPY_TRANSFER, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS );
     texture->ready = true;
     texture->state = CRUDE_GFX_RHI_RESOURCE_STATE_SHADER_RESOURCE;
     crude_gfx_generate_mipmaps( cmd, texture );
@@ -1330,7 +1323,9 @@ crude_gfx_create_texture
     region.image_subresource.base_array_layer = 0;
     region.image_subresource.layer_count = 1;
     region.image_offset = { 0, 0, 0 };
-    region.image_extent = { creation->width, creation->height, creation->depth };    
+    region.image_extent.x = creation->width;
+    region.image_extent.y = creation->height;
+    region.image_extent.z = creation->depth;  
     crude_gfx_rhi_command_buffer_copy_buffer_to_image( cmd->rhi_cmd_buffer, staging_buffer, texture->rhi_image, &region );
 
     crude_gfx_generate_mipmaps( cmd, texture );
@@ -2109,7 +2104,7 @@ crude_gfx_create_buffer
   
   if ( creation->persistent )
   {
-    buffer->mapped_data = ( uint8* )allocation_info.pMappedData;
+    buffer->mapped_data = CRUDE_CAST( uint8*, crude_gfx_rhi_get_buffer_mapped_data( buffer->rhi_buffer ) );
   }
 
   return handle;
@@ -2286,7 +2281,7 @@ crude_gfx_create_descriptor_set
   {
     crude_gfx_descriptor_binding const *binding = &descriptor_set_layout->bindings[ descriptor_set_layout->binding_to_index[ creation->bindings[ i ] ] ];
     
-    if ( binding->set == CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX && ( binding->type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || binding->type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE ) )
+    if ( binding->set == CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX && ( binding->type == CRUDE_GFX_RHI_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER || binding->type == CRUDE_GFX_RHI_DESCRIPTOR_TYPE_STORAGE_IMAGE ) )
     {
       continue;
     }
@@ -2360,7 +2355,7 @@ crude_gfx_create_descriptor_set
     {
       crude_gfx_texture_handle texture_handle = CRUDE_COMPOUNT( crude_gfx_texture_handle, { creation->resources[ i ] } );
       crude_gfx_texture *texture = crude_gfx_access_texture( gpu, texture_handle );
-      image_info[ i ].sampler = g_crude_gfx_rhi_empty_sampler;
+      image_info[ i ].sampler = crude_gfx_rhi_sampler_empty( );
       image_info[ i ].image_view = texture->rhi_image_view;
       image_info[ i ].image_layout = CRUDE_GFX_RHI_IMAGE_LAYOUT_GENERAL;
 
@@ -2400,9 +2395,9 @@ crude_gfx_create_descriptor_set
   rhi_creation.bindless = descriptor_set_layout->bindless;
   rhi_creation.descriptor_pool = descriptor_set_layout->bindless ? gpu->rhi_bindless_descriptor_pool : gpu->rhi_descriptor_pool;
   rhi_creation.descriptor_set_layout = descriptor_set_layout->rhi_descriptor_set_layout;
-  rhi_creation.write_descripor_sets_count = num_resources;
-  rhi_creation.write_descripor_sets = descriptor_write;
   crude_gfx_rhi_create_descriptor_set( &gpu->rhi_device, &rhi_creation, &descriptor_set->rhi_descriptor_set );
+  
+  crude_gfx_rhi_update_descriptor_set( &gpu->rhi_device, descriptor_set->rhi_descriptor_set, descriptor_write, num_resources );
 
   crude_gfx_rhi_set_descriptor_set_debug_name( &gpu->rhi_device, descriptor_set->rhi_descriptor_set, creation->name );
 
@@ -3055,179 +3050,67 @@ crude_gfx_release_technique
  * 
  ***********************************************/
 void
-vk_create_swapchain_
+crude_gfx_create_swapchain_internal_
 ( 
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ crude_allocator_container                           temporary_allocator
+  _In_ crude_gfx_device                                   *gpu
 )
 {
   crude_gfx_cmd_buffer                                    *cmd;
-  VkPresentModeKHR                                        *available_present_modes;
-  VkSurfaceFormatKHR                                      *available_formats;
-  crude_gfx_rhi_swapchain_create_info                      rhi_swapchain_creation;
-  VkSwapchainCreateInfoKHR                                 swapchain_create_info;
-  XMFLOAT2                                                 swapchain_extent;
-  uint32                                                   available_formats_count, available_present_modes_count, image_count;
-  bool                                                     surface_format_found;
+  crude_gfx_rhi_swapchain_create_info                      swapchain_creation;
 
-  swapchain_extent = crude_gfx_rhi_get_surface_extent( &gpu->rhi_device, gpu->rhi_surface );
-  CRUDE_ASSERT( swapchain_extent.x != UINT32_MAX );
+  swapchain_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_swapchain_create_info );
+  swapchain_creation.surface = gpu->rhi_surface;
 
-  gpu->swapchain_size = swapchain_extent;
-  gpu->renderer_size = swapchain_extent;
-  
-  available_formats_count;
-  vkGetPhysicalDeviceSurfaceFormatsKHR( gpu->vk_physical_device, gpu->vk_surface, &available_formats_count, NULL );
+  crude_gfx_rhi_create_swapchain(
+    &gpu->rhi_device, &swapchain_creation, gpu->allocator,
+    &gpu->rhi_swapchain, &gpu->swapchain_images_count, &gpu->swapchain_size, gpu->rhi_swapchain_images );
 
-  if ( available_formats_count == 0u )
-  {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Can't find available surface format! (available_formats_count == 0u)" );
-  }
-
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( available_formats, available_formats_count, temporary_allocator );
-  vkGetPhysicalDeviceSurfaceFormatsKHR( gpu->vk_physical_device, gpu->vk_surface, &available_formats_count, available_formats );
-
-  surface_format_found = false;
-  for ( uint32 i = 0; i < available_formats_count; ++i )
-  {
-    CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Available surface formats: format %i color_space: %i", available_formats[ i ].format, available_formats[ i ].colorSpace );
-    if ( available_formats[ i ].format == VK_FORMAT_R8G8B8A8_UNORM && available_formats[ i ].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR )
-    {
-      gpu->vk_surface_format = available_formats[ i ];
-      surface_format_found = true;
-    }
-  }
-
-  if ( !surface_format_found )
-  {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Can't find requested surface format" );
-    CRUDE_ARRAY_DEINITIALIZE( available_formats );
-  }
-  
-  available_present_modes_count;
-  vkGetPhysicalDeviceSurfacePresentModesKHR( gpu->vk_physical_device, gpu->vk_surface, &available_present_modes_count, NULL );
-  if ( available_present_modes_count == 0u ) 
-  {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Can't find available surface present_mode" );
-    CRUDE_ARRAY_DEINITIALIZE( available_formats );
-  }
-  
-  
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( available_present_modes, available_present_modes_count, temporary_allocator );
-  vkGetPhysicalDeviceSurfacePresentModesKHR( gpu->vk_physical_device, gpu->vk_surface, &available_present_modes_count, available_present_modes );
-
-  gpu->vk_selected_present_mode = VK_PRESENT_MODE_FIFO_KHR;
-  for ( uint32 i = 0; i < available_present_modes_count; ++i )
-  {
-    if ( available_present_modes[ i ] == VK_PRESENT_MODE_MAILBOX_KHR )
-    {
-      gpu->vk_selected_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
-      break;
-    }
-  }
-
-  image_count = ( gpu->vk_selected_present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR ? 2 : 3 );
-  
-  rhi_swapchain_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_swapchain_create_info );
-  rhi_swapchain_creation.surface = gpu->rhi_surface;
-  rhi_swapchain_creation.min_images_count = image_count;
-  rhi_swapchain_creation.image_format = gpu->vk_surface_format.format;
-  rhi_swapchain_creation.image_color_space = gpu->vk_surface_format.colorSpace;
-  rhi_swapchain_creation.image_extent = swapchain_extent;
-  rhi_swapchain_creation.preTransform = surface_capabilities.currentTransform;
-  rhi_swapchain_creation.presentMode = gpu->vk_selected_present_mode;
-  
-  crude_gfx_rhi_create_swapchain( &gpu->rhi_device, &rhi_swapchain_creation, &gpu->rhi_swapchain );
-
-  vkGetSwapchainImagesKHR( gpu->vk_device, gpu->vk_swapchain, &gpu->vk_swapchain_images_count, NULL );
-  vkGetSwapchainImagesKHR( gpu->vk_device, gpu->vk_swapchain, &gpu->vk_swapchain_images_count, &gpu->vk_swapchain_images[0] );
+  gpu->renderer_size = gpu->swapchain_size;
   
   cmd = crude_gfx_access_cmd_buffer( gpu, gpu->immediate_transfer_cmd_buffer );
   crude_gfx_cmd_begin_primary( cmd );
-  for ( size_t i = 0; i < gpu->vk_swapchain_images_count; ++i )
+  for ( size_t i = 0; i < gpu->swapchain_images_count; ++i )
   {
-    crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->vk_swapchain_images[ i ], CRUDE_GFX_RHI_RESOURCE_STATE_UNDEFINED, CRUDE_GFX_RHI_RESOURCE_STATE_PRESENT, 0, 1, false );
+    crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->rhi_swapchain_images[ i ], CRUDE_GFX_RHI_RESOURCE_STATE_UNDEFINED, CRUDE_GFX_RHI_RESOURCE_STATE_PRESENT, 0, 1, false );
   }
   crude_gfx_submit_immediate( cmd );
 }
 
 void
-vk_create_descriptor_pool_
+crude_gfx_create_descriptor_pool_internal_
 (
   _In_ crude_gfx_device                                   *gpu
 )
 {
-  {
-    VkDescriptorPoolCreateInfo                               pool_info;
-    uint32                                                   pool_count;
-    VkDescriptorSetLayoutBinding                             vk_binding[ 2 ];
-    VkDescriptorBindingFlags                                 bindless_flags;
+  crude_gfx_descriptor_set_layout_creation                 dsl_creation;
+  crude_gfx_descriptor_set_creation                        ds_creation;
 
-    {
-      VkDescriptorPoolSize pool_sizes[] =
-      {
-        { VK_DESCRIPTOR_TYPE_SAMPLER, 100 },
-        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 },
-        { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 100 },
-        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 100 },
-        { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 100 },
-        { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 100 },
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100 },
-        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 11000 },
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 100 },
-        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 100 },
-        { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 11000 },
-#if CRUDE_GFX_RAY_TRACING_ENABLED
-        { VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 100 },
-#endif
-      };
-      pool_info = CRUDE_COMPOUNT_EMPTY( VkDescriptorPoolCreateInfo );
-      pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-      pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-      pool_info.maxSets = 4096;
-      pool_info.poolSizeCount = CRUDE_COUNTOF( pool_sizes );
-      pool_info.pPoolSizes = pool_sizes;
-      CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDescriptorPool( gpu->vk_device, &pool_info, gpu->vk_allocation_callbacks, &gpu->vk_descriptor_pool ), "Failed create descriptor pool" );
-      crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_DESCRIPTOR_POOL, CRUDE_CAST( uint64, gpu->vk_descriptor_pool ), "vk_descriptor_pool " );
-    }
-    {
-      VkDescriptorPoolSize pool_sizes_bindless[] = {
-        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT },
-        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT }
-      };
-      pool_info = CRUDE_COMPOUNT_EMPTY( VkDescriptorPoolCreateInfo );
-      pool_info.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-      pool_info.flags         = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT | VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-      pool_info.maxSets       = CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT * CRUDE_COUNTOF( pool_sizes_bindless );
-      pool_info.poolSizeCount = CRUDE_COUNTOF( pool_sizes_bindless );
-      pool_info.pPoolSizes    = pool_sizes_bindless;
-      CRUDE_GFX_HANDLE_VULKAN_RESULT( vkCreateDescriptorPool( gpu->vk_device, &pool_info, gpu->vk_allocation_callbacks, &gpu->vk_bindless_descriptor_pool ), "Failed create descriptor pool" );
-      crude_gfx_set_resource_name( gpu, VK_OBJECT_TYPE_DESCRIPTOR_POOL, CRUDE_CAST( uint64, gpu->vk_bindless_descriptor_pool ), "vk_bindless_descriptor_pool " );
-    }
-  }
-  {
-    crude_gfx_descriptor_set_layout_creation creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_descriptor_set_layout_creation );
-    creation.name = "bindless_descriptor_set_layout";
-    creation.bindless = true;
-    creation.set_index = 0u;
-    crude_gfx_descriptor_set_layout_creation_add_binding( &creation, CRUDE_COMPOUNT( crude_gfx_descriptor_set_layout_binding, {
-      .type = CRUDE_GFX_RHI_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-      .start = CRUDE_BINDLESS_TEXTURE_BINDING,
-      .count = CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT,
-    } ) );
-    crude_gfx_descriptor_set_layout_creation_add_binding( &creation, CRUDE_COMPOUNT( crude_gfx_descriptor_set_layout_binding, {
-      .type = CRUDE_GFX_RHI_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-      .start = CRUDE_BINDLESS_TEXTURE_BINDING + 1,
-      .count = CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT,
-    } ) );
-    gpu->bindless_descriptor_set_layout_handle = crude_gfx_create_descriptor_set_layout( gpu, &creation );
-  }
-  {
-    crude_gfx_descriptor_set_creation creation = crude_gfx_descriptor_set_creation_empty();
-    creation.name = "bindless_descriptor_set";
-    creation.layout = gpu->bindless_descriptor_set_layout_handle;
-    gpu->bindless_descriptor_set_handle = crude_gfx_create_descriptor_set( gpu, &creation );
-  }
+  crude_gfx_rhi_create_descriptor_pool( &gpu->rhi_device, true, &gpu->rhi_bindless_descriptor_pool );
+  crude_gfx_rhi_set_descriptor_pool_debug_name( &gpu->rhi_device, gpu->rhi_bindless_descriptor_pool, "rhi_bindless_descriptor_pool" );
+  
+  crude_gfx_rhi_create_descriptor_pool( &gpu->rhi_device, false, &gpu->rhi_descriptor_pool );
+  crude_gfx_rhi_set_descriptor_pool_debug_name( &gpu->rhi_device, gpu->rhi_descriptor_pool, "rhi_descriptor_pool" );
+
+  dsl_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_descriptor_set_layout_creation );
+  dsl_creation.name = "bindless_descriptor_set_layout";
+  dsl_creation.bindless = true;
+  dsl_creation.set_index = 0u;
+  crude_gfx_descriptor_set_layout_creation_add_binding( &dsl_creation, CRUDE_COMPOUNT( crude_gfx_descriptor_set_layout_binding, {
+    .type = CRUDE_GFX_RHI_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+    .start = CRUDE_BINDLESS_TEXTURE_BINDING,
+    .count = CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT,
+  } ) );
+  crude_gfx_descriptor_set_layout_creation_add_binding( &dsl_creation, CRUDE_COMPOUNT( crude_gfx_descriptor_set_layout_binding, {
+    .type = CRUDE_GFX_RHI_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+    .start = CRUDE_BINDLESS_TEXTURE_BINDING + 1,
+    .count = CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT,
+  } ) );
+  gpu->bindless_descriptor_set_layout_handle = crude_gfx_create_descriptor_set_layout( gpu, &dsl_creation );
+  
+  ds_creation = crude_gfx_descriptor_set_creation_empty();
+  ds_creation.name = "bindless_descriptor_set";
+  ds_creation.layout = gpu->bindless_descriptor_set_layout_handle;
+  gpu->bindless_descriptor_set_handle = crude_gfx_create_descriptor_set( gpu, &ds_creation );
 }
 
 void
@@ -3355,33 +3238,27 @@ crude_gfx_create_texture_view_internal_
 }
 
 void
-vk_resize_swapchain_
+crude_gfx_resize_swapchain_internal_
 (
   _In_ crude_gfx_device                                   *gpu
 )
 {
+  XMFLOAT2                                                 new_surface_extent;
+
   crude_gfx_rhi_wait_idle( &gpu->rhi_device );
   
+  new_surface_extent = crude_gfx_rhi_get_surface_extent( &gpu->rhi_device, gpu->rhi_surface );
+
+  if ( new_surface_extent.x == 0 || new_surface_extent.y == 0 )
   {
-    VkSurfaceCapabilitiesKHR new_surface_capabilities;
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR( gpu->vk_physical_device, gpu->vk_surface, &new_surface_capabilities );
-    
-    if ( new_surface_capabilities.currentExtent.width == 0 || new_surface_capabilities.currentExtent.height == 0 )
-    {
-      return;
-    }
+    return;
   }
 
   crude_gfx_rhi_destroy_swapchain( &gpu->rhi_device, gpu->rhi_swapchain );
   crude_gfx_rhi_destroy_surface( gpu->rhi_instance, gpu->rhi_surface );
   crude_gfx_rhi_create_surface( gpu->rhi_instance, gpu->sdl_window, &gpu->rhi_surface );
 
-  {
-    crude_allocator_container temporary_allocator = crude_stack_allocator_pack( gpu->temporary_allocator );
-    uint32 marker = crude_stack_allocator_get_marker( gpu->temporary_allocator );
-    vk_create_swapchain_( gpu, temporary_allocator );
-    crude_stack_allocator_free_marker( gpu->temporary_allocator, marker );
-  }
+  crude_gfx_create_swapchain_internal_( gpu );
 
   gpu->swapchain_resized_last_frame = true;
 
