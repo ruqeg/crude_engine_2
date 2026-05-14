@@ -1698,6 +1698,8 @@ crude_gfx_rhi_create_graphics_pipeline
 
   for ( uint32 i = 0; i < creation->color_blend_state->attachments_count; ++i )
   {
+    vk_color_blend_attachment[ i ] = CRUDE_COMPOUNT_EMPTY( VkPipelineColorBlendAttachmentState );
+    vk_color_blend_attachment[ i ].blendEnable = creation->color_blend_state->attachments[ i ].blend_enable;
     vk_color_blend_attachment[ i ].colorWriteMask = creation->color_blend_state->attachments[ i ].color_write_mask;
     vk_color_blend_attachment[ i ].srcColorBlendFactor = CRUDE_CAST( VkBlendFactor, creation->color_blend_state->attachments[ i ].src_color_blend_factor );
     vk_color_blend_attachment[ i ].dstColorBlendFactor = CRUDE_CAST( VkBlendFactor, creation->color_blend_state->attachments[ i ].dst_color_blend_factor );
@@ -2065,11 +2067,11 @@ crude_gfx_rhi_update_descriptor_set
 )
 {
 #if CRUDE_GFX_RAY_TRACING_ENABLED
-  VkWriteDescriptorSetAccelerationStructureKHR             vk_acceleration_structure_info[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
+  VkWriteDescriptorSetAccelerationStructureKHR             vk_acceleration_structure_info[ CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT ];
 #endif
-  VkWriteDescriptorSet                                     vk_descriptor_write[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
-  VkDescriptorBufferInfo                                   vk_buffer_info[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
-  VkDescriptorImageInfo                                    vk_image_info[ CRUDE_GFX_DESCRIPTORS_PER_SET_MAX_COUNT ];
+  VkWriteDescriptorSet                                     vk_descriptor_write[ CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT ];
+  VkDescriptorBufferInfo                                   vk_buffer_info[ CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT ];
+  VkDescriptorImageInfo                                    vk_image_info[ CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT ];
 
   for ( uint32 i = 0; i < write_descripor_sets_count; i++ )
   {

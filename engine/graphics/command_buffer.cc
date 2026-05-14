@@ -810,7 +810,7 @@ crude_gfx_cmd_push_constant
   _In_ uint64                                              size
 )
 {
-  crude_gfx_rhi_command_buffer_push_constant( cmd->rhi_cmd_buffer, cmd->current_pipeline->rhi_pipeline_layout, VK_SHADER_STAGE_ALL, 0, size, data );
+  crude_gfx_rhi_command_buffer_push_constant( cmd->rhi_cmd_buffer, cmd->current_pipeline->rhi_pipeline_layout, CRUDE_GFX_RHI_SHADER_STAGE_ALL, 0, size, data );
 }
 
 void

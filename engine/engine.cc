@@ -880,7 +880,7 @@ crude_engine_graphics_main_thread_loop_
 
   crude_gfx_new_frame( &engine->gpu );
 
-  //crude_engine_gui_queue_draw_( engine );
+  crude_engine_gui_queue_draw_( engine );
   
   new_buffers_recrteated_or_model_initialized = crude_gfx_scene_renderer_update_instances_from_node( &engine->scene_renderer, engine->world, engine->main_node );
   engine->scene_renderer.options.scene.camera = *CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( engine->world, engine->camera_node, crude_camera );

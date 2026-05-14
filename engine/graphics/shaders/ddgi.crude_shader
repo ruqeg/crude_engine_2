@@ -76,9 +76,6 @@ CRUDE_PUSH_CONSTANT( crude_gfx_probe_raytracer_push_constant_ )
 
   LightsRef                                                lights;
   VerticesRef                                              vertices;
-
-  DebugLinesVerticesRef                                    debug_line_vertices;
-  DebugCountsRef                                           debug_counts;
 };
 #endif /* PROBE_RAYTRACER */
 
