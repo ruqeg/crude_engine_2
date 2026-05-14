@@ -678,7 +678,7 @@ crude_gfx_render_graph_render
     crude_gfx_render_graph_node                           *node;
 
     node = crude_gfx_render_graph_builder_access_node( render_graph->builder, render_graph->nodes[ node_index ] );
-    
+   
     if ( !node->enabled )
     {
       continue;
@@ -871,7 +871,7 @@ crude_gfx_render_graph_builder_initialize
   _In_ crude_gfx_device                                   *gpu
 )
 {
-  builder->allocator_container = gpu->allocator_container;
+  builder->allocator_container = crude_heap_allocator_pack( gpu->allocator );
   builder->gpu = gpu;
   
   crude_gfx_render_graph_builder_resource_cache_initialize( builder );

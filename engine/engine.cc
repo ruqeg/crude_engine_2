@@ -583,7 +583,6 @@ crude_engine_initialize_graphics_
   device_creation.vk_application_name = "CrudeEngine";
   device_creation.vk_application_version = VK_MAKE_VERSION( 1, 0, 0 );
   device_creation.allocator = &engine->common_allocator;
-  device_creation.temporary_allocator = &engine->temporary_allocator;
   device_creation.shaders_absolute_directory = engine->environment.directories.shaders_absolute_directory;
   device_creation.techniques_absolute_directory = engine->environment.directories.techniques_absolute_directory;
   device_creation.compiled_shaders_absolute_directory = engine->environment.directories.compiled_shaders_absolute_directory;
@@ -881,7 +880,7 @@ crude_engine_graphics_main_thread_loop_
 
   crude_gfx_new_frame( &engine->gpu );
 
-  crude_engine_gui_queue_draw_( engine );
+  //crude_engine_gui_queue_draw_( engine );
   
   new_buffers_recrteated_or_model_initialized = crude_gfx_scene_renderer_update_instances_from_node( &engine->scene_renderer, engine->world, engine->main_node );
   engine->scene_renderer.options.scene.camera = *CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( engine->world, engine->camera_node, crude_camera );

@@ -85,7 +85,7 @@ crude_gfx_technique_load_from_file
   crude_string_buffer_initialize( &buffer_name_buffer, 1024 * 1024, crude_stack_allocator_pack( temporary_allocator ) );
 #endif
 
-  crude_string_buffer_initialize( &technique_buffer, crude_string_length( gpu->techniques_absolute_directory ) + crude_string_length( technique_relative_filepath ) + 1, gpu->allocator_container );
+  crude_string_buffer_initialize( &technique_buffer, crude_string_length( gpu->techniques_absolute_directory ) + crude_string_length( technique_relative_filepath ) + 1, crude_heap_allocator_pack( gpu->allocator ) );
   json_path = crude_string_buffer_append_use_f( &technique_buffer, "%s%s", gpu->techniques_absolute_directory, technique_relative_filepath );;
   if ( !crude_file_exist( json_path ) )
   {

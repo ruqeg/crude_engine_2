@@ -892,14 +892,14 @@ crude_gfx_cmd_manager_initialize
 
   total_pools = CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT * cmd_manager->num_pools_per_frame;
 
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( cmd_manager->num_used_primary_cmd_buffers_per_frame, total_pools, gpu->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( cmd_manager->num_used_primary_cmd_buffers_per_frame, total_pools, crude_heap_allocator_pack( gpu->allocator ) );
   for ( uint32 i = 0; i < total_pools; ++i )
   {
     cmd_manager->num_used_primary_cmd_buffers_per_frame[ i ] = 0;
   }
   
   total_buffers = total_pools * cmd_manager->num_primary_cmd_buffers_per_thread;
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( cmd_manager->primary_cmd_buffers, total_buffers, gpu->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( cmd_manager->primary_cmd_buffers, total_buffers, crude_heap_allocator_pack( gpu->allocator ) );
   
   for ( uint32 i = 0; i < total_buffers; i++ )
   {

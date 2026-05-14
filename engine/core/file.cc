@@ -193,8 +193,7 @@ bool
 crude_read_file_binary
 (
   _In_ char const                                         *filename,
-  _In_ crude_allocator_container                           allocator_container,
-  _Out_ uint8                                            **buffer,
+  _Out_opt_ uint8                                         *buffer,
   _Out_ uint32                                            *buffer_size
 )
 {
@@ -207,10 +206,18 @@ crude_read_file_binary
   }
 
   sizet filesize = _get_file_size( file );
-  *buffer = CRUDE_REINTERPRET_CAST( uint8*, CRUDE_ALLOCATE( allocator_container, filesize + 1 ) );
-  *buffer_size = fread( *buffer, 1, filesize, file );
-  (*buffer)[ *buffer_size ] = 0;
-  fclose( file );
+  if ( buffer )
+  {
+    *buffer_size = fread( buffer, 1, filesize, file );
+    buffer[ *buffer_size ] = 0;
+    fclose( file );
+    
+    CRUDE_ASSERT( *buffer_size < filesize + 1 );
+  }
+  else
+  {
+    *buffer_size = filesize + 1;
+  }
   return true;
 }
 

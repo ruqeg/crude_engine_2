@@ -37,7 +37,6 @@ typedef struct crude_gfx_device_creation
   char const                                              *vk_application_name;
   uint32                                                   vk_application_version;
   crude_heap_allocator                                    *allocator;
-  crude_stack_allocator                                   *temporary_allocator;
   
   char const                                              *working_absolute_directory;
   char const                                              *techniques_absolute_directory;
@@ -141,8 +140,6 @@ typedef struct crude_gfx_device
    * Allocators and callbacks
    */                           
   crude_heap_allocator                                    *allocator;
-  crude_allocator_container                                allocator_container;
-  crude_stack_allocator                                   *temporary_allocator;
 
   /**
    * !TODO 
@@ -247,24 +244,26 @@ crude_gfx_texture_ready
   _In_ crude_gfx_texture_handle                            texture_handle
 );
 
-CRUDE_API crude_gfx_rhi_shader_module_create_info
+CRUDE_API void
 crude_gfx_read_shader
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ char const                                         *name,
-  _In_ crude_gfx_rhi_shader_stage_flag_bits                    stage,
-  _In_ crude_stack_allocator                              *temporary_allocator
+  _In_ crude_gfx_rhi_shader_stage_flag_bits                stage,
+  _In_ crude_heap_allocator                               *allocator,
+  _Out_opt_ uint32                                        *spirv_code,
+  _Out_ uint32                                            *spirv_codesize
 );
 
-CRUDE_API crude_gfx_rhi_shader_module_create_info
+CRUDE_API char const*
 crude_gfx_compile_shader
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ char const                                         *code,
   _In_ uint32                                              code_size,
-  _In_ crude_gfx_rhi_shader_stage_flag_bits                    stage,
+  _In_ crude_gfx_rhi_shader_stage_flag_bits                stage,
   _In_ char const                                         *name,
-  _In_ crude_stack_allocator                              *temporary_allocator
+  _In_ crude_heap_allocator                               *allocator
 );
 
 CRUDE_API void

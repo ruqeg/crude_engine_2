@@ -111,8 +111,6 @@ crude_gfx_device_initialize
 
   gpu->sdl_window = creation->sdl_window;
   gpu->allocator = creation->allocator;
-  gpu->allocator_container = crude_heap_allocator_pack( gpu->allocator );
-  gpu->temporary_allocator = creation->temporary_allocator;
   gpu->previous_frame = 0;
   gpu->current_frame = 1;
   gpu->absolute_frame = 0;
@@ -136,29 +134,29 @@ crude_gfx_device_initialize
   crude_gfx_gpu_crash_tracker_initialize( &gpu->crash_tracker, gpu->allocator );
 #endif
 
-  crude_resource_pool_initialize( &gpu->buffers, gpu->allocator_container, 4096, sizeof( crude_gfx_buffer ) );
-  crude_resource_pool_initialize( &gpu->textures, gpu->allocator_container, 512, sizeof( crude_gfx_texture ) );
-  crude_resource_pool_initialize( &gpu->render_passes, gpu->allocator_container, 256, sizeof( crude_gfx_render_pass ) );
-  crude_resource_pool_initialize( &gpu->descriptor_set_layouts, gpu->allocator_container, 256, sizeof( crude_gfx_descriptor_set_layout ) );
-  crude_resource_pool_initialize( &gpu->descriptor_sets, gpu->allocator_container, 256, sizeof( crude_gfx_descriptor_set ) );
-  crude_resource_pool_initialize( &gpu->pipelines, gpu->allocator_container, 128, sizeof( crude_gfx_pipeline ) );
-  crude_resource_pool_initialize( &gpu->shaders, gpu->allocator_container, 128, sizeof( crude_gfx_shader_state ) );
-  crude_resource_pool_initialize( &gpu->samplers, gpu->allocator_container, 32, sizeof( crude_gfx_sampler ) );
-  crude_resource_pool_initialize( &gpu->framebuffers, gpu->allocator_container, 128, sizeof( crude_gfx_framebuffer ) );
-  crude_resource_pool_initialize( &gpu->techniques, gpu->allocator_container, 256, sizeof( crude_gfx_technique ) );
-  crude_resource_pool_initialize( &gpu->cmd_pools, gpu->allocator_container, 16, sizeof( crude_gfx_cmd_pool ) );
-  crude_resource_pool_initialize( &gpu->cmd_buffers, gpu->allocator_container, 16, sizeof( crude_gfx_cmd_buffer ) );
+  crude_resource_pool_initialize( &gpu->buffers, crude_heap_allocator_pack( gpu->allocator ), 4096, sizeof( crude_gfx_buffer ) );
+  crude_resource_pool_initialize( &gpu->textures, crude_heap_allocator_pack( gpu->allocator ), 512, sizeof( crude_gfx_texture ) );
+  crude_resource_pool_initialize( &gpu->render_passes, crude_heap_allocator_pack( gpu->allocator ), 256, sizeof( crude_gfx_render_pass ) );
+  crude_resource_pool_initialize( &gpu->descriptor_set_layouts, crude_heap_allocator_pack( gpu->allocator ), 256, sizeof( crude_gfx_descriptor_set_layout ) );
+  crude_resource_pool_initialize( &gpu->descriptor_sets, crude_heap_allocator_pack( gpu->allocator ), 256, sizeof( crude_gfx_descriptor_set ) );
+  crude_resource_pool_initialize( &gpu->pipelines, crude_heap_allocator_pack( gpu->allocator ), 128, sizeof( crude_gfx_pipeline ) );
+  crude_resource_pool_initialize( &gpu->shaders, crude_heap_allocator_pack( gpu->allocator ), 128, sizeof( crude_gfx_shader_state ) );
+  crude_resource_pool_initialize( &gpu->samplers, crude_heap_allocator_pack( gpu->allocator ), 32, sizeof( crude_gfx_sampler ) );
+  crude_resource_pool_initialize( &gpu->framebuffers, crude_heap_allocator_pack( gpu->allocator ), 128, sizeof( crude_gfx_framebuffer ) );
+  crude_resource_pool_initialize( &gpu->techniques, crude_heap_allocator_pack( gpu->allocator ), 256, sizeof( crude_gfx_technique ) );
+  crude_resource_pool_initialize( &gpu->cmd_pools, crude_heap_allocator_pack( gpu->allocator ), 16, sizeof( crude_gfx_cmd_pool ) );
+  crude_resource_pool_initialize( &gpu->cmd_buffers, crude_heap_allocator_pack( gpu->allocator ), 16, sizeof( crude_gfx_cmd_buffer ) );
   
   {
     gpu->gpu_timestamp_frequency = crude_gfx_rhi_get_timestamp_period( &gpu->rhi_device ) / ( 1000 * 1000 );
     gpu->gpu_time_queries_per_frame = 32;
     gpu->num_threads = 1u;
 
-    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( gpu->thread_frame_pools, CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT * gpu->num_threads, gpu->allocator_container );
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( gpu->thread_frame_pools, CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT * gpu->num_threads, crude_heap_allocator_pack( gpu->allocator ) );
     
 #if CRUDE_GFX_GPU_PROFILER
-    gpu->gpu_time_queries_manager = CRUDE_STATIC_CAST( crude_gfx_gpu_time_queries_manager*, CRUDE_ALLOCATE( gpu->allocator_container, sizeof( crude_gfx_gpu_time_queries_manager ) ) );
-    crude_gfx_gpu_time_queries_manager_initialize( gpu->gpu_time_queries_manager, gpu->thread_frame_pools, gpu->allocator_container, gpu->gpu_time_queries_per_frame, gpu->num_threads, CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT );
+    gpu->gpu_time_queries_manager = CRUDE_STATIC_CAST( crude_gfx_gpu_time_queries_manager*, CRUDE_ALLOCATE( crude_heap_allocator_pack( gpu->allocator ), sizeof( crude_gfx_gpu_time_queries_manager ) ) );
+    crude_gfx_gpu_time_queries_manager_initialize( gpu->gpu_time_queries_manager, gpu->thread_frame_pools, crude_heap_allocator_pack( gpu->allocator ), gpu->gpu_time_queries_per_frame, gpu->num_threads, CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT );
 #endif
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->thread_frame_pools ); ++i )
     {
@@ -205,9 +203,9 @@ crude_gfx_device_initialize
   crude_gfx_rhi_set_semaphore_debug_name( &gpu->rhi_device, gpu->rhi_graphics_semaphore, "graphics_semaphore" );
   
   crude_gfx_cmd_manager_initialize( &gpu->cmd_buffer_manager, gpu, gpu->num_threads, 1u );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gpu->queued_command_buffers, 128, gpu->allocator_container );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gpu->resource_deletion_queue, 16, gpu->allocator_container );
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gpu->texture_to_update_bindless, 16, gpu->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gpu->queued_command_buffers, 128, crude_heap_allocator_pack( gpu->allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gpu->resource_deletion_queue, 16, crude_heap_allocator_pack( gpu->allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( gpu->texture_to_update_bindless, 16, crude_heap_allocator_pack( gpu->allocator ) );
   
   crude_gfx_create_swapchain_internal_( gpu );
   crude_gfx_create_descriptor_pool_internal_( gpu );
@@ -255,7 +253,7 @@ crude_gfx_device_initialize
   gpu->swapchain_output.color_operations[ 0 ] = CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR;
   gpu->swapchain_output.num_color_formats = 1u;
   
-  CRUDE_HASHMAPSTR_INITIALIZE( gpu->resource_cache.techniques, gpu->allocator_container );
+  CRUDE_HASHMAPSTR_INITIALIZE( gpu->resource_cache.techniques, crude_heap_allocator_pack( gpu->allocator ) );
   
   gpu->num_textures_to_update = 0;
   mtx_init( &gpu->texture_update_mutex, mtx_plain );
@@ -355,7 +353,7 @@ crude_gfx_device_deinitialize
   
 #if CRUDE_GFX_GPU_PROFILER
   crude_gfx_gpu_time_queries_manager_deinitialize( gpu->gpu_time_queries_manager );
-  CRUDE_DEALLOCATE( gpu->allocator_container, gpu->gpu_time_queries_manager );
+  CRUDE_DEALLOCATE( crude_heap_allocator_pack( gpu->allocator ), gpu->gpu_time_queries_manager );
 #endif
   CRUDE_ARRAY_DEINITIALIZE( gpu->thread_frame_pools );
   
@@ -615,7 +613,6 @@ crude_gfx_present
       crude_gfx_cmd_pool                                  *cmd_pool;
       crude_gfx_gpu_time_query_tree                       *time_query;
       uint32                                               pool_index;
-      uint32                                               temporary_allocator_marker;
 
       pool_index = ( gpu->previous_frame * gpu->num_threads ) + i;
       cmd_pool = crude_gfx_access_cmd_pool( gpu, gpu->thread_frame_pools[ pool_index ] );
@@ -623,7 +620,6 @@ crude_gfx_present
       if ( cmd_pool->profiler.enabled )
       {
         time_query = cmd_pool->profiler.time_queries_trees;
-        temporary_allocator_marker = crude_stack_allocator_get_marker( gpu->temporary_allocator );
 
         if ( time_query && time_query->allocated_time_query )
         {
@@ -633,7 +629,7 @@ crude_gfx_present
 
           query_offset = ( pool_index * gpu->gpu_time_queries_manager->queries_per_thread );
           query_count = time_query->allocated_time_query;
-          CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( timestamps_data, query_count * 2, crude_stack_allocator_pack( gpu->temporary_allocator ) );
+          CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( timestamps_data, query_count * 2, crude_heap_allocator_pack( gpu->allocator ) );
           crude_gfx_rhi_get_query_pool_results(
             &gpu->rhi_device,
             cmd_pool->profiler.rhi_timestamp_query_pool,
@@ -658,7 +654,7 @@ crude_gfx_present
             timestamp->frame_index = gpu->absolute_frame;
           }
           
-          CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( pipeline_statistics_data, CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT, crude_stack_allocator_pack( gpu->temporary_allocator ) );
+          CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( pipeline_statistics_data, CRUDE_GFX_GPU_PIPELINE_STATISTICS_COUNT, crude_heap_allocator_pack( gpu->allocator ) );
           crude_gfx_rhi_get_query_pool_results(
             &gpu->rhi_device,
             cmd_pool->profiler.rhi_pipeline_stats_query_pool,
@@ -670,10 +666,11 @@ crude_gfx_present
           {
             gpu->gpu_time_queries_manager->frame_pipeline_statistics.statistics[ i ] += pipeline_statistics_data[ i ];
           }
+
+          CRUDE_ARRAY_DEINITIALIZE( pipeline_statistics_data );
+          CRUDE_ARRAY_DEINITIALIZE( timestamps_data );
         }
       }
-      
-      crude_stack_allocator_free_marker( gpu->temporary_allocator, temporary_allocator_marker );
     }
   }
 #endif
@@ -770,57 +767,49 @@ crude_gfx_texture_ready
   return texture->ready;
 }
 
-crude_gfx_rhi_shader_module_create_info
+void
 crude_gfx_read_shader
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ char const                                         *name,
-  _In_ crude_gfx_rhi_shader_stage_flag_bits                    stage,
-  _In_ crude_stack_allocator                              *temporary_allocator
+  _In_ crude_gfx_rhi_shader_stage_flag_bits                stage,
+  _In_ crude_heap_allocator                               *allocator,
+  _Out_opt_ uint32                                        *spirv_code,
+  _Out_ uint32                                            *spirv_codesize
 )
 {
-  uint8                                                   *spirv_code;
   char const                                              *optimized_spirv_filename;
   crude_string_buffer                                      temporary_string_buffer;
-  crude_gfx_rhi_shader_module_create_info                  shader_create_info;
-  uint32                                                   spirv_codesize;
-  
-  spirv_code = NULL;
-  spirv_codesize = 0u;
-
-  crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 1 ), crude_stack_allocator_pack( temporary_allocator ) );
+ 
+  crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 1 ), crude_heap_allocator_pack( allocator ) );
   
   optimized_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\%s.%s.shader_opt.spv", gpu->compiled_shaders_absolute_directory, name ? name : "unknown", crude_gfx_shader_stage_to_compiler_extension( stage ) );
 
-  crude_read_file_binary( optimized_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &spirv_code, &spirv_codesize );
-
-  shader_create_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_shader_module_create_info );
-  shader_create_info.code_size = spirv_codesize;
-  shader_create_info.code = CRUDE_REINTERPRET_CAST( uint32 const*, spirv_code );
-  return shader_create_info;
+  crude_read_file_binary( optimized_spirv_filename, CRUDE_CAST( uint8*, spirv_code ), spirv_codesize );
+  
+  crude_string_buffer_deinitialize( &temporary_string_buffer );
 }
 
-crude_gfx_rhi_shader_module_create_info
+char const*
 crude_gfx_compile_shader
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ char const                                         *code,
   _In_ uint32                                              code_size,
-  _In_ crude_gfx_rhi_shader_stage_flag_bits                    stage,
+  _In_ crude_gfx_rhi_shader_stage_flag_bits                stage,
   _In_ char const                                         *name,
-  _In_ crude_stack_allocator                              *temporary_allocator
+  _In_ crude_heap_allocator                               *allocator
 )
 {
   uint8                                                   *spirv_code;
   char const                                              *optimized_spirv_filename;
   crude_string_buffer                                      temporary_string_buffer;
-  crude_gfx_rhi_shader_module_create_info                  shader_create_info;
   uint32                                                   spirv_codesize;
   
   spirv_code = NULL;
   spirv_codesize = 0u;
 
-  crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 1 ), crude_stack_allocator_pack( temporary_allocator ) );
+  crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 1 ), crude_heap_allocator_pack( allocator ) );
   
   optimized_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\%s.%s.shader_opt.spv", gpu->compiled_shaders_absolute_directory, name ? name : "unknown", crude_gfx_shader_stage_to_compiler_extension( stage ) );
 
@@ -859,21 +848,19 @@ crude_gfx_compile_shader
   crude_process_execute( ".", spirv_optimizer_path, spirv_opt_arguments, "" );
   crude_read_file_binary( optimized_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &spirv_code, &spirv_codesize );
 #else
-  crude_read_file_binary( final_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &spirv_code, &spirv_codesize );
 #endif
 
   if ( !spirv_code )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Error in creation of shader %s, stage %s. Writing shader:\n", name, crude_gfx_shader_stage_to_defines( stage ) );
   }
+
+  crude_string_buffer_deinitialize( &temporary_string_buffer );
   
   crude_file_delete( temp_filename );
   crude_file_delete( final_spirv_filename );
 
-  shader_create_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_shader_module_create_info );
-  shader_create_info.code_size = spirv_codesize;
-  shader_create_info.code = CRUDE_REINTERPRET_CAST( uint32 const*, spirv_code );
-  return shader_create_info;
+  return "shader_final.spv";
 }
 
 void
@@ -1454,9 +1441,8 @@ crude_gfx_create_shader_state
     crude_gfx_shader_stage const                          *stage;
     crude_gfx_rhi_pipeline_shader_stage_create_info       *shader_stage_info;
     crude_gfx_rhi_shader_module_create_info                rhi_creation_info;
-    uint64                                                 temporary_allocator_marker;
+    char const                                            *shader_absolute_filepath;
 
-    temporary_allocator_marker = crude_stack_allocator_get_marker( gpu->temporary_allocator );
     stage = &creation->stages[ compiled_shaders_count ];
   
     if ( stage->type == VK_SHADER_STAGE_COMPUTE_BIT )
@@ -1465,14 +1451,31 @@ crude_gfx_create_shader_state
     }
   
     rhi_creation_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_shader_module_create_info );
-
+    
     if ( creation->spv_input )
     {
-      rhi_creation_info = crude_gfx_read_shader( gpu, creation->name, stage->type, gpu->temporary_allocator );
+      shader_absolute_filepath = crude_gfx_compile_shader( gpu, stage->code, stage->code_size, stage->type, creation->name, gpu->allocator );
     }
     else
     {
-      rhi_creation_info = crude_gfx_compile_shader( gpu, stage->code, stage->code_size, stage->type, creation->name, gpu->temporary_allocator );
+      shader_absolute_filepath = creation->name;
+    }
+
+    {
+      uint32                                              *code;
+      uint32                                               code_size;
+
+      code = NULL;
+      code_size = 0;
+
+      crude_gfx_read_shader( gpu, creation->name, stage->type, gpu->allocator, NULL, &code_size );
+
+      code = CRUDE_CAST( uint32*, crude_heap_allocator_allocate( gpu->allocator, code_size ) );
+
+      crude_gfx_read_shader( gpu, creation->name, stage->type, gpu->allocator, code, &code_size );
+
+      rhi_creation_info.code = code;
+      rhi_creation_info.code_size = code_size;
     }
   
     CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, stage->code && stage->code_size, "\"%s\" shader code contains an error or empty!", creation->name ? creation->name : "unkown" );
@@ -1552,8 +1555,6 @@ crude_gfx_create_shader_state
     {
       vk_reflect_shader_( gpu, rhi_creation_info.code, rhi_creation_info.code_size, &shader_state->reflect );
     }
-  
-    crude_stack_allocator_free_marker( gpu->temporary_allocator, temporary_allocator_marker );
   }
   
   shader_state->active_shaders = compiled_shaders_count;
@@ -1895,12 +1896,12 @@ crude_gfx_create_pipeline
     }
     
     rhi_rasterization_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_pipeline_rasterization_state_create_info );
-    rhi_rasterization_creation.depth_clamp_enable = VK_FALSE;
-    rhi_rasterization_creation.rasterizer_discard_enable = VK_FALSE;
+    rhi_rasterization_creation.depth_clamp_enable = false;
+    rhi_rasterization_creation.rasterizer_discard_enable = false;
     rhi_rasterization_creation.polygon_mode = CRUDE_GFX_RHI_POLYGON_MODE_FILL;
     rhi_rasterization_creation.cull_mode = creation->rasterization.cull_mode;
     rhi_rasterization_creation.front_face = creation->rasterization.front;
-    rhi_rasterization_creation.depth_bias_enable = VK_FALSE;
+    rhi_rasterization_creation.depth_bias_enable = false;
     rhi_rasterization_creation.depth_bias_constant_factor = 0.0f;
     rhi_rasterization_creation.depth_bias_clamp = 0.0f;
     rhi_rasterization_creation.depth_bias_slope_factor = 0.0f;
@@ -1952,10 +1953,8 @@ crude_gfx_create_pipeline
     uint8                                                 *shader_binding_table_data;
     crude_gfx_rhi_ray_tracing_pipeline_create_info         rhi_pipeline_creation;
     crude_gfx_buffer_creation                              shader_binding_table_creation;
-    uint64                                                 shader_binding_table_size, temporary_allocator_marker, group_count, group_handle_size;
+    uint64                                                 shader_binding_table_size, group_count, group_handle_size;
     
-    temporary_allocator_marker = crude_stack_allocator_get_marker( gpu->temporary_allocator );
-
     rhi_pipeline_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_ray_tracing_pipeline_create_info );
     rhi_pipeline_creation.stage_count = shader_state->active_shaders;
     rhi_pipeline_creation.stages = shader_state->shader_stage_info;
@@ -1969,7 +1968,7 @@ crude_gfx_create_pipeline
     group_handle_size = gpu->ray_tracing_pipeline_properties.shaderGroupHandleSize;
     shader_binding_table_size = group_handle_size * group_count;
 
-    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( shader_binding_table_data, shader_binding_table_size, crude_stack_allocator_pack( gpu->temporary_allocator ) );
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( shader_binding_table_data, shader_binding_table_size, crude_heap_allocator_pack( gpu->allocator ) );
 
     crude_gfx_rhi_get_ray_tracing_shader_group_handles( &gpu->rhi_device, pipeline->rhi_pipeline, 0, shader_state->active_shaders, shader_binding_table_size, shader_binding_table_data );
     
@@ -1990,9 +1989,9 @@ crude_gfx_create_pipeline
     crude_string_copy( shader_binding_table_creation.name, "shader_binding_table_miss", sizeof( shader_binding_table_creation.name ) );
     pipeline->shader_binding_table_miss = crude_gfx_create_buffer( gpu, &shader_binding_table_creation );
     
-    pipeline->bind_point = CRUDE_GFX_RHI_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
+    CRUDE_ARRAY_DEINITIALIZE( shader_binding_table_data );
 
-    crude_stack_allocator_free_marker( gpu->temporary_allocator, temporary_allocator_marker );
+    pipeline->bind_point = CRUDE_GFX_RHI_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
   }
 
@@ -2170,7 +2169,7 @@ crude_gfx_create_descriptor_set_layout
   
   descriptor_set_layout = crude_gfx_access_descriptor_set_layout( gpu, descriptor_set_layout_handle );
   
-  memory = CRUDE_CAST( uint8*, CRUDE_ALLOCATE( gpu->allocator_container, ( sizeof( crude_gfx_rhi_descriptor_set_layout_binding ) + sizeof( crude_gfx_descriptor_binding ) ) * creation->num_bindings ) );
+  memory = CRUDE_CAST( uint8*, crude_heap_allocator_allocate( gpu->allocator, ( sizeof( crude_gfx_rhi_descriptor_set_layout_binding ) + sizeof( crude_gfx_descriptor_binding ) ) * creation->num_bindings ) );
   descriptor_set_layout->num_bindings = creation->num_bindings;
   descriptor_set_layout->bindings     = CRUDE_CAST( crude_gfx_descriptor_binding*, memory );
   descriptor_set_layout->rhi_bindings = CRUDE_CAST( crude_gfx_rhi_descriptor_set_layout_binding*, memory + sizeof( crude_gfx_descriptor_binding ) * creation->num_bindings );
@@ -2241,7 +2240,7 @@ crude_gfx_destroy_descriptor_set_layout_instant
 )
 {
   crude_gfx_descriptor_set_layout *descriptor_set_layout = crude_gfx_access_descriptor_set_layout( gpu, handle );
-  CRUDE_DEALLOCATE( gpu->allocator_container, descriptor_set_layout->bindings );
+  crude_heap_allocator_deallocate( gpu->allocator, descriptor_set_layout->bindings );
   crude_gfx_rhi_destroy_descriptor_set_layout( &gpu->rhi_device, descriptor_set_layout->rhi_descriptor_set_layout );
   crude_gfx_release_descriptor_set_layout( gpu, handle );
 }
@@ -2656,8 +2655,8 @@ crude_gfx_create_technique
 #endif
   crude_string_copy( technique->name, creation->name, sizeof( technique->name ) );
 
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( technique->passes, creation->passes_count, gpu->allocator_container );
-  CRUDE_HASHMAPSTR_INITIALIZE( technique->name_to_pass_index, gpu->allocator_container );
+  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( technique->passes, creation->passes_count, crude_heap_allocator_pack( gpu->allocator ) );
+  CRUDE_HASHMAPSTR_INITIALIZE( technique->name_to_pass_index, crude_heap_allocator_pack( gpu->allocator ) );
 
   for ( size_t i = 0; i < creation->passes_count; ++i )
   {
@@ -3309,8 +3308,8 @@ vk_reflect_shader_
 
   if ( spv_reflect.shader_stage == SPV_REFLECT_SHADER_STAGE_VERTEX_BIT )
   {
-    CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( reflect->input.vertex_attributes, spv_reflect.input_variable_count, gpu->allocator_container );
-    CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( reflect->input.vertex_streams, spv_reflect.input_variable_count, gpu->allocator_container );
+    CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( reflect->input.vertex_attributes, spv_reflect.input_variable_count, crude_heap_allocator_pack( gpu->allocator ) );
+    CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( reflect->input.vertex_streams, spv_reflect.input_variable_count, crude_heap_allocator_pack( gpu->allocator ) );
 
     for ( uint32 input_index = 0; input_index < spv_reflect.input_variable_count; ++input_index )
     {
