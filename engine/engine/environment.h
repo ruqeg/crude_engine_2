@@ -13,6 +13,7 @@ typedef struct crude_environment
     char const                                            *techniques_absolute_directory;
     char const                                            *shaders_absolute_directory;
     char const                                            *compiled_shaders_absolute_directory;
+    char const                                            *temporary_absolute_directory;
   } directories;
   struct
   {

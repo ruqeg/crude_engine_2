@@ -66,11 +66,10 @@ crude_heap_allocator_deinitialize
   pool_t                                                   pool;
   memory_statistics                                        stats;
   
-  stats = CRUDE_COMPOUNT( memory_statistics, {
-    .allocated_bytes = 0,
-    .total_bytes = 0,
-    .allocation_count = 0
-  } );
+  stats = CRUDE_COMPOUNT_EMPTY( memory_statistics );
+  stats.allocated_bytes = 0;
+  stats.total_bytes = 0;
+  stats.allocation_count = 0;
   
   pool = tlsf_get_pool( allocator->tlsf_handle );
   tlsf_walk_pool( pool, exit_walker, &stats );

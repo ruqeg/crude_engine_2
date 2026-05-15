@@ -49,6 +49,7 @@ crude_environment_initialize
     constant_string_buffer_size += working_absolute_directory_length + crude_string_length( techniques_relative_directory );
     constant_string_buffer_size += working_absolute_directory_length + crude_string_length( shaders_relative_directory );
     constant_string_buffer_size += working_absolute_directory_length + crude_string_length( compiled_shaders_relative_directory );
+    constant_string_buffer_size += working_absolute_directory_length;
 
     crude_string_buffer_initialize( &environment->constant_string_buffer, constant_string_buffer_size, crude_heap_allocator_pack( heap_allocator ) );
     environment->directories.render_graph_absolute_directory = crude_string_buffer_append_use_f( &environment->constant_string_buffer, "%s%s", working_absolute_directory, render_graph_relative_directory );
@@ -56,6 +57,7 @@ crude_environment_initialize
     environment->directories.techniques_absolute_directory = crude_string_buffer_append_use_f( &environment->constant_string_buffer, "%s%s", working_absolute_directory, techniques_relative_directory );
     environment->directories.shaders_absolute_directory = crude_string_buffer_append_use_f( &environment->constant_string_buffer, "%s%s", working_absolute_directory, shaders_relative_directory );
     environment->directories.compiled_shaders_absolute_directory = crude_string_buffer_append_use_f( &environment->constant_string_buffer, "%s%s", working_absolute_directory, compiled_shaders_relative_directory );
+    environment->directories.temporary_absolute_directory = crude_string_buffer_append_use_f( &environment->constant_string_buffer, "%s", working_absolute_directory );
   }
   
   {

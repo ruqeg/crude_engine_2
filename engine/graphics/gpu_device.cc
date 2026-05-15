@@ -82,7 +82,7 @@ vk_reflect_shader_
 );
 
 static void
-vk_destroy_resources_instant_
+crude_gfx_destroy_resources_instant_
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_gfx_resource_deletion_type                    type,
@@ -118,7 +118,7 @@ crude_gfx_device_initialize
   gpu->swapchain_resized_last_frame = false;
   gpu->timestamps_enabled = false;
 
-  gpu->working_absolute_directory = creation->working_absolute_directory;
+  gpu->temporary_absolute_directory = creation->temporary_absolute_directory;
   gpu->techniques_absolute_directory = creation->techniques_absolute_directory;
   gpu->compiled_shaders_absolute_directory = creation->compiled_shaders_absolute_directory;
   gpu->shaders_absolute_directory = creation->shaders_absolute_directory;
@@ -222,9 +222,7 @@ crude_gfx_device_initialize
     gpu->default_sampler = crude_gfx_create_sampler( gpu, &default_sampler_creation );
   }
   
-  {
-    crude_gfx_linear_allocator_initialize( &gpu->frame_linear_allocator, gpu, CRUDE_RMEGA( 64 ), "frame_linear_allocator" );
-  }
+  crude_gfx_linear_allocator_initialize( &gpu->frame_linear_allocator, gpu, CRUDE_RMEGA( 64 ), "frame_linear_allocator" );
 
   {
     VkPhysicalDeviceProperties2                             physical_device_properties_2;
@@ -259,7 +257,7 @@ crude_gfx_device_initialize
   mtx_init( &gpu->texture_update_mutex, mtx_plain );
 
   gpu->mesh_shaders_extension_present = crude_gfx_rhi_get_device_optional_extensions( &gpu->rhi_device )->mesh_shaders_extension_present;
- }
+}
 
 void
 crude_gfx_device_deinitialize
@@ -295,7 +293,7 @@ crude_gfx_device_deinitialize
       continue;
     }
 
-    vk_destroy_resources_instant_( gpu, resource_deletion->type, resource_deletion->handle );
+    crude_gfx_destroy_resources_instant_( gpu, resource_deletion->type, resource_deletion->handle );
   }
   
   crude_gfx_rhi_destroy_descriptor_pool( &gpu->rhi_device, &gpu->rhi_bindless_descriptor_pool );
@@ -338,6 +336,13 @@ crude_gfx_device_deinitialize
     }
   }
 
+#if CRUDE_GFX_GPU_PROFILER
+  crude_gfx_gpu_time_queries_manager_deinitialize( gpu->gpu_time_queries_manager );
+  crude_heap_allocator_deallocate( gpu->allocator, gpu->gpu_time_queries_manager );
+#endif
+  
+  CRUDE_ARRAY_DEINITIALIZE( gpu->thread_frame_pools );
+
   crude_resource_pool_deinitialize( &gpu->buffers );
   crude_resource_pool_deinitialize( &gpu->textures );
   crude_resource_pool_deinitialize( &gpu->render_passes );
@@ -351,16 +356,10 @@ crude_gfx_device_deinitialize
   crude_resource_pool_deinitialize( &gpu->cmd_pools );
   crude_resource_pool_deinitialize( &gpu->cmd_buffers );
   
-#if CRUDE_GFX_GPU_PROFILER
-  crude_gfx_gpu_time_queries_manager_deinitialize( gpu->gpu_time_queries_manager );
-  CRUDE_DEALLOCATE( crude_heap_allocator_pack( gpu->allocator ), gpu->gpu_time_queries_manager );
-#endif
-  CRUDE_ARRAY_DEINITIALIZE( gpu->thread_frame_pools );
-  
 #if CRUDE_GFX_NSIGHT_AFTERMATH
   crude_gfx_gpu_crash_tracker_deinitialize( &gpu->crash_tracker );
 #endif
-
+ 
   crude_gfx_rhi_destroy_device( &gpu->rhi_device, gpu->rhi_instance );
   crude_gfx_rhi_destroy_surface( gpu->rhi_instance, gpu->rhi_surface );
   crude_gfx_rhi_destroy_instance( gpu->rhi_instance );
@@ -677,22 +676,20 @@ crude_gfx_present
 
   crude_gfx_update_frame_counters_( gpu );
 
+  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->resource_deletion_queue ); ++i )
   {
-    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->resource_deletion_queue ); ++i )
+    crude_gfx_resource_update* resource_deletion = &gpu->resource_deletion_queue[ i ];
+    
+    if ( resource_deletion->current_frame != gpu->current_frame )
     {
-      crude_gfx_resource_update* resource_deletion = &gpu->resource_deletion_queue[ i ];
-      
-      if ( resource_deletion->current_frame != gpu->current_frame )
-      {
-        continue;
-      }
-      
-      vk_destroy_resources_instant_( gpu, resource_deletion->type, resource_deletion->handle );
-
-      resource_deletion->current_frame = UINT32_MAX;
-      CRUDE_ARRAY_DELSWAP( gpu->resource_deletion_queue, i );
-      --i;
+      continue;
     }
+    
+    crude_gfx_destroy_resources_instant_( gpu, resource_deletion->type, resource_deletion->handle );
+  
+    resource_deletion->current_frame = UINT32_MAX;
+    CRUDE_ARRAY_DELSWAP( gpu->resource_deletion_queue, i );
+    --i;
   }
 
   CRUDE_PROFILER_ZONE_END;
@@ -767,29 +764,6 @@ crude_gfx_texture_ready
   return texture->ready;
 }
 
-void
-crude_gfx_read_shader
-(
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ char const                                         *name,
-  _In_ crude_gfx_rhi_shader_stage_flag_bits                stage,
-  _In_ crude_heap_allocator                               *allocator,
-  _Out_opt_ uint32                                        *spirv_code,
-  _Out_ uint32                                            *spirv_codesize
-)
-{
-  char const                                              *optimized_spirv_filename;
-  crude_string_buffer                                      temporary_string_buffer;
- 
-  crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 1 ), crude_heap_allocator_pack( allocator ) );
-  
-  optimized_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\%s.%s.shader_opt.spv", gpu->compiled_shaders_absolute_directory, name ? name : "unknown", crude_gfx_shader_stage_to_compiler_extension( stage ) );
-
-  crude_read_file_binary( optimized_spirv_filename, CRUDE_CAST( uint8*, spirv_code ), spirv_codesize );
-  
-  crude_string_buffer_deinitialize( &temporary_string_buffer );
-}
-
 char const*
 crude_gfx_compile_shader
 (
@@ -818,7 +792,7 @@ crude_gfx_compile_shader
   char                                                     technique_name_upper[ CRUDE_GFX_TECHNIQUE_NAME_MAX_LENGTH ];
   uint32                                                   i;
   
-  temp_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s.%s", name ? name : "unknown", crude_gfx_shader_stage_to_compiler_extension( stage ) );
+  temp_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\%s.%s", gpu->temporary_absolute_directory, name ? name : "unknown", crude_gfx_shader_stage_to_compiler_extension( stage ) );
   crude_write_file( temp_filename, code, code_size );
 
   technique_name_upper[ 0 ] = 0;
@@ -836,7 +810,7 @@ crude_gfx_compile_shader
 
 #if defined(_MSC_VER)
   glsl_compiler_path = crude_string_buffer_append_use_f( &temporary_string_buffer, "%sglslangValidator.exe", vulkan_binaries_path );
-  final_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "shader_final.spv" ); 
+  final_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\shader_final.spv", gpu->temporary_absolute_directory ); 
   arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "glslangValidator.exe %s -V --target-env vulkan1.2 --glsl-version 460 -o %s -S %s --D %s --D %s " CRUDE_GRAPHICS_GLSLLANG_VALIDATIO_ADDITIONAL_ARGS, temp_filename, final_spirv_filename, crude_gfx_shader_stage_to_compiler_extension( stage ), crude_gfx_shader_stage_to_defines( stage ), technique_name_upper );
 #endif
   crude_process_execute( ".", glsl_compiler_path, arguments, "" );
@@ -851,9 +825,6 @@ crude_gfx_compile_shader
 #endif
 
   crude_string_buffer_deinitialize( &temporary_string_buffer );
-  
-  crude_file_delete( temp_filename );
-  crude_file_delete( final_spirv_filename );
 
   return "shader_final.spv";
 }
@@ -1410,8 +1381,10 @@ crude_gfx_create_shader_state
 )
 {
   crude_gfx_shader_state                                  *shader_state;
+  crude_string_buffer                                      temporary_string_buffer;
   crude_gfx_shader_state_handle                            shader_state_handle;
   uint32                                                   compiled_shaders_count;
+  bool                                                     creation_failed;
 
   if ( creation->stages_count == 0 || creation->stages == NULL )
   {
@@ -1431,12 +1404,18 @@ crude_gfx_create_shader_state
   shader_state->pipeline_type = CRUDE_GFX_PIPELINE_TYPE_GRAPHICS;
   shader_state->active_shaders = 0;
   
+  crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 1 ), crude_heap_allocator_pack( gpu->allocator ) );
+  
   for ( compiled_shaders_count = 0; compiled_shaders_count < creation->stages_count; ++compiled_shaders_count )
   {
     crude_gfx_shader_stage const                          *stage;
     crude_gfx_rhi_pipeline_shader_stage_create_info       *shader_stage_info;
+    char const                                            *spirv_absolute_filepath;
+    uint32                                                *code;
+    uint32                                                 code_size;
     crude_gfx_rhi_shader_module_create_info                rhi_creation_info;
-    char const                                            *shader_absolute_filepath;
+    
+    crude_string_buffer_clear( &temporary_string_buffer );
 
     stage = &creation->stages[ compiled_shaders_count ];
   
@@ -1445,33 +1424,29 @@ crude_gfx_create_shader_state
       shader_state->pipeline_type = CRUDE_GFX_PIPELINE_TYPE_COMPUTE;
     }
   
-    rhi_creation_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_shader_module_create_info );
-    
     if ( !creation->spv_input )
     {
-      shader_absolute_filepath = crude_gfx_compile_shader( gpu, stage->code, stage->code_size, stage->type, creation->name, gpu->allocator );
+      spirv_absolute_filepath = crude_gfx_compile_shader( gpu, stage->code, stage->code_size, stage->type, creation->name, gpu->allocator );
+      spirv_absolute_filepath = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\%s", gpu->temporary_absolute_directory, spirv_absolute_filepath );
     }
     else
     {
-      shader_absolute_filepath = creation->name;
+      CRUDE_ASSERT( false );
+      spirv_absolute_filepath = creation->name;
     }
 
-    {
-      uint32                                              *code;
-      uint32                                               code_size;
-
-      code = NULL;
-      code_size = 0;
-
-      crude_gfx_read_shader( gpu, creation->name, stage->type, gpu->allocator, NULL, &code_size );
-
-      code = CRUDE_CAST( uint32*, crude_heap_allocator_allocate( gpu->allocator, code_size ) );
-
-      crude_gfx_read_shader( gpu, creation->name, stage->type, gpu->allocator, code, &code_size );
-
-      rhi_creation_info.code = code;
-      rhi_creation_info.code_size = code_size;
-    }
+    code = NULL;
+    code_size = 0;
+    
+    crude_read_file_binary( spirv_absolute_filepath, NULL, &code_size );
+    
+    code = CRUDE_CAST( uint32*, crude_heap_allocator_allocate( gpu->allocator, code_size ) );
+    
+    crude_read_file_binary( spirv_absolute_filepath, CRUDE_CAST( uint8*, code ), &code_size );
+    
+    rhi_creation_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_shader_module_create_info );
+    rhi_creation_info.code = code;
+    rhi_creation_info.code_size = code_size;
   
     CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, stage->code && stage->code_size, "\"%s\" shader code contains an error or empty!", creation->name ? creation->name : "unkown" );
 
@@ -1550,22 +1525,26 @@ crude_gfx_create_shader_state
     {
       vk_reflect_shader_( gpu, rhi_creation_info.code, rhi_creation_info.code_size, &shader_state->reflect );
     }
+
+    crude_heap_allocator_deallocate( gpu->allocator, code );
   }
+
+  crude_string_buffer_deinitialize( &temporary_string_buffer );
   
   shader_state->active_shaders = compiled_shaders_count;
   shader_state->name = creation->name;
 
-  bool creation_failed = compiled_shaders_count != creation->stages_count;
+  creation_failed = ( compiled_shaders_count != creation->stages_count );
   if ( creation_failed )
   {
     crude_gfx_destroy_shader_state( gpu, shader_state_handle );
     
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Error in creation of shader %s. Dumping all shader informations.", creation->name );
-    for ( compiled_shaders_count = 0; compiled_shaders_count < creation->stages_count; ++compiled_shaders_count )
-    {
-      crude_gfx_shader_stage const *stage = &creation->stages[ compiled_shaders_count ];
-      CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "%u:\n%s", stage->type, stage->code );
-    }
+    //for ( compiled_shaders_count = 0; compiled_shaders_count < creation->stages_count; ++compiled_shaders_count )
+    //{
+    //  crude_gfx_shader_stage const *stage = &creation->stages[ compiled_shaders_count ];
+    //  CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "%u:\n%s", stage->type, stage->code );
+    //}
     return CRUDE_GFX_SHADER_STATE_HANDLE_INVALID;
   }
 
@@ -3412,7 +3391,7 @@ vk_reflect_shader_
 }
 
 void
-vk_destroy_resources_instant_
+crude_gfx_destroy_resources_instant_
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_gfx_resource_deletion_type                    type,

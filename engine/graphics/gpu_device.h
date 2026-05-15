@@ -38,7 +38,7 @@ typedef struct crude_gfx_device_creation
   uint32                                                   vk_application_version;
   crude_heap_allocator                                    *allocator;
   
-  char const                                              *working_absolute_directory;
+  char const                                              *temporary_absolute_directory;
   char const                                              *techniques_absolute_directory;
   char const                                              *compiled_shaders_absolute_directory;
   char const                                              *shaders_absolute_directory;
@@ -46,7 +46,7 @@ typedef struct crude_gfx_device_creation
 
 typedef struct crude_gfx_device
 {
-  char const                                              *working_absolute_directory;
+  char const                                              *temporary_absolute_directory;
   char const                                              *techniques_absolute_directory;
   char const                                              *compiled_shaders_absolute_directory;
   char const                                              *shaders_absolute_directory;
@@ -242,17 +242,6 @@ crude_gfx_texture_ready
 (
   _In_ crude_gfx_device                                   *gpu,
   _In_ crude_gfx_texture_handle                            texture_handle
-);
-
-CRUDE_API void
-crude_gfx_read_shader
-(
-  _In_ crude_gfx_device                                   *gpu,
-  _In_ char const                                         *name,
-  _In_ crude_gfx_rhi_shader_stage_flag_bits                stage,
-  _In_ crude_heap_allocator                               *allocator,
-  _Out_opt_ uint32                                        *spirv_code,
-  _Out_ uint32                                            *spirv_codesize
 );
 
 CRUDE_API char const*

@@ -970,25 +970,25 @@ crude_gfx_rhi_create_device
   vk_physical_device_ray_tracing_position_fetch_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR );
   vk_physical_device_ray_tracing_position_fetch_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR;
   vk_physical_device_ray_tracing_position_fetch_features.pNext = vk_next_feature;
-  vk_physical_device_ray_tracing_position_fetch_features.rayTracingPositionFetch = true;
+  vk_physical_device_ray_tracing_position_fetch_features.rayTracingPositionFetch = VK_TRUE;
   vk_next_feature = &vk_physical_device_ray_tracing_position_fetch_features;
 
   vk_physical_device_ray_query_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayQueryFeaturesKHR );
   vk_physical_device_ray_query_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
   vk_physical_device_ray_query_features.pNext = vk_next_feature;
-  vk_physical_device_ray_query_features.rayQuery = true;
+  vk_physical_device_ray_query_features.rayQuery = VK_TRUE;
   vk_next_feature = &vk_physical_device_ray_query_features;
 
   vk_physical_device_ray_tracing_pipeline_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayTracingPipelineFeaturesKHR );
   vk_physical_device_ray_tracing_pipeline_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
   vk_physical_device_ray_tracing_pipeline_features.pNext = vk_next_feature;
-  vk_physical_device_ray_tracing_pipeline_features.rayTracingPipeline = true;
+  vk_physical_device_ray_tracing_pipeline_features.rayTracingPipeline = VK_TRUE;
   vk_next_feature = &vk_physical_device_ray_tracing_pipeline_features;
   
   vk_physical_device_acceleration_structure_features = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceAccelerationStructureFeaturesKHR );
   vk_physical_device_acceleration_structure_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
   vk_physical_device_acceleration_structure_features.pNext = vk_next_feature;
-  vk_physical_device_acceleration_structure_features.accelerationStructure = true;
+  vk_physical_device_acceleration_structure_features.accelerationStructure = VK_TRUE;
   vk_next_feature = &vk_physical_device_acceleration_structure_features;
   
 //#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
@@ -3116,6 +3116,8 @@ crude_gfx_rhi_vk_pick_physical_device_
     }
 #endif
   }
+
+  CRUDE_ARRAY_DEINITIALIZE( vk_available_extensions );
 
   return true;
 }

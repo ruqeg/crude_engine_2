@@ -281,7 +281,16 @@ crude_engine_deinitialize
   _In_ crude_engine                                       *engine
 )
 {
+  crude_gfx_cmd_buffer                                    *immediate_cmd;
+
   engine->running = false;
+  
+  immediate_cmd = crude_gfx_access_cmd_buffer( &engine->gpu, engine->gpu.immediate_transfer_cmd_buffer );
+  
+  crude_gfx_cmd_begin_primary( immediate_cmd );
+  crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &engine->model_renderer_resources_manager, immediate_cmd );
+  crude_gfx_submit_immediate( immediate_cmd );
+
 
   crude_engine_deinitialize_editor_( engine );
   crude_engine_deinitialize_gui_( engine );
@@ -586,6 +595,7 @@ crude_engine_initialize_graphics_
   device_creation.shaders_absolute_directory = engine->environment.directories.shaders_absolute_directory;
   device_creation.techniques_absolute_directory = engine->environment.directories.techniques_absolute_directory;
   device_creation.compiled_shaders_absolute_directory = engine->environment.directories.compiled_shaders_absolute_directory;
+  device_creation.temporary_absolute_directory = engine->environment.directories.temporary_absolute_directory;
   crude_gfx_device_initialize( &engine->gpu, &device_creation );
   
   crude_gfx_render_graph_builder_initialize( &engine->render_graph_builder, &engine->gpu );
@@ -606,7 +616,7 @@ crude_engine_initialize_graphics_
 #endif
 
   crude_gfx_render_graph_compile( &engine->render_graph, &engine->temporary_allocator );
-  
+
   if ( engine->gpu.mesh_shaders_extension_present )
   {
     crude_gfx_technique_load_from_file( "geometry_meshlet.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
