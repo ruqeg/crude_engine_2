@@ -490,6 +490,11 @@ crude_gfx_cmd_add_buffer_barrier
 
   buffer = crude_gfx_access_buffer( cmd->gpu, buffer_handle );
 
+  buffer_memory_barrier = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_buffer_memory_barrier );
+  
+  buffer_memory_barrier.src_queue_family_index = crude_gfx_rhi_queue_empty( ).vk_queue_family;
+  buffer_memory_barrier.dst_queue_family_index = crude_gfx_rhi_queue_empty( ).vk_queue_family;
+
   buffer_memory_barrier.src_access_mask = crude_gfx_rhi_resource_state_to_access_flags( old_state );
   buffer_memory_barrier.src_stage_mask = crude_gfx_rhi_determine_pipeline_stage_flags(
     buffer_memory_barrier.src_access_mask, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS );
@@ -570,7 +575,7 @@ crude_gfx_cmd_add_image_barrier_ext3
   _In_ crude_gfx_rhi_queue_type                            destination_queue_type
 )
 {
-  crude_gfx_cmd_add_image_barrier_ext5( cmd, rhi_image, old_state, new_state, base_mip_level, mip_count, 0u, 1u, is_depth, source_queue.vk_queue_family, destination_queue.vk_queue_family, source_queue_type, destination_queue_type );
+  crude_gfx_cmd_add_image_barrier_ext5( cmd, rhi_image, old_state, new_state, base_mip_level, mip_count, 0u, 1u, is_depth, source_queue, destination_queue, source_queue_type, destination_queue_type );
 }
 
 void
@@ -586,7 +591,7 @@ crude_gfx_cmd_add_image_barrier_ext4
   _In_ bool                                                is_depth
 )
 {
-  crude_gfx_cmd_add_image_barrier_ext5( cmd, texture->rhi_image, texture->state, new_state, base_mip_level, mip_count, 0u, 1u, is_depth, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS );
+  crude_gfx_cmd_add_image_barrier_ext5( cmd, texture->rhi_image, texture->state, new_state, base_mip_level, mip_count, 0u, 1u, is_depth, crude_gfx_rhi_queue_empty( ), crude_gfx_rhi_queue_empty( ), CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS );
   texture->state = new_state;
 }
 
@@ -602,8 +607,8 @@ crude_gfx_cmd_add_image_barrier_ext5
   _In_ uint32                                              base_array_layer,
   _In_ uint32                                              array_layer_count,
   _In_ bool                                                is_depth,
-  _In_ uint32                                              source_queue_family,
-  _In_ uint32                                              destination_family,
+  _In_ crude_gfx_rhi_queue                                 source_queue,
+  _In_ crude_gfx_rhi_queue                                 destination,
   _In_ crude_gfx_rhi_queue_type                            source_queue_type,
   _In_ crude_gfx_rhi_queue_type                            destination_queue_type
 )
@@ -623,8 +628,8 @@ crude_gfx_cmd_add_image_barrier_ext5
   image_memory_barrier.dst_access_mask = dst_access_mask;
   image_memory_barrier.old_layout = crude_gfx_rhi_resource_state_to_image_layout( old_state );
   image_memory_barrier.new_layout = crude_gfx_rhi_resource_state_to_image_layout( new_state );
-  image_memory_barrier.src_queue_family_index = source_queue_family;
-  image_memory_barrier.dst_queue_family_index = destination_family;
+  image_memory_barrier.src_queue_family_index = source_queue.vk_queue_family;
+  image_memory_barrier.dst_queue_family_index = destination.vk_queue_family;
   image_memory_barrier.image = rhi_image;
   image_memory_barrier.subresource_range.aspect_mask = is_depth ? CRUDE_GFX_RHI_IMAGE_ASPECT_DEPTH_BIT : CRUDE_GFX_RHI_IMAGE_ASPECT_COLOR_BIT;
   image_memory_barrier.subresource_range.base_mip_level = base_mip_level;

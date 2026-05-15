@@ -163,7 +163,9 @@ crude_gfx_rhi_queue_empty
 (
 )
 {
-  crude_gfx_rhi_queue queue = { VK_NULL_HANDLE, VK_QUEUE_FAMILY_IGNORED };
+  crude_gfx_rhi_queue                                      queue;
+  queue.vk_queue = VK_NULL_HANDLE;
+  queue.vk_queue_family = VK_QUEUE_FAMILY_IGNORED;
   return queue;
 }
 
@@ -989,13 +991,13 @@ crude_gfx_rhi_create_device
   vk_physical_device_acceleration_structure_features.accelerationStructure = true;
   vk_next_feature = &vk_physical_device_acceleration_structure_features;
   
-#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
-  vk_physical_device_ray_tracing_validation_features_nv = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayTracingValidationFeaturesNV );
-  vk_physical_device_ray_tracing_validation_features_nv.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV;
-  vk_physical_device_ray_tracing_validation_features_nv.pNext = vk_next_feature;
-  vk_physical_device_ray_tracing_validation_features_nv.rayTracingValidation = true;
-  vk_next_feature = &vk_physical_device_ray_tracing_validation_features_nv;
-#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
+//#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
+//  vk_physical_device_ray_tracing_validation_features_nv = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayTracingValidationFeaturesNV );
+//  vk_physical_device_ray_tracing_validation_features_nv.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV;
+//  vk_physical_device_ray_tracing_validation_features_nv.pNext = vk_next_feature;
+//  vk_physical_device_ray_tracing_validation_features_nv.rayTracingValidation = true;
+//  vk_next_feature = &vk_physical_device_ray_tracing_validation_features_nv;
+//#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
 
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 

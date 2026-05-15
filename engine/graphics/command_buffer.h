@@ -271,8 +271,8 @@ crude_gfx_cmd_add_image_barrier_ext5
   _In_ uint32                                              base_array_layer,
   _In_ uint32                                              array_layer_count,
   _In_ bool                                                is_depth,
-  _In_ uint32                                              source_queue_family,
-  _In_ uint32                                              destination_family,
+  _In_ crude_gfx_rhi_queue                                 source_queue,
+  _In_ crude_gfx_rhi_queue                                 destination,
   _In_ crude_gfx_rhi_queue_type                            source_queue_type,
   _In_ crude_gfx_rhi_queue_type                            destination_queue_type
 );

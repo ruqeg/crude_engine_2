@@ -850,11 +850,6 @@ crude_gfx_compile_shader
 #else
 #endif
 
-  if ( !spirv_code )
-  {
-    CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Error in creation of shader %s, stage %s. Writing shader:\n", name, crude_gfx_shader_stage_to_defines( stage ) );
-  }
-
   crude_string_buffer_deinitialize( &temporary_string_buffer );
   
   crude_file_delete( temp_filename );
@@ -1452,7 +1447,7 @@ crude_gfx_create_shader_state
   
     rhi_creation_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_shader_module_create_info );
     
-    if ( creation->spv_input )
+    if ( !creation->spv_input )
     {
       shader_absolute_filepath = crude_gfx_compile_shader( gpu, stage->code, stage->code_size, stage->type, creation->name, gpu->allocator );
     }
