@@ -167,7 +167,7 @@ crude_gfx_memory_allocate
   _In_ crude_gfx_device                                   *gpu,
   _In_ uint64                                              size,
   _In_ crude_gfx_memory_type                               type,
-  _In_ VkBufferUsageFlags2                                 additional_flags
+  _In_ crude_gfx_rhi_buffer_usage_flags                    additional_flags
 )
 {
   return crude_gfx_memory_allocate_with_pname( gpu, size, type, "default_allocated_buffer", additional_flags );
@@ -179,7 +179,7 @@ crude_gfx_memory_allocate_cpu_gpu_copy
   _In_ crude_gfx_device                                   *gpu,
   _In_ void                                               *data,
   _In_ uint64                                              size,
-  _In_ VkBufferUsageFlags2                                 additional_flags
+  _In_ crude_gfx_rhi_buffer_usage_flags                    additional_flags
 )
 {
   crude_gfx_memory_allocation allocation = crude_gfx_memory_allocate( gpu, size, CRUDE_GFX_MEMORY_TYPE_CPU_GPU, additional_flags );
@@ -194,7 +194,7 @@ crude_gfx_memory_allocate_with_pname
   _In_ uint64                                              size,
   _In_ crude_gfx_memory_type                               type,
   _In_ char const                                         *name,
-  _In_ VkBufferUsageFlags2                                 additional_flags
+  _In_ crude_gfx_rhi_buffer_usage_flags                    additional_flags
 )
 {
   crude_gfx_memory_allocation                              allocation;
@@ -212,7 +212,7 @@ crude_gfx_memory_allocate_with_name
   _In_ uint64                                              size,
   _In_ crude_gfx_memory_type                               type,
   _In_ char                                                name[ CRUDE_GFX_BUFFER_NAME_MAX ],
-  _In_ VkBufferUsageFlags2                                 additional_flags
+  _In_ crude_gfx_rhi_buffer_usage_flags                    additional_flags
 )
 {
   crude_gfx_memory_allocation                              memory_allocation;
@@ -226,7 +226,14 @@ crude_gfx_memory_allocate_with_name
   {
     buffer_creation = crude_gfx_buffer_creation_empty();
     crude_string_copy( buffer_creation.name, name, sizeof( buffer_creation.name ) );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | additional_flags;
+    buffer_creation.type_flags = CRUDE_GFX_RHI_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+    buffer_creation.type_flags |= CRUDE_GFX_RHI_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    buffer_creation.type_flags |= CRUDE_GFX_RHI_BUFFER_USAGE_TRANSFER_DST_BIT;
+    buffer_creation.type_flags |= CRUDE_GFX_RHI_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    buffer_creation.type_flags |= CRUDE_GFX_RHI_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    buffer_creation.type_flags |= CRUDE_GFX_RHI_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    buffer_creation.type_flags |= CRUDE_GFX_RHI_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    buffer_creation.type_flags |= additional_flags;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
     buffer_creation.size = size;
     buffer_creation.persistent = true;
@@ -242,7 +249,14 @@ crude_gfx_memory_allocate_with_name
   {
     buffer_creation = crude_gfx_buffer_creation_empty();
     crude_string_copy( buffer_creation.name, name, sizeof( buffer_creation.name ) );
-    buffer_creation.type_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | additional_flags;
+    buffer_creation.type_flags = CRUDE_GFX_RHI_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+    buffer_creation.type_flags |= CRUDE_GFX_RHI_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    buffer_creation.type_flags |= CRUDE_GFX_RHI_BUFFER_USAGE_TRANSFER_DST_BIT;
+    buffer_creation.type_flags |= CRUDE_GFX_RHI_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    buffer_creation.type_flags |= CRUDE_GFX_RHI_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    buffer_creation.type_flags |= CRUDE_GFX_RHI_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    buffer_creation.type_flags |= CRUDE_GFX_RHI_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    buffer_creation.type_flags |= additional_flags;
     buffer_creation.usage = CRUDE_GFX_RESOURCE_USAGE_TYPE_IMMUTABLE;
     buffer_creation.size = size;
     buffer_creation.device_only = true;

@@ -89,6 +89,7 @@ crude_gfx_opaque_early_pass_render
   
     crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
   
+#if CRUDE_GFX_VULKAN
     crude_gfx_cmd_draw_mesh_task_indirect_count(
       primary_cmd,
       pass->scene_renderer->mesh_task_indirect_commands_hga.buffer_handle,
@@ -96,8 +97,11 @@ crude_gfx_opaque_early_pass_render
       pass->scene_renderer->mesh_task_indirect_count_hga.buffer_handle,
       CRUDE_OFFSETOF( crude_gfx_mesh_draw_count, opaque_mesh_visible_early_count ),
       pass->scene_renderer->total_visible_meshes_instances_count,
-      sizeof( crude_gfx_mesh_draw_command )
-    );
+      sizeof( crude_gfx_mesh_draw_command ) );
+#elif CRUDE_GFX_NAPI
+#else
+    CRUDE_GFX_RHI_TO_IMPLEMENTIT
+#endif
   }
   else
   {
@@ -112,6 +116,7 @@ crude_gfx_opaque_early_pass_render
   
     crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
   
+#if CRUDE_GFX_VULKAN
     crude_gfx_cmd_draw_indirect_count(
       primary_cmd,
       pass->scene_renderer->mesh_task_indirect_commands_hga.buffer_handle,
@@ -119,8 +124,11 @@ crude_gfx_opaque_early_pass_render
       pass->scene_renderer->mesh_task_indirect_count_hga.buffer_handle,
       CRUDE_OFFSETOF( crude_gfx_mesh_draw_count, opaque_mesh_visible_early_count ),
       pass->scene_renderer->total_visible_meshes_instances_count,
-      sizeof( crude_gfx_mesh_draw_command )
-    );
+      sizeof( crude_gfx_mesh_draw_command ) );
+#elif CRUDE_GFX_NAPI
+#else
+    CRUDE_GFX_RHI_TO_IMPLEMENTIT
+#endif
   }
 }
 

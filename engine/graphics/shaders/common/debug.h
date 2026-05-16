@@ -28,6 +28,7 @@ CRUDE_SHADER_STRUCT( crude_gfx_debug_cube_instance )
 
 CRUDE_SHADER_STRUCT( crude_gfx_debug_counts )
 {
+#if CRUDE_GFX_VULKAN
 #if defined( __cplusplus )
   VkDrawIndirectCommand                                    draw_indirect_3dline;
   VkDrawIndirectCommand                                    draw_indirect_2dline;
@@ -45,6 +46,10 @@ CRUDE_SHADER_STRUCT( crude_gfx_debug_counts )
   uint32                                                   debug_cubes_instances_count;
   uint32                                                   debug_cubes_first_vertex;
   uint32                                                   debug_cubes_first_instance;
+#endif 
+#elif CRUDE_GFX_NAPI
+#else
+  CRUDE_GFX_RHI_TO_IMPLEMENTIT
 #endif
 };
 

@@ -20,12 +20,17 @@ crude_platform_service_initialize
     CRUDE_ABORT( CRUDE_CHANNEL_PLATFORM, "Unable to initialize SDL: %s", SDL_GetError() );
     return;
   }
-
+  
+#if CRUDE_GFX_VULKAN
   if ( !SDL_Vulkan_LoadLibrary( NULL ) )
   {
     CRUDE_ABORT( CRUDE_CHANNEL_PLATFORM, "Unable to load SDL Vulkan: %s", SDL_GetError() );
     return;
   }
+#elif CRUDE_GFX_NAPI
+#else
+  CRUDE_GFX_RHI_TO_IMPLEMENTIT
+#endif
 }
 
 void
@@ -33,7 +38,12 @@ crude_platform_service_deinitialize
 (
 )
 {
+#if CRUDE_GFX_VULKAN
   SDL_Vulkan_UnloadLibrary();
+#elif CRUDE_GFX_NAPI
+#else
+  CRUDE_GFX_RHI_TO_IMPLEMENTIT
+#endif
   SDL_Quit();
   
   NFD_Quit( );

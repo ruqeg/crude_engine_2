@@ -8,6 +8,10 @@
 #include <engine/graphics/rhi.h>
 #endif
 
+#if defined( Vulkan )
+#define CRUDE_GFX_VULKAN 1
+#endif
+
 #define CRUDE_SHADER_DEVELOP 1
 
 #define CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX 0
@@ -37,10 +41,10 @@
 #endif
 
 #ifdef __cplusplus
-#define CRUDE_SHADER_RBUFFER_REF( name, type )  typedef VkDeviceAddress name;
-#define CRUDE_SHADER_RBUFFER_REF_ARRAY( name, type )  typedef VkDeviceAddress name;
-#define CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( name, type ) typedef VkDeviceAddress name;
-#define CRUDE_SHADER_RBUFFER_REF_SCALAR( name, type )  typedef VkDeviceAddress name;
+#define CRUDE_SHADER_RBUFFER_REF( name, type )  typedef crude_gfx_rhi_device_address name;
+#define CRUDE_SHADER_RBUFFER_REF_ARRAY( name, type )  typedef crude_gfx_rhi_device_address name;
+#define CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( name, type ) typedef crude_gfx_rhi_device_address name;
+#define CRUDE_SHADER_RBUFFER_REF_SCALAR( name, type )  typedef crude_gfx_rhi_device_address name;
 #else
 #define CRUDE_SHADER_RBUFFER_REF( name, type ) layout(buffer_reference, row_major, std430) readonly buffer name { type data; };
 #define CRUDE_SHADER_RBUFFER_REF_ARRAY( name, type ) layout(buffer_reference, row_major, std430) readonly buffer name { type data[]; };

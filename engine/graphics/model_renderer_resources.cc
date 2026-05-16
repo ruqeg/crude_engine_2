@@ -76,9 +76,9 @@ crude_gfx_model_renderer_resources_deinitialize
     
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources->meshes ); ++i )
     {
-      gpu->rhi_device.vkDestroyAccelerationStructureKHR( gpu->rhi_device.vk_device, model_renderer_resources->vk_blases[ i ], CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
+      crude_gfx_rhi_destroy_acceleration_structure( &gpu->rhi_device, model_renderer_resources->rhi_blases[ i ] );
     }
-    CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->vk_blases );
+    CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->rhi_blases );
   }
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 

@@ -66,7 +66,8 @@ crude_gfx_translucent_pass_render
     push_constant.joint_matrices = pass->scene_renderer->joint_matrices_hga.gpu_address;
     push_constant.lights_world_to_texture = pass->scene_renderer->lights_world_to_texture_hga.gpu_address;
     crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
-
+    
+#if CRUDE_GFX_VULKAN
     crude_gfx_cmd_draw_mesh_task_indirect_count(
       primary_cmd,
       pass->scene_renderer->mesh_task_indirect_commands_hga.buffer_handle,
@@ -74,8 +75,11 @@ crude_gfx_translucent_pass_render
       pass->scene_renderer->mesh_task_indirect_count_hga.buffer_handle,
       CRUDE_OFFSETOF( crude_gfx_mesh_draw_count, transparent_mesh_visible_count ),
       pass->scene_renderer->total_visible_meshes_instances_count,
-      sizeof( crude_gfx_mesh_draw_command )
-    );
+      sizeof( crude_gfx_mesh_draw_command ) );
+#elif CRUDE_GFX_NAPI
+#else
+    CRUDE_GFX_RHI_TO_IMPLEMENTIT
+#endif
   }
   else
   {
@@ -90,7 +94,8 @@ crude_gfx_translucent_pass_render
     push_constant.inv_radiance_texture_width = 1.f / gpu->renderer_size.x;
     push_constant.inv_radiance_texture_height = 1.f / gpu->renderer_size.y;
     crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
-
+    
+#if CRUDE_GFX_VULKAN
     crude_gfx_cmd_draw_indirect_count(
       primary_cmd,
       pass->scene_renderer->mesh_task_indirect_commands_hga.buffer_handle,
@@ -98,8 +103,11 @@ crude_gfx_translucent_pass_render
       pass->scene_renderer->mesh_task_indirect_count_hga.buffer_handle,
       CRUDE_OFFSETOF( crude_gfx_mesh_draw_count, transparent_mesh_visible_count ),
       pass->scene_renderer->total_visible_meshes_instances_count,
-      sizeof( crude_gfx_mesh_draw_command )
-    );
+      sizeof( crude_gfx_mesh_draw_command ) );
+#elif CRUDE_GFX_NAPI
+#else
+    CRUDE_GFX_RHI_TO_IMPLEMENTIT
+#endif
   }
 }
 

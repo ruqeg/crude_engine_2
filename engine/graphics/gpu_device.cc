@@ -224,21 +224,7 @@ crude_gfx_device_initialize
   
   crude_gfx_linear_allocator_initialize( &gpu->frame_linear_allocator, gpu, CRUDE_RMEGA( 64 ), "frame_linear_allocator" );
 
-  {
-    VkPhysicalDeviceProperties2                             physical_device_properties_2;
-    
-    physical_device_properties_2 = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceProperties2 );
-    physical_device_properties_2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-
-#if CRUDE_GFX_RAY_TRACING_ENABLED
-    gpu->ray_tracing_pipeline_properties = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayTracingPipelinePropertiesKHR );
-    gpu->ray_tracing_pipeline_properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
-
-    physical_device_properties_2.pNext = &gpu->ray_tracing_pipeline_properties;
-#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
-
-    vkGetPhysicalDeviceProperties2( gpu->rhi_device.vk_physical_device, &physical_device_properties_2 );
-  }
+  crude_gfx_rhi_get_device_ray_tracing_pipeline_properties( &gpu->rhi_device, &gpu->ray_tracing_pipeline_properties );
 
   gpu->swapchain_output.depth_stencil_format = CRUDE_GFX_RHI_FORMAT_D32_SFLOAT;
   gpu->swapchain_output.depth_stencil_final_layout = CRUDE_GFX_RHI_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
@@ -512,7 +498,7 @@ crude_gfx_present
     };
       
     crude_gfx_rhi_semaphore_submit_info signal_semaphores[] = {
-      { gpu->rhi_rendering_finished_semaphore[ gpu->swapchain_image_index ], 0, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, 0 },
+      { gpu->rhi_rendering_finished_semaphore[ gpu->swapchain_image_index ], 0, CRUDE_GFX_RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, 0 },
     };
 
     crude_gfx_rhi_command_buffer_submit_info command_buffers[] = {
@@ -811,7 +797,7 @@ crude_gfx_compile_shader
 #if defined(_MSC_VER)
   glsl_compiler_path = crude_string_buffer_append_use_f( &temporary_string_buffer, "%sglslangValidator.exe", vulkan_binaries_path );
   final_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\shader_final.spv", gpu->temporary_absolute_directory ); 
-  arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "glslangValidator.exe %s -V --target-env vulkan1.2 --glsl-version 460 -o %s -S %s --D %s --D %s " CRUDE_GRAPHICS_GLSLLANG_VALIDATIO_ADDITIONAL_ARGS, temp_filename, final_spirv_filename, crude_gfx_shader_stage_to_compiler_extension( stage ), crude_gfx_shader_stage_to_defines( stage ), technique_name_upper );
+  arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "glslangValidator.exe %s -V --target-env vulkan1.2 --glsl-version 460 -o %s -S %s --D %s --D %s --D %s " CRUDE_GRAPHICS_GLSLLANG_VALIDATIO_ADDITIONAL_ARGS, temp_filename, final_spirv_filename, crude_gfx_shader_stage_to_compiler_extension( stage ), crude_gfx_shader_stage_to_defines( stage ), technique_name_upper, crude_gfx_rhi_current_graphics_api_str( ) );
 #endif
   crude_process_execute( ".", glsl_compiler_path, arguments, "" );
 
@@ -982,7 +968,7 @@ crude_gfx_generate_mipmaps
 
     blit_region = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_image_blit );
 
-    blit_region.src_subresource.aspect_mask = VK_IMAGE_ASPECT_COLOR_BIT;
+    blit_region.src_subresource.aspect_mask = CRUDE_GFX_RHI_IMAGE_ASPECT_COLOR_BIT;
     blit_region.src_subresource.mip_level = mip_index - 1;
     blit_region.src_subresource.base_array_layer = 0;
     blit_region.src_subresource.layer_count = 1;
@@ -997,7 +983,7 @@ crude_gfx_generate_mipmaps
     w /= 2;
     h /= 2;
 
-    blit_region.dst_subresource.aspect_mask = VK_IMAGE_ASPECT_COLOR_BIT;
+    blit_region.dst_subresource.aspect_mask = CRUDE_GFX_RHI_IMAGE_ASPECT_COLOR_BIT;
     blit_region.dst_subresource.mip_level = mip_index;
     blit_region.dst_subresource.base_array_layer = 0;
     blit_region.dst_subresource.layer_count = 1;
@@ -1074,9 +1060,6 @@ crude_gfx_add_texture_update_commands
   _In_ crude_gfx_cmd_buffer                               *cmd
 )
 {
-  VkCommandBufferBeginInfo                                 begin_info;
-  VkSubmitInfo2                                            submit_info;
-
   mtx_lock( &gpu->texture_update_mutex );
   
   if ( gpu->num_textures_to_update == 0 )
@@ -1179,7 +1162,7 @@ crude_gfx_create_sampler
   rhi_creation.border_color             = CRUDE_GFX_RHI_BORDER_COLOR_INT_OPAQUE_WHITE;
   rhi_creation.unnormalized_coordinates = 0;
   rhi_creation.min_lod                  = 0.f;
-  rhi_creation.max_lod                  = VK_LOD_CLAMP_NONE;
+  rhi_creation.max_lod                  = CRUDE_GFX_RHI_LOD_CLAMP_NONE;
   rhi_creation.reduction_mode           = creation->reduction_mode;
 
   crude_gfx_rhi_create_sampler( &gpu->rhi_device, &rhi_creation, &sampler->rhi_sampler );  
@@ -1271,7 +1254,7 @@ crude_gfx_create_texture
     region.buffer_offset = 0;
     region.buffer_row_length = 0;
     region.buffer_image_height = 0;
-    region.image_subresource.aspect_mask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.image_subresource.aspect_mask = CRUDE_GFX_RHI_IMAGE_ASPECT_COLOR_BIT;
     region.image_subresource.mip_level = 0;
     region.image_subresource.base_array_layer = 0;
     region.image_subresource.layer_count = 1;
@@ -1419,7 +1402,7 @@ crude_gfx_create_shader_state
 
     stage = &creation->stages[ compiled_shaders_count ];
   
-    if ( stage->type == VK_SHADER_STAGE_COMPUTE_BIT )
+    if ( stage->type == CRUDE_GFX_RHI_SHADER_STAGE_COMPUTE_BIT )
     {
       shader_state->pipeline_type = CRUDE_GFX_PIPELINE_TYPE_COMPUTE;
     }
@@ -1468,51 +1451,51 @@ crude_gfx_create_shader_state
 #if CRUDE_GFX_RAY_TRACING_ENABLED
     switch ( stage->type )
     {
-      case VK_SHADER_STAGE_RAYGEN_BIT_KHR:
+      case CRUDE_GFX_RHI_SHADER_STAGE_RAYGEN_BIT_KHR:
       {
         crude_gfx_rhi_ray_tracing_shader_group_create_info *shader_group_info = &shader_state->shader_group_info[ compiled_shaders_count ];
         *shader_group_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_ray_tracing_shader_group_create_info );
         shader_group_info->type = CRUDE_GFX_RHI_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
         shader_group_info->general_shader = compiled_shaders_count;
-        shader_group_info->closest_hit_shader = VK_SHADER_UNUSED_KHR;
-        shader_group_info->any_hit_shader = VK_SHADER_UNUSED_KHR;
-        shader_group_info->intersection_shader = VK_SHADER_UNUSED_KHR;
+        shader_group_info->closest_hit_shader = CRUDE_GFX_RHI_SHADER_UNUSED_KHR;
+        shader_group_info->any_hit_shader = CRUDE_GFX_RHI_SHADER_UNUSED_KHR;
+        shader_group_info->intersection_shader = CRUDE_GFX_RHI_SHADER_UNUSED_KHR;
         shader_state->pipeline_type = CRUDE_GFX_PIPELINE_TYPE_RAY_TRACING;
         break;
       }
-      case VK_SHADER_STAGE_ANY_HIT_BIT_KHR:
+      case CRUDE_GFX_RHI_SHADER_STAGE_ANY_HIT_BIT_KHR:
       {
         crude_gfx_rhi_ray_tracing_shader_group_create_info *shader_group_info = &shader_state->shader_group_info[ compiled_shaders_count ];
         *shader_group_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_ray_tracing_shader_group_create_info );
         shader_group_info->type = CRUDE_GFX_RHI_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
-        shader_group_info->general_shader = VK_SHADER_UNUSED_KHR;
-        shader_group_info->closest_hit_shader = VK_SHADER_UNUSED_KHR;
+        shader_group_info->general_shader = CRUDE_GFX_RHI_SHADER_UNUSED_KHR;
+        shader_group_info->closest_hit_shader = CRUDE_GFX_RHI_SHADER_UNUSED_KHR;
         shader_group_info->any_hit_shader = compiled_shaders_count;
-        shader_group_info->intersection_shader = VK_SHADER_UNUSED_KHR;
+        shader_group_info->intersection_shader = CRUDE_GFX_RHI_SHADER_UNUSED_KHR;
         shader_state->pipeline_type = CRUDE_GFX_PIPELINE_TYPE_RAY_TRACING;
         break;
       }
-      case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
+      case CRUDE_GFX_RHI_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
       {
         crude_gfx_rhi_ray_tracing_shader_group_create_info *shader_group_info = &shader_state->shader_group_info[ compiled_shaders_count ];
         *shader_group_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_ray_tracing_shader_group_create_info );
         shader_group_info->type = CRUDE_GFX_RHI_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
-        shader_group_info->general_shader = VK_SHADER_UNUSED_KHR;
+        shader_group_info->general_shader = CRUDE_GFX_RHI_SHADER_UNUSED_KHR;
         shader_group_info->closest_hit_shader = compiled_shaders_count;
-        shader_group_info->any_hit_shader = VK_SHADER_UNUSED_KHR;
-        shader_group_info->intersection_shader = VK_SHADER_UNUSED_KHR;
+        shader_group_info->any_hit_shader = CRUDE_GFX_RHI_SHADER_UNUSED_KHR;
+        shader_group_info->intersection_shader = CRUDE_GFX_RHI_SHADER_UNUSED_KHR;
         shader_state->pipeline_type = CRUDE_GFX_PIPELINE_TYPE_RAY_TRACING;
         break;
       }
-      case VK_SHADER_STAGE_MISS_BIT_KHR:
+      case CRUDE_GFX_RHI_SHADER_STAGE_MISS_BIT_KHR:
       {
         crude_gfx_rhi_ray_tracing_shader_group_create_info *shader_group_info = &shader_state->shader_group_info[ compiled_shaders_count ];
         *shader_group_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_ray_tracing_shader_group_create_info );
         shader_group_info->type = CRUDE_GFX_RHI_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
         shader_group_info->general_shader = compiled_shaders_count;
-        shader_group_info->closest_hit_shader = VK_SHADER_UNUSED_KHR;
-        shader_group_info->any_hit_shader = VK_SHADER_UNUSED_KHR;
-        shader_group_info->intersection_shader = VK_SHADER_UNUSED_KHR;
+        shader_group_info->closest_hit_shader = CRUDE_GFX_RHI_SHADER_UNUSED_KHR;
+        shader_group_info->any_hit_shader = CRUDE_GFX_RHI_SHADER_UNUSED_KHR;
+        shader_group_info->intersection_shader = CRUDE_GFX_RHI_SHADER_UNUSED_KHR;
         shader_state->pipeline_type = CRUDE_GFX_PIPELINE_TYPE_RAY_TRACING;
         break;
       }
@@ -1614,7 +1597,7 @@ crude_gfx_create_render_pass
     render_pass->output.color_operations[ i ] = creation->color_operations[ i ];
     ++render_pass->output.num_color_formats;
   }
-  if ( creation->depth_stencil_format != VK_FORMAT_UNDEFINED )
+  if ( creation->depth_stencil_format != CRUDE_GFX_RHI_FORMAT_UNDEFINED )
   {
     render_pass->output.depth_stencil_final_layout = creation->depth_stencil_final_layout;
     render_pass->output.depth_stencil_format = creation->depth_stencil_format;
@@ -1830,7 +1813,7 @@ crude_gfx_create_pipeline
       {
         rhi_color_blending_creation.attachments[ i ] = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_pipeline_color_blend_attachment_state );
         rhi_color_blending_creation.attachments[ i ].blend_enable = false;
-        rhi_color_blending_creation.attachments[ i ].color_write_mask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        rhi_color_blending_creation.attachments[ i ].color_write_mask = CRUDE_GFX_RHI_COLOR_COMPONENT_R_BIT | CRUDE_GFX_RHI_COLOR_COMPONENT_G_BIT | CRUDE_GFX_RHI_COLOR_COMPONENT_B_BIT | CRUDE_GFX_RHI_COLOR_COMPONENT_A_BIT;
       }
     }
     
@@ -1939,7 +1922,7 @@ crude_gfx_create_pipeline
     crude_gfx_rhi_create_ray_tracing_pipeline( &gpu->rhi_device, &rhi_pipeline_creation, &pipeline->rhi_pipeline );
 
     group_count = shader_state->active_shaders;
-    group_handle_size = gpu->ray_tracing_pipeline_properties.shaderGroupHandleSize;
+    group_handle_size = gpu->ray_tracing_pipeline_properties.shader_group_handle_size;
     shader_binding_table_size = group_handle_size * group_count;
 
     CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( shader_binding_table_data, shader_binding_table_size, crude_heap_allocator_pack( gpu->allocator ) );

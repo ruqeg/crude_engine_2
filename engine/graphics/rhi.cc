@@ -785,6 +785,36 @@ crude_gfx_rhi_set_descriptor_pool_debug_name
 }
 
 void
+crude_gfx_rhi_create_acceleration_structure
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_acceleration_structure_create_info const *creation,
+  _Out_ crude_gfx_rhi_acceleration_structure              *acceleration_structure
+)
+{
+  VkAccelerationStructureCreateInfoKHR                     vk_acceleration_structure_create_info;
+
+  vk_acceleration_structure_create_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureCreateInfoKHR );
+  vk_acceleration_structure_create_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+  vk_acceleration_structure_create_info.buffer = creation->buffer.vk_buffer;
+  vk_acceleration_structure_create_info.offset = creation->offset;
+  vk_acceleration_structure_create_info.size = creation->size;
+  vk_acceleration_structure_create_info.type = CRUDE_CAST( VkAccelerationStructureTypeKHR, creation->type );
+  vk_acceleration_structure_create_info.deviceAddress = creation->device_address;
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( device->vkCreateAccelerationStructureKHR( device->vk_device, &vk_acceleration_structure_create_info, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &acceleration_structure->vk_acceleration_structure ), "Failed vkCreateAccelerationStructureKHR" );
+}
+
+void
+crude_gfx_rhi_destroy_acceleration_structure
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_acceleration_structure                acceleration_structure
+)
+{
+  device->vkDestroyAccelerationStructureKHR( device->vk_device, acceleration_structure.vk_acceleration_structure, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
+}
+
+void
 crude_gfx_rhi_create_command_pool
 (
   _In_ crude_gfx_rhi_device                               *device,
@@ -2339,6 +2369,148 @@ crude_gfx_rhi_destroy_descriptor_pool
   vkDestroyDescriptorPool( device->vk_device, descriptor_pool->vk_descriptor_pool, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
 }
 
+
+void
+crude_gfx_rhi_get_device_memory_budget
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _Out_ crude_gfx_rhi_device_memory_budget                *budget
+)
+{
+  VmaBudget                                              gpu_memory_heap_budgets[ VK_MAX_MEMORY_HEAPS ];
+  
+  crude_memory_set(gpu_memory_heap_budgets, 0u, sizeof(gpu_memory_heap_budgets));
+  vmaGetHeapBudgets( device->vma_allocator, gpu_memory_heap_budgets);
+  
+  budget->allocated = 0;
+  budget->used = 0;
+
+  for ( uint32 i = 0; i < VK_MAX_MEMORY_HEAPS; ++i )
+  {
+    budget->used += gpu_memory_heap_budgets[i].usage;
+    budget->allocated += gpu_memory_heap_budgets[i].budget;
+  }
+}
+
+void
+crude_gfx_rhi_get_device_ray_tracing_pipeline_properties
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _Out_ crude_gfx_rhi_device_ray_tracing_pipeline_properties *ray_tracing_properties
+)
+{
+  VkPhysicalDeviceProperties2                              vk_physical_device_properties_2;
+  VkPhysicalDeviceRayTracingPipelinePropertiesKHR          vk_ray_tracing_pipeline_properties;
+    
+  vk_physical_device_properties_2 = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceProperties2 );
+  vk_physical_device_properties_2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+
+#if CRUDE_GFX_RAY_TRACING_ENABLED
+  vk_ray_tracing_pipeline_properties = CRUDE_COMPOUNT_EMPTY( VkPhysicalDeviceRayTracingPipelinePropertiesKHR );
+  vk_ray_tracing_pipeline_properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
+
+  vk_physical_device_properties_2.pNext = &vk_ray_tracing_pipeline_properties;
+#endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
+
+  vkGetPhysicalDeviceProperties2( device->vk_physical_device, &vk_physical_device_properties_2 );
+
+  ray_tracing_properties->shader_group_handle_alignment = vk_ray_tracing_pipeline_properties.shaderGroupHandleAlignment;
+  ray_tracing_properties->shader_group_handle_size = vk_ray_tracing_pipeline_properties.shaderGroupHandleSize;
+}
+
+void
+crude_gfx_rhi_get_device_name
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _Out_ char                                               name[ 256 ]
+)
+{
+  VkPhysicalDeviceProperties                             vk_physical_properties;
+
+  vkGetPhysicalDeviceProperties( device->vk_physical_device, &vk_physical_properties );
+
+  crude_string_copy( name, vk_physical_properties.deviceName ? vk_physical_properties.deviceName : "Unknown", sizeof( name ) );
+}
+
+void
+crude_gfx_rhi_get_acceleration_structure_build_sizes
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_heap_allocator                               *allocator,
+  _In_ crude_gfx_rhi_acceleration_structure_build_type     build_type,
+  _In_ crude_gfx_rhi_acceleration_structure_build_geometry_info const *build_info,
+  _In_ uint32 const                                       *max_primitives_count,
+  _Out_ crude_gfx_rhi_acceleration_structure_build_sizes_info *build_size_info
+)
+{
+  VkAccelerationStructureGeometryKHR                      *vk_acceleration_structure_geometries;
+  VkAccelerationStructureBuildSizesInfoKHR                 vk_acceleration_structure_build_sizes_info;
+  VkAccelerationStructureBuildGeometryInfoKHR              vk_acceleration_build_geometry_infos;
+  
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( vk_acceleration_structure_geometries, build_info->geometry_count, crude_heap_allocator_pack( allocator ) );
+
+  for ( uint32 i = 0; i < build_info->geometry_count; ++i )
+  {
+    vk_acceleration_structure_geometries[ i ] = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureGeometryKHR );
+    vk_acceleration_structure_geometries[ i ].sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+    vk_acceleration_structure_geometries[ i ].flags = build_info->geometries[ i ].flags;
+    vk_acceleration_structure_geometries[ i ].geometryType = CRUDE_CAST( VkGeometryTypeKHR, build_info->geometries[ i ].geometry_type );
+
+    switch ( build_info->geometries[ i ].geometry_type )
+    {
+    case CRUDE_GFX_RHI_GEOMETRY_TYPE_AABBS_KHR:
+    {
+      vk_acceleration_structure_geometries[ i ].geometry.aabbs.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_AABBS_DATA_KHR;
+      vk_acceleration_structure_geometries[ i ].geometry.aabbs.data.deviceAddress = build_info->geometries[ i ].geometry.aabbs.data.device_address;
+      vk_acceleration_structure_geometries[ i ].geometry.aabbs.stride = build_info->geometries[ i ].geometry.aabbs.stride;
+      break;
+    }
+    case CRUDE_GFX_RHI_GEOMETRY_TYPE_INSTANCES_KHR:
+    {
+      vk_acceleration_structure_geometries[ i ].geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
+      vk_acceleration_structure_geometries[ i ].geometry.instances.arrayOfPointers = build_info->geometries[ i ].geometry.instances.array_of_pointers ? VK_TRUE : VK_FALSE;
+      vk_acceleration_structure_geometries[ i ].geometry.instances.data.deviceAddress = build_info->geometries[ i ].geometry.instances.data.device_address;
+      break;
+    }
+    case CRUDE_GFX_RHI_GEOMETRY_TYPE_TRIANGLES_KHR:
+    {
+      vk_acceleration_structure_geometries[ i ].geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+      vk_acceleration_structure_geometries[ i ].geometry.triangles.vertexFormat = CRUDE_CAST( VkFormat, build_info->geometries[ i ].geometry.triangles.vertex_format );
+      vk_acceleration_structure_geometries[ i ].geometry.triangles.vertexData.deviceAddress = build_info->geometries[ i ].geometry.triangles.vertex_data.device_address;
+      vk_acceleration_structure_geometries[ i ].geometry.triangles.vertexStride = build_info->geometries[ i ].geometry.triangles.vertex_stride;
+      vk_acceleration_structure_geometries[ i ].geometry.triangles.maxVertex = build_info->geometries[ i ].geometry.triangles.max_vertex;
+      vk_acceleration_structure_geometries[ i ].geometry.triangles.indexType = CRUDE_CAST( VkIndexType, build_info->geometries[ i ].geometry.triangles.index_type );
+      vk_acceleration_structure_geometries[ i ].geometry.triangles.indexData.deviceAddress = build_info->geometries[ i ].geometry.triangles.index_data.device_address;
+      vk_acceleration_structure_geometries[ i ].geometry.triangles.transformData.deviceAddress = build_info->geometries[ i ].geometry.triangles.transform_data.device_address;
+      break;
+    }
+    }
+  }
+
+  vk_acceleration_build_geometry_infos = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildGeometryInfoKHR );
+  vk_acceleration_build_geometry_infos.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+  vk_acceleration_build_geometry_infos.type = CRUDE_CAST( VkAccelerationStructureTypeKHR, build_info->type );
+  vk_acceleration_build_geometry_infos.flags = build_info->flags;
+  vk_acceleration_build_geometry_infos.mode = CRUDE_CAST( VkBuildAccelerationStructureModeKHR, build_info->mode );
+  vk_acceleration_build_geometry_infos.srcAccelerationStructure = build_info->src_acceleration_structure.vk_acceleration_structure;
+  vk_acceleration_build_geometry_infos.dstAccelerationStructure = build_info->dst_acceleration_structure.vk_acceleration_structure;
+  vk_acceleration_build_geometry_infos.geometryCount = build_info->geometry_count;
+  vk_acceleration_build_geometry_infos.pGeometries = vk_acceleration_structure_geometries;
+  vk_acceleration_build_geometry_infos.ppGeometries = NULL;
+  vk_acceleration_build_geometry_infos.scratchData.deviceAddress = build_info->scratch_data.device_address;
+
+  vk_acceleration_structure_build_sizes_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildSizesInfoKHR );
+  vk_acceleration_structure_build_sizes_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+
+  device->vkGetAccelerationStructureBuildSizesKHR( device->vk_device, CRUDE_CAST( VkAccelerationStructureBuildTypeKHR, build_type ), &vk_acceleration_build_geometry_infos, max_primitives_count, &vk_acceleration_structure_build_sizes_info );
+
+  build_size_info->acceleration_structure_size = vk_acceleration_structure_build_sizes_info.accelerationStructureSize;
+  build_size_info->build_scratch_size = vk_acceleration_structure_build_sizes_info.buildScratchSize;
+  build_size_info->update_scratch_size = vk_acceleration_structure_build_sizes_info.updateScratchSize;
+
+  CRUDE_ARRAY_DEINITIALIZE( vk_acceleration_structure_geometries );
+}
+
 void
 crude_gfx_rhi_reset_command_pool
 (
@@ -2598,6 +2770,8 @@ crude_gfx_rhi_command_buffer_pipeline_image_barrier
   VkDependencyInfoKHR                                      vk_dependency_info;
   VkImageMemoryBarrier2                                    vk_image_barrier;
   
+  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, image_memory_barriers->image.vk_image, "Can't add image barrier to the image! image is VK_NULL_HANDLE!" );
+
   vk_dependency_info = CRUDE_COMPOUNT_EMPTY( VkDependencyInfoKHR );
   vk_dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR;
 
@@ -2960,6 +3134,120 @@ crude_gfx_rhi_reset_command_buffer
   vkResetCommandBuffer( command_buffer.vk_command_buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT );
 }
 
+void
+crude_gfx_rhi_command_buffer_build_acceleration_structures
+(
+  _In_ crude_gfx_rhi_device                                                   *device,
+  _In_ crude_heap_allocator                                                   *allocator,
+  _In_ crude_gfx_rhi_command_buffer                                            command_buffer,
+  _In_ uint32                                                                  info_count,
+  _In_ crude_gfx_rhi_acceleration_structure_build_geometry_info const         *infos,
+  _In_ crude_gfx_rhi_acceleration_structure_build_range_info const            *build_range_infos
+)
+{
+  VkAccelerationStructureBuildRangeInfoKHR               **vk_acceleration_structure_build_range_infos;
+  VkAccelerationStructureGeometryKHR                     **vk_acceleration_structure_geometries;
+  VkAccelerationStructureBuildGeometryInfoKHR             *vk_acceleration_build_geometry_infos;
+  
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( vk_acceleration_build_geometry_infos, info_count, crude_heap_allocator_pack( allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( vk_acceleration_structure_geometries, info_count, crude_heap_allocator_pack( allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( vk_acceleration_structure_build_range_infos, info_count, crude_heap_allocator_pack( allocator ) );
+
+  for ( uint32 i = 0; i < info_count; ++i )
+  {
+    CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( vk_acceleration_structure_geometries[ i ], infos[ i ].geometry_count, crude_heap_allocator_pack( allocator ) );
+
+    for ( uint32 gi = 0u; gi < infos[ i ].geometry_count; ++gi )
+    {
+      crude_gfx_rhi_acceleration_structure_geometry const *geometry;
+      VkAccelerationStructureGeometryKHR                  *vk_geometry;
+
+      geometry = &infos->geometries[ gi ];
+      vk_geometry = &vk_acceleration_structure_geometries[ i ][ gi ];
+
+      *vk_geometry = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureGeometryKHR );
+      vk_geometry->sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+      vk_geometry->flags = geometry->flags;
+      vk_geometry->geometryType = CRUDE_CAST( VkGeometryTypeKHR, geometry->geometry_type );
+
+      switch ( infos->geometries[ i ].geometry_type )
+      {
+      case CRUDE_GFX_RHI_GEOMETRY_TYPE_AABBS_KHR:
+      {
+        vk_geometry->geometry.aabbs.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_AABBS_DATA_KHR;
+        vk_geometry->geometry.aabbs.data.deviceAddress = geometry->geometry.aabbs.data.device_address;
+        vk_geometry->geometry.aabbs.stride = geometry->geometry.aabbs.stride;
+        break;
+      }
+      case CRUDE_GFX_RHI_GEOMETRY_TYPE_INSTANCES_KHR:
+      {
+        vk_geometry->geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
+        vk_geometry->geometry.instances.arrayOfPointers = geometry->geometry.instances.array_of_pointers ? VK_TRUE : VK_FALSE;
+        vk_geometry->geometry.instances.data.deviceAddress = geometry->geometry.instances.data.device_address;
+        break;
+      }
+      case CRUDE_GFX_RHI_GEOMETRY_TYPE_TRIANGLES_KHR:
+      {
+        vk_geometry->geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+        vk_geometry->geometry.triangles.vertexFormat = CRUDE_CAST( VkFormat, geometry->geometry.triangles.vertex_format );
+        vk_geometry->geometry.triangles.vertexData.deviceAddress = geometry->geometry.triangles.vertex_data.device_address;
+        vk_geometry->geometry.triangles.vertexStride = geometry->geometry.triangles.vertex_stride;
+        vk_geometry->geometry.triangles.maxVertex = geometry->geometry.triangles.max_vertex;
+        vk_geometry->geometry.triangles.indexType = CRUDE_CAST( VkIndexType, geometry->geometry.triangles.index_type );
+        vk_geometry->geometry.triangles.indexData.deviceAddress = geometry->geometry.triangles.index_data.device_address;
+        vk_geometry->geometry.triangles.transformData.deviceAddress = geometry->geometry.triangles.transform_data.device_address;
+        break;
+      }
+      }
+    }
+
+    vk_acceleration_build_geometry_infos[ i ] = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildGeometryInfoKHR );
+    vk_acceleration_build_geometry_infos[ i ].sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    vk_acceleration_build_geometry_infos[ i ].type = CRUDE_CAST( VkAccelerationStructureTypeKHR, infos->type );
+    vk_acceleration_build_geometry_infos[ i ].flags = infos->flags;
+    vk_acceleration_build_geometry_infos[ i ].mode = CRUDE_CAST( VkBuildAccelerationStructureModeKHR, infos->mode );
+    vk_acceleration_build_geometry_infos[ i ].srcAccelerationStructure = infos->src_acceleration_structure.vk_acceleration_structure;
+    vk_acceleration_build_geometry_infos[ i ].dstAccelerationStructure = infos->dst_acceleration_structure.vk_acceleration_structure;
+    vk_acceleration_build_geometry_infos[ i ].geometryCount = infos->geometry_count;
+    vk_acceleration_build_geometry_infos[ i ].pGeometries = vk_acceleration_structure_geometries[ i ];
+    vk_acceleration_build_geometry_infos[ i ].ppGeometries = NULL;
+    vk_acceleration_build_geometry_infos[ i ].scratchData.deviceAddress = infos->scratch_data.device_address;
+  }
+  
+  for ( uint32 i = 0; i < info_count; ++i )
+  {
+    vk_acceleration_structure_build_range_infos[ i ] = CRUDE_CAST( VkAccelerationStructureBuildRangeInfoKHR*, crude_heap_allocator_allocate( allocator, sizeof( VkAccelerationStructureBuildRangeInfoKHR ) ) );
+    vk_acceleration_structure_build_range_infos[ i ]->firstVertex = build_range_infos[ i ].first_vertex;
+    vk_acceleration_structure_build_range_infos[ i ]->primitiveCount = build_range_infos[ i ].primitive_count;
+    vk_acceleration_structure_build_range_infos[ i ]->primitiveOffset = build_range_infos[ i ].primitive_offset;
+    vk_acceleration_structure_build_range_infos[ i ]->transformOffset = build_range_infos[ i ].transform_offset;
+  }
+
+  device->vkCmdBuildAccelerationStructuresKHR( command_buffer.vk_command_buffer, 1u, vk_acceleration_build_geometry_infos, vk_acceleration_structure_build_range_infos );
+
+  for ( uint32 i = 0; i < info_count; ++i )
+  {
+    crude_heap_allocator_deallocate( allocator, vk_acceleration_structure_build_range_infos[ i ] );
+    CRUDE_ARRAY_DEINITIALIZE( vk_acceleration_structure_geometries[ i ] );
+  }
+
+  CRUDE_ARRAY_DEINITIALIZE( vk_acceleration_build_geometry_infos );
+  CRUDE_ARRAY_DEINITIALIZE( vk_acceleration_structure_geometries );
+  CRUDE_ARRAY_DEINITIALIZE( vk_acceleration_structure_build_range_infos );
+}
+
+char const*
+crude_gfx_rhi_current_graphics_api_str
+(
+)
+{
+#if CRUDE_GFX_VULKAN
+  return "Vulkan";
+#elif CRUDE_GFX_NAPI
+#else
+CRUDE_GFX_RHI_TO_IMPLEMENTIT
+#endif
+}
 
 #if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
 VKAPI_ATTR VkBool32

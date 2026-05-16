@@ -21,6 +21,8 @@ build VS2022 project with cmake
 ```
 mkdir build
 cd build
+# For some reason we need to execute cmake two times because of the imgui library (idk why)
+cmake ../ -G "Visual Studio 17 2022"
 cmake ../ -G "Visual Studio 17 2022"
 ```
 open generated `.sln` file in Visual Studio 2022 and build solution. 

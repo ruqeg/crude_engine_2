@@ -335,7 +335,6 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_instances_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_scratch_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_hga );
-  scene_renderer->gpu->rhi_device.vkDestroyAccelerationStructureKHR( scene_renderer->gpu->rhi_device.vk_device, scene_renderer->rhi_tlas.vk_acceleration_structure, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
 
   crude_gfx_destroy_descriptor_set( scene_renderer->gpu, scene_renderer->acceleration_stucture_ds );
   crude_gfx_destroy_descriptor_set_layout( scene_renderer->gpu, scene_renderer->acceleration_stucture_dsl );
@@ -446,7 +445,7 @@ crude_gfx_scene_renderer_update_instances_from_node
       crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_hga );
       crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_instances_hga );
       crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_scratch_hga );
-      scene_renderer->gpu->rhi_device.vkDestroyAccelerationStructureKHR( scene_renderer->gpu->rhi_device.vk_device, scene_renderer->rhi_tlas.vk_acceleration_structure, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS );
+      crude_gfx_rhi_destroy_acceleration_structure( &scene_renderer->gpu->rhi_device, scene_renderer->rhi_tlas );
     }
 
     crude_gfx_cmd_buffer *cmd = crude_gfx_access_cmd_buffer( scene_renderer->gpu, scene_renderer->gpu->immediate_transfer_cmd_buffer );
@@ -923,9 +922,14 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
     debug_draw_command = CRUDE_CAST( crude_gfx_debug_counts*, debug_draw_command_tca.cpu_address );
 
     *debug_draw_command = CRUDE_COMPOUNT_EMPTY( crude_gfx_debug_counts );
+#if CRUDE_GFX_VULKAN
     debug_draw_command->draw_indirect_2dline.instanceCount = 1u;
     debug_draw_command->draw_indirect_3dline.instanceCount = 1u;
     debug_draw_command->draw_indirect_cube.vertexCount = 36u;
+#elif CRUDE_GFX_NAPI
+#else
+  CRUDE_GFX_RHI_TO_IMPLEMENTIT
+#endif
     
     crude_gfx_cmd_memory_copy( primary_cmd, debug_draw_command_tca, scene_renderer->debug_commands_hga, 0, 0 );
   }
@@ -1305,7 +1309,7 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
 
           vk_acceleration_structure_address_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureDeviceAddressInfoKHR );
           vk_acceleration_structure_address_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
-          vk_acceleration_structure_address_info.accelerationStructure = model_renderer_resources->vk_blases[ node->meshes[ mesh_index ] ];
+          vk_acceleration_structure_address_info.accelerationStructure = model_renderer_resources->rhi_blases[ node->meshes[ mesh_index ] ].vk_acceleration_structure;
 
           vk_blas_address = scene_renderer->gpu->rhi_device.vkGetAccelerationStructureDeviceAddressKHR( scene_renderer->gpu->rhi_device.vk_device, &vk_acceleration_structure_address_info );
     
@@ -1493,7 +1497,7 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
       
         vk_acceleration_structure_address_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureDeviceAddressInfoKHR );
         vk_acceleration_structure_address_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
-        vk_acceleration_structure_address_info.accelerationStructure = model_renderer_resources->vk_blases[ node->meshes[ mesh_index ] ];
+        vk_acceleration_structure_address_info.accelerationStructure = model_renderer_resources->rhi_blases[ node->meshes[ mesh_index ] ].vk_acceleration_structure;
       
         vk_blas_address = scene_renderer->gpu->rhi_device.vkGetAccelerationStructureDeviceAddressKHR( scene_renderer->gpu->rhi_device.vk_device, &vk_acceleration_structure_address_info );
       

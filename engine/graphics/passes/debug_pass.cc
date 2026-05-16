@@ -87,7 +87,16 @@ crude_gfx_debug_pass_render
     push_constant.debug_lines_vertices = pass->scene_renderer->debug_line_vertices_hga.gpu_address;
     crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
 
-    crude_gfx_cmd_draw_inderect( primary_cmd, pass->scene_renderer->debug_commands_hga.buffer_handle, CRUDE_OFFSETOF( crude_gfx_debug_counts, draw_indirect_2dline ), 1u, sizeof( crude_gfx_debug_counts ) );
+#if CRUDE_GFX_VULKAN
+    crude_gfx_cmd_draw_inderect(
+      primary_cmd,
+      pass->scene_renderer->debug_commands_hga.buffer_handle,
+      CRUDE_OFFSETOF( crude_gfx_debug_counts, draw_indirect_2dline ),
+      1u, sizeof( crude_gfx_debug_counts ) );
+#elif CRUDE_GFX_NAPI
+#else
+    CRUDE_GFX_RHI_TO_IMPLEMENTIT
+#endif
   }
 
   {
@@ -103,8 +112,17 @@ crude_gfx_debug_pass_render
     push_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
     push_constant.debug_cube_instances = pass->scene_renderer->debug_cubes_instances_hga.gpu_address;
     crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
-
-    crude_gfx_cmd_draw_inderect( primary_cmd, pass->scene_renderer->debug_commands_hga.buffer_handle, CRUDE_OFFSETOF( crude_gfx_debug_counts, draw_indirect_cube ), 1u, sizeof( crude_gfx_debug_counts ) );
+    
+#if CRUDE_GFX_VULKAN
+    crude_gfx_cmd_draw_inderect(
+      primary_cmd,
+      pass->scene_renderer->debug_commands_hga.buffer_handle,
+      CRUDE_OFFSETOF( crude_gfx_debug_counts, draw_indirect_cube ),
+      1u, sizeof( crude_gfx_debug_counts ) );
+#elif CRUDE_GFX_NAPI
+#else
+    CRUDE_GFX_RHI_TO_IMPLEMENTIT
+#endif
   }
 }
 

@@ -12,7 +12,7 @@ typedef enum crude_gfx_memory_type
 typedef struct crude_gfx_memory_allocation
 {
   void                                                    *cpu_address;
-  VkDeviceAddress                                          gpu_address;
+  crude_gfx_rhi_device_address                             gpu_address;
   crude_gfx_buffer_handle                                  buffer_handle;
   crude_gfx_memory_type                                    type;
   uint64                                                   size;
@@ -117,7 +117,7 @@ crude_gfx_memory_allocate
   _In_ crude_gfx_device                                   *gpu,
   _In_ uint64                                              size,
   _In_ crude_gfx_memory_type                               type,
-  _In_ VkBufferUsageFlags2                                 additional_flags
+  _In_ crude_gfx_rhi_buffer_usage_flags                    additional_flags
 );
 
 CRUDE_API crude_gfx_memory_allocation
@@ -126,7 +126,7 @@ crude_gfx_memory_allocate_cpu_gpu_copy
   _In_ crude_gfx_device                                   *gpu,
   _In_ void                                               *data,
   _In_ uint64                                              size,
-  _In_ VkBufferUsageFlags2                                 additional_flags
+  _In_ crude_gfx_rhi_buffer_usage_flags                    additional_flags
 );
 
 CRUDE_API void
@@ -143,7 +143,7 @@ crude_gfx_memory_allocate_with_name
   _In_ uint64                                              size,
   _In_ crude_gfx_memory_type                               type,
   _In_ char                                                name[ CRUDE_GFX_BUFFER_NAME_MAX ],
-  _In_ VkBufferUsageFlags2                                 additional_flags
+  _In_ crude_gfx_rhi_buffer_usage_flags                    additional_flags
 );
 
 CRUDE_API crude_gfx_memory_allocation
@@ -153,5 +153,5 @@ crude_gfx_memory_allocate_with_pname
   _In_ uint64                                              size,
   _In_ crude_gfx_memory_type                               type,
   _In_ char const                                         *name,
-  _In_ VkBufferUsageFlags2                                 additional_flags
+  _In_ crude_gfx_rhi_buffer_usage_flags                    additional_flags
 );

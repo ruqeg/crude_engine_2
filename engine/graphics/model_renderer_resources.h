@@ -100,7 +100,7 @@ typedef struct crude_gfx_model_renderer_resources
   CRUDE_HASHMAPSTR( uint64 )                              *animation_name_to_index;  
 #if CRUDE_GFX_RAY_TRACING_ENABLED
   bool                                                     rtx_affected;
-  VkAccelerationStructureKHR                              *vk_blases;
+  crude_gfx_rhi_acceleration_structure                    *rhi_blases;
   crude_gfx_memory_allocation                             *blases_hga;
   crude_gfx_memory_allocation                             *blases_transforms_hga;
 #endif

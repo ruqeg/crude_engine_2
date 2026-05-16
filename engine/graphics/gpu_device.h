@@ -126,7 +126,6 @@ typedef struct crude_gfx_device
   uint32                                                   swapchain_images_count;
   XMFLOAT2                                                 swapchain_size;
   uint32                                                   swapchain_image_index;
-  VkPresentModeKHR                                         vk_selected_present_mode;
   bool                                                     swapchain_resized_last_frame;
   crude_gfx_render_pass_output                             swapchain_output;
   /**
@@ -160,7 +159,7 @@ typedef struct crude_gfx_device
 #endif
 
 #if CRUDE_GFX_RAY_TRACING_ENABLED
-  VkPhysicalDeviceRayTracingPipelinePropertiesKHR          ray_tracing_pipeline_properties;
+  crude_gfx_rhi_device_ray_tracing_pipeline_properties     ray_tracing_pipeline_properties;
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 } crude_gfx_device;                                
 

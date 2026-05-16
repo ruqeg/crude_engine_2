@@ -53,15 +53,13 @@ crude_gfx_ray_tracing_solid_pass_render
   crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );
   crude_gfx_cmd_bind_acceleration_structure_descriptor_set( primary_cmd, pass->scene_renderer->acceleration_stucture_ds );
 
-  CRUDE_ASSERT( sizeof( VkAccelerationStructureKHR ) == sizeof( uint64 ) );
-
   push_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_pointshadow_culling_pass_push_constant_ );
   push_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
   push_constant.vertices = pass->scene_renderer->model_renderer_resources_manager->meshlets_vertices_hga.gpu_address;
   push_constant.mesh_draws = pass->scene_renderer->model_renderer_resources_manager->meshes_draws_hga.gpu_address;
   push_constant.mesh_instance_draws = pass->scene_renderer->meshes_instances_draws_hga.gpu_address;
   push_constant.sbt_offset = 0;
-  push_constant.sbt_stride = pass->scene_renderer->gpu->ray_tracing_pipeline_properties.shaderGroupHandleAlignment;
+  push_constant.sbt_stride = pass->scene_renderer->gpu->ray_tracing_pipeline_properties.shader_group_handle_alignment;
   push_constant.miss_index = 0;
   push_constant.out_image_index = ray_tracing_solid_texture_handle.index;
   crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );

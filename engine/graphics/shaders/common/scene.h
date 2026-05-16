@@ -51,7 +51,8 @@ CRUDE_SHADER_STRUCT( crude_gfx_mesh_draw )
 
 CRUDE_SHADER_STRUCT( crude_gfx_mesh_draw_command )
 {
-#if __cplusplus
+#if CRUDE_GFX_VULKAN
+#if defined(__cplusplus)
   uint32                                                   draw_id;
   VkDrawMeshTasksIndirectCommandEXT                        indirect_meshlet;
   VkDrawIndirectCommand                                    indirect_mesh;
@@ -65,6 +66,10 @@ CRUDE_SHADER_STRUCT( crude_gfx_mesh_draw_command )
   uint32                                                   indirect_mesh_instance_count;
   uint32                                                   indirect_mesh_first_vertex;
   uint32                                                   indirect_mesh_first_instance;
+#endif
+#elif CRUDE_GFX_NAPI
+#else
+  CRUDE_GFX_RHI_TO_IMPLEMENTIT
 #endif
 };
 
@@ -83,7 +88,7 @@ CRUDE_SHADER_STRUCT( crude_gfx_mesh_instance_draw )
 
 CRUDE_SHADER_STRUCT( crude_gfx_vertex )
 {
-#if __cplusplus
+#if defined(__cplusplus)
   uint8                                                    normal[ 4 ];
   uint8                                                    tangent[ 4 ];
   uint16                                                   texcoords[ 2 ];

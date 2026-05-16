@@ -53,7 +53,7 @@ crude_gfx_cmd_begin_primary
   cmd->is_recording = true;
 
   begin_info = crude_gfx_rhi_command_buffer_begin_info_empty( );
-  begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  begin_info.flags = CRUDE_GFX_RHI_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   crude_gfx_rhi_begin_command_buffer( cmd->rhi_cmd_buffer, &begin_info );
 
   //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "crude_gfx_cmd_begin_primary( %s )", cmd->name );
@@ -617,7 +617,6 @@ crude_gfx_cmd_add_image_barrier_ext5
   crude_gfx_rhi_access_flags                               src_access_mask, dst_access_mask;
 
   //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Transitioning Texture %s from %s to %s", texture->name, crude_gfx_resource_state_to_name( texture->state ), crude_gfx_resource_state_to_name( new_state ) );
-  CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, rhi_image.vk_image, "Can't add image barrier to the image! image is VK_NULL_HANDLE!" );
   
   src_access_mask = crude_gfx_rhi_resource_state_to_access_flags( old_state );
   dst_access_mask = crude_gfx_rhi_resource_state_to_access_flags( new_state );
@@ -849,7 +848,7 @@ crude_gfx_cmd_trace_rays
 
   pipeline = crude_gfx_access_pipeline( cmd->gpu, pipeline_handle );
 
-  shader_group_handle_size = cmd->gpu->ray_tracing_pipeline_properties.shaderGroupHandleSize;
+  shader_group_handle_size = cmd->gpu->ray_tracing_pipeline_properties.shader_group_handle_size;
 
   raygen_table = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_strided_device_address_region );
   raygen_table.device_address = crude_gfx_get_buffer_device_address( cmd->gpu, pipeline->shader_binding_table_raygen );
