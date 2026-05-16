@@ -55,8 +55,8 @@ typedef struct crude_gfx_node
   int64                                                    parent;
   int64                                                   *childrens;
   uint64                                                  *meshes;
-  crude_gfx_aabb_cpu                                      *affected_joints_local_aabb;
-  uint32                                                  *affected_joints; /* need to calculate animation bounding box, i would like to move all this bullshit to the compute shader, but naaah im too lazy */
+  crude_gfx_aabb_cpu                                     **affected_joints_local_aabb;
+  uint32                                                 **affected_joints;
   char                                                     name[ CRUDE_GFX_NODE_NAME_LENGTH_MAX ];
 } crude_gfx_node;
 

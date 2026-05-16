@@ -155,7 +155,7 @@ crude_gfx_device_initialize
     CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( gpu->thread_frame_pools, CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT * gpu->num_threads, crude_heap_allocator_pack( gpu->allocator ) );
     
 #if CRUDE_GFX_GPU_PROFILER
-    gpu->gpu_time_queries_manager = CRUDE_STATIC_CAST( crude_gfx_gpu_time_queries_manager*, CRUDE_ALLOCATE( crude_heap_allocator_pack( gpu->allocator ), sizeof( crude_gfx_gpu_time_queries_manager ) ) );
+    gpu->gpu_time_queries_manager = CRUDE_CAST( crude_gfx_gpu_time_queries_manager*, crude_heap_allocator_allocate( gpu->allocator, sizeof( crude_gfx_gpu_time_queries_manager ) ) );
     crude_gfx_gpu_time_queries_manager_initialize( gpu->gpu_time_queries_manager, gpu->thread_frame_pools, crude_heap_allocator_pack( gpu->allocator ), gpu->gpu_time_queries_per_frame, gpu->num_threads, CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT );
 #endif
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->thread_frame_pools ); ++i )

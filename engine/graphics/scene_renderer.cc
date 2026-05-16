@@ -797,7 +797,7 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
 
             if ( node->skin != -1 )
             {
-              if ( CRUDE_ARRAY_LENGTH( node->affected_joints ) )
+              if ( CRUDE_ARRAY_LENGTH( node->affected_joints[ mesh_index ] ) )
               {
                 crude_gfx_skin                             *skin;
                 XMMATRIX                                   model_to_mesh;
@@ -808,20 +808,20 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
                 skin = &model_renderer_resources->skins[ node->skin ];
                 model_to_mesh = XMMatrixInverse( NULL, mesh_to_model );
 
-                position_max = XMLoadFloat3( &node->affected_joints_local_aabb[ 0 ].max );
-                position_min = XMLoadFloat3( &node->affected_joints_local_aabb[ 0 ].min );
+                position_max = XMLoadFloat3( &node->affected_joints_local_aabb[ mesh_index ][ 0 ].max );
+                position_min = XMLoadFloat3( &node->affected_joints_local_aabb[ mesh_index ][ 0 ].min );
 
-                for ( uint32 affected_joint = 0; affected_joint < CRUDE_ARRAY_LENGTH( node->affected_joints ); ++affected_joint )
+                for ( uint32 affected_joint = 0; affected_joint < CRUDE_ARRAY_LENGTH( node->affected_joints[ mesh_index ] ); ++affected_joint )
                 {
                   crude_gfx_aabb_cpu                      *local_joint_aabb;
                   XMVECTOR                                 animated_joint_aabb_max;
                   XMVECTOR                                 animated_joint_aabb_min;
                   XMMATRIX                                 joint_matrix, inverse_bind_matrix;
 
-                  local_joint_aabb = &node->affected_joints_local_aabb[ affected_joint ];
+                  local_joint_aabb = &node->affected_joints_local_aabb[ mesh_index ][ affected_joint ];
 
-                  inverse_bind_matrix = XMLoadFloat4x4( &skin->inverse_bind_matrices[ node->affected_joints[ affected_joint ] ] );
-                  joint_matrix = crude_gfx_node_to_model( model_renderer_resources->nodes, model_renderer_resources_instance->nodes_transforms, skin->joints[ node->affected_joints[ affected_joint ] ] );
+                  inverse_bind_matrix = XMLoadFloat4x4( &skin->inverse_bind_matrices[ node->affected_joints[ mesh_index ][ affected_joint ] ] );
+                  joint_matrix = crude_gfx_node_to_model( model_renderer_resources->nodes, model_renderer_resources_instance->nodes_transforms, skin->joints[ node->affected_joints[ mesh_index ][ affected_joint ] ] );
                   joint_matrix = XMMatrixMultiply( XMMatrixMultiply( inverse_bind_matrix, joint_matrix ), model_to_mesh );
                   
                   animated_joint_aabb_max = XMVector3Transform( XMLoadFloat3( &local_joint_aabb->max ), joint_matrix );

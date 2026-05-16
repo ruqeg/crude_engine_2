@@ -291,7 +291,6 @@ crude_engine_deinitialize
   crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &engine->model_renderer_resources_manager, immediate_cmd );
   crude_gfx_submit_immediate( immediate_cmd );
 
-
   crude_engine_deinitialize_editor_( engine );
   crude_engine_deinitialize_gui_( engine );
   crude_engine_commands_manager_deinitialize( &engine->commands_manager );

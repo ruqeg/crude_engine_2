@@ -88,10 +88,18 @@ crude_gfx_model_renderer_resources_deinitialize
   {
     if ( model_renderer_resources->nodes[ k ].affected_joints )
     {
+      for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes[ k ].affected_joints ); ++i )
+      {
+        CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->nodes[ k ].affected_joints[ i ] );
+      }
       CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->nodes[ k ].affected_joints );
     }
     if ( model_renderer_resources->nodes[ k ].affected_joints_local_aabb )
     {
+      for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resources->nodes[ k ].affected_joints_local_aabb ); ++i )
+      {
+        CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->nodes[ k ].affected_joints_local_aabb[ i ] );
+      }
       CRUDE_ARRAY_DEINITIALIZE( model_renderer_resources->nodes[ k ].affected_joints_local_aabb );
     }
     if ( model_renderer_resources->nodes[ k ].meshes )

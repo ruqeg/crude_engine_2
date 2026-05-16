@@ -1224,7 +1224,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
   
   manager->total_meshes_count += CRUDE_ARRAY_LENGTH( model_renderer_resouces->meshes );
 
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( meshes_draws, CRUDE_ARRAY_LENGTH( model_renderer_resouces->meshes ), crude_heap_allocator_pack( manager->allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( meshes_draws, CRUDE_ARRAY_LENGTH( model_renderer_resouces->meshes ), crude_heap_allocator_pack( manager->test_allocator ) );
 
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( model_renderer_resouces->meshes ); ++i )
   {
@@ -1307,8 +1307,8 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
   _In_ uint32                                             *gltf_mesh_index_to_mesh_primitive_index
 )
 {
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( model_renderer_resources->nodes, gltf->nodes_count, crude_heap_allocator_pack( manager->allocator ) );
-  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( model_renderer_resources->default_nodes_transforms, gltf->nodes_count, crude_heap_allocator_pack( manager->allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( model_renderer_resources->nodes, gltf->nodes_count, crude_heap_allocator_pack( manager->test_allocator ) );
+  CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( model_renderer_resources->default_nodes_transforms, gltf->nodes_count, crude_heap_allocator_pack( manager->test_allocator ) );
   
   for ( uint32 i = 0; i < gltf->nodes_count; ++i )
   {
@@ -1320,6 +1320,8 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
     node = &model_renderer_resources->nodes[ i ];
     transform = &model_renderer_resources->default_nodes_transforms[ i ];
     
+    *node = CRUDE_COMPOUNT_EMPTY( crude_gfx_node );
+
     crude_string_copy( node->name, gltf_node->name ? gltf_node->name : "None", sizeof( node->name ) );
 
     if ( gltf_node->skin )
@@ -1342,7 +1344,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
     
     if ( gltf_node->children_count )
     {
-      CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->childrens, gltf_node->children_count, crude_heap_allocator_pack( manager->allocator ) );
+      CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->childrens, gltf_node->children_count, crude_heap_allocator_pack( manager->test_allocator ) );
       for ( uint32 k = 0; k < gltf_node->children_count; ++k )
       {
         node->childrens[ k ] = cgltf_node_index( gltf, gltf_node->children[ k ] );
@@ -1358,7 +1360,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
       uint32                                               mesh_index_offset;
 
       mesh_index_offset = gltf_mesh_index_to_mesh_primitive_index[ cgltf_mesh_index( gltf, gltf_node->mesh ) ];
-      CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->meshes, gltf_node->mesh->primitives_count, crude_heap_allocator_pack( manager->allocator )  );
+      CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->meshes, gltf_node->mesh->primitives_count, crude_heap_allocator_pack( manager->test_allocator )  );
 
       for ( uint32 pi = 0; pi < gltf_node->mesh->primitives_count; ++pi )
       {
@@ -1375,6 +1377,9 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
     /* Joints */
     if ( gltf_node->mesh && gltf_node->skin )
     {
+      CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->affected_joints, gltf_node->mesh->primitives_count, crude_heap_allocator_pack( manager->allocator ) );
+      CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->affected_joints_local_aabb, gltf_node->mesh->primitives_count, crude_heap_allocator_pack( manager->test_allocator ) );
+
       for ( uint32 pi = 0; pi < gltf_node->mesh->primitives_count; ++pi )
       {
         crude_gfx_aabb_cpu                                *joints_aabbs;
@@ -1397,7 +1402,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
 
         primitive_vertices_count = gltf_primitive->attributes[ 0 ].data->count;
 
-        CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( joints_aabbs, CRUDE_ARRAY_LENGTH( skin->joints ), crude_heap_allocator_pack( manager->allocator ) );
+        CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( joints_aabbs, CRUDE_ARRAY_LENGTH( skin->joints ), crude_heap_allocator_pack( manager->test_allocator ) );
 
         for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( joints_aabbs ); ++i )
         {
@@ -1480,15 +1485,16 @@ crude_gfx_model_renderer_resources_manager_gltf_load_nodes_
             primitive_joints_data += primitive_joints_stride;
           }
         }
+        
+        CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->affected_joints[ pi ], 0, crude_heap_allocator_pack( manager->allocator ) );
+        CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->affected_joints_local_aabb[ pi ], 0, crude_heap_allocator_pack( manager->allocator ) );
 
-        CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->affected_joints, 0, crude_heap_allocator_pack( manager->allocator ) );
-        CRUDE_ARRAY_INITIALIZE_WITH_LENGTH( node->affected_joints_local_aabb, 0, crude_heap_allocator_pack( manager->allocator ) );
         for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( joints_aabbs ); ++i )
         {
           if ( joints_aabbs[ i ].max.x != FLT_MAX )
           {
-            CRUDE_ARRAY_PUSH( node->affected_joints, i );
-            CRUDE_ARRAY_PUSH( node->affected_joints_local_aabb, joints_aabbs[ i ] );
+            CRUDE_ARRAY_PUSH( node->affected_joints[ pi ], i );
+            CRUDE_ARRAY_PUSH( node->affected_joints_local_aabb[ pi ], joints_aabbs[ i ] );
           }
         }
 

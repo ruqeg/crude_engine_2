@@ -33,7 +33,7 @@ exit_walker
   stats = CRUDE_REINTERPRET_CAST( memory_statistics*, user );
   stats->allocated_bytes += size;
   ++stats->allocation_count;
-  CRUDE_LOG_WARNING( CRUDE_CHANNEL_MEMORY, "Found active allocation %p, %llu", ptr, size );
+  CRUDE_LOG_ERROR( CRUDE_CHANNEL_MEMORY, "Found active allocation %p, %llu", ptr, size );
 }
 
 /*****************************************
@@ -102,7 +102,6 @@ crude_heap_allocator_allocate
   allocated_memory = tlsf_malloc( allocator->tlsf_handle, size );
   CRUDE_ASSERTM( CRUDE_CHANNEL_MEMORY, allocated_memory, "Failed to allocate %i bytes in \"%s\" allocator!", size, allocator->name ? allocator->name : "unknown allocator" );
   actual_size = tlsf_block_size( allocated_memory );
-  
   CRUDE_PROFILER_ALLOC_NAME( allocated_memory, actual_size, allocator->name );
   allocator->occupied += actual_size;
 
