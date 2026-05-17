@@ -98,6 +98,7 @@ crude_gfx_opaque_late_pass_render
       CRUDE_OFFSETOF( crude_gfx_mesh_draw_count, opaque_mesh_visible_late_count ),
       pass->scene_renderer->total_visible_meshes_instances_count,
       sizeof( crude_gfx_mesh_draw_command ) );
+#elif CRUDE_GFX_DX12
 #elif CRUDE_GFX_NAPI
 #else
   CRUDE_GFX_RHI_TO_IMPLEMENTIT
@@ -124,6 +125,7 @@ crude_gfx_opaque_late_pass_render
       CRUDE_OFFSETOF( crude_gfx_mesh_draw_count, opaque_mesh_visible_late_count ),
       pass->scene_renderer->total_visible_meshes_instances_count,
       sizeof( crude_gfx_mesh_draw_command ) );
+#elif CRUDE_GFX_DX12
 #elif CRUDE_GFX_NAPI
 #else
   CRUDE_GFX_RHI_TO_IMPLEMENTIT

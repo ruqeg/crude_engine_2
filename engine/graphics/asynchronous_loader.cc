@@ -253,8 +253,12 @@ crude_gfx_asynchronous_loader_update
 
       CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Texture %s %i start copy", texture->name, aligned_image_size );
       
-#if !CRUDE_GFX_NAPI
+#if CRUDE_GFX_VULKAN
       crude_memory_copy( asynloader->staging_allocation.cpu_address, request.data, aligned_image_size );
+#elif CRUDE_GFX_DX12
+#elif CRUDE_GFX_NAPI
+#else
+      CRUDE_GFX_RHI_TO_IMPLEMENTIT
 #endif
 
       crude_gfx_cmd_memory_copy_to_texture( cmd, texture->handle, asynloader->staging_allocation );

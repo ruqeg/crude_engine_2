@@ -80,5 +80,5 @@
 #define CRUDE_GFX_RAY_TRACING_SOLID_DEBUG_ENABLED          1 && CRUDE_GFX_RAY_TRACING_ENABLED
 
 #define CRUDE_GFX_VULKAN                                   0
-#define CRUDE_GFX_DX12                                     0
-#define CRUDE_GFX_NAPI                                     1
+#define CRUDE_GFX_DX12                                     1
+#define CRUDE_GFX_NAPI                                     0

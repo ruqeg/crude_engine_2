@@ -27,6 +27,7 @@ crude_platform_service_initialize
     CRUDE_ABORT( CRUDE_CHANNEL_PLATFORM, "Unable to load SDL Vulkan: %s", SDL_GetError() );
     return;
   }
+#elif CRUDE_GFX_DX12
 #elif CRUDE_GFX_NAPI
 #else
   CRUDE_GFX_RHI_TO_IMPLEMENTIT
@@ -40,6 +41,7 @@ crude_platform_service_deinitialize
 {
 #if CRUDE_GFX_VULKAN
   SDL_Vulkan_UnloadLibrary();
+#elif CRUDE_GFX_DX12
 #elif CRUDE_GFX_NAPI
 #else
   CRUDE_GFX_RHI_TO_IMPLEMENTIT

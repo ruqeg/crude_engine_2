@@ -196,6 +196,7 @@ crude_gfx_model_renderer_resources_manager_intialize
     crude_memory_copy( manager->bottom_level_acceleration_structure_transform_hga.cpu_address, &vk_transform_matrix, sizeof( vk_transform_matrix ) );
   }
 #elif CRUDE_GFX_NAPI
+#elif CRUDE_GFX_DX12
 #else
 CRUDE_GFX_RHI_TO_IMPLEMENTIT
 #endif
@@ -210,6 +211,7 @@ crude_gfx_model_renderer_resources_manager_deintialize
 #if CRUDE_GFX_VULKAN
   crude_gfx_memory_deallocate( manager->gpu, manager->bottom_level_acceleration_structure_transform_hga );
 #elif CRUDE_GFX_NAPI
+#elif CRUDE_GFX_DX12
 #else
 CRUDE_GFX_RHI_TO_IMPLEMENTIT
 #endif

@@ -47,6 +47,7 @@ CRUDE_SHADER_STRUCT( crude_gfx_debug_counts )
   uint32                                                   debug_cubes_first_vertex;
   uint32                                                   debug_cubes_first_instance;
 #endif 
+#elif CRUDE_GFX_DX12
 #elif CRUDE_GFX_NAPI
 #else
   CRUDE_GFX_RHI_TO_IMPLEMENTIT

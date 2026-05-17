@@ -1245,8 +1245,12 @@ crude_gfx_create_texture
     crude_gfx_rhi_create_buffer( &gpu->rhi_device, &buffre_creation, &staging_buffer );
     
     crude_gfx_rhi_map_buffer( &gpu->rhi_device, staging_buffer, &destination_data );
-#if !CRUDE_GFX_NAPI
+#if CRUDE_GFX_VULKAN
     memcpy( destination_data, creation->initial_data, image_size );
+#elif CRUDE_GFX_DX12
+#elif CRUDE_GFX_NAPI
+#else
+    CRUDE_GFX_RHI_TO_IMPLEMENTIT
 #endif
     crude_gfx_rhi_unmap_buffer( &gpu->rhi_device, staging_buffer );
     

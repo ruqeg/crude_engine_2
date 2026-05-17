@@ -67,6 +67,7 @@ CRUDE_SHADER_STRUCT( crude_gfx_mesh_draw_command )
   uint32                                                   indirect_mesh_first_vertex;
   uint32                                                   indirect_mesh_first_instance;
 #endif
+#elif CRUDE_GFX_DX12
 #elif CRUDE_GFX_NAPI
 #else
   CRUDE_GFX_RHI_TO_IMPLEMENTIT

@@ -887,8 +887,12 @@ crude_engine_graphics_main_thread_loop_
 
   crude_gfx_new_frame( &engine->gpu );
   
-#if !CRUDE_GFX_NAPI
+#if CRUDE_GFX_VULKAN
   crude_engine_gui_queue_draw_( engine );
+#elif CRUDE_GFX_DX12
+#elif CRUDE_GFX_NAPI
+#else
+  CRUDE_GFX_RHI_TO_IMPLEMENTIT
 #endif
   
   new_buffers_recrteated_or_model_initialized = crude_gfx_scene_renderer_update_instances_from_node( &engine->scene_renderer, engine->world, engine->main_node );
@@ -935,8 +939,12 @@ crude_engine_graphics_task_set_thread_loop_
   
   final_render_texture = crude_gfx_access_texture( &engine->gpu, crude_gfx_render_graph_builder_access_resource_by_name( engine->scene_renderer.render_graph->builder, CRUDE_GFX_PRESENT_TEXTURE_NAME )->resource_info.texture.handle );
   
-#if !CRUDE_GFX_NAPI
+#if CRUDE_GFX_VULKAN
   crude_gfx_scene_renderer_render( &engine->scene_renderer );
+#elif CRUDE_GFX_DX12
+#elif CRUDE_GFX_NAPI
+#else
+  CRUDE_GFX_RHI_TO_IMPLEMENTIT
 #endif
   crude_gfx_scene_renderer_queue( &engine->scene_renderer );
 

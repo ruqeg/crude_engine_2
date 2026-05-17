@@ -540,9 +540,13 @@ crude_gfx_scene_renderer_update_dynamic_buffers
 {
   CRUDE_PROFILER_ZONE_NAME( "crude_gfx_scene_renderer_update_dynamic_buffers" );
   crude_gfx_cmd_push_marker( scene_renderer->primary_cmd, "crude_gfx_scene_renderer_update_dynamic_buffers" );
-#if !CRUDE_GFX_NAPI
+#if CRUDE_GFX_VULKAN
   crude_scene_renderer_cull_lights_( scene_renderer );
   crude_gfx_scene_renderer_update_dynamic_buffers_( scene_renderer, scene_renderer->primary_cmd );
+#elif CRUDE_GFX_DX12
+#elif CRUDE_GFX_NAPI
+#else
+  CRUDE_GFX_RHI_TO_IMPLEMENTIT
 #endif
   crude_gfx_cmd_pop_marker( scene_renderer->primary_cmd );
   CRUDE_PROFILER_ZONE_END;
@@ -928,6 +932,7 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
     debug_draw_command->draw_indirect_2dline.instanceCount = 1u;
     debug_draw_command->draw_indirect_3dline.instanceCount = 1u;
     debug_draw_command->draw_indirect_cube.vertexCount = 36u;
+#elif CRUDE_GFX_DX12
 #elif CRUDE_GFX_NAPI
 #else
   CRUDE_GFX_RHI_TO_IMPLEMENTIT
@@ -1237,6 +1242,7 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
 {
 #if CRUDE_GFX_VULKAN
   VkAccelerationStructureInstanceKHR                      *vk_acceleration_structure_instances;
+#elif CRUDE_GFX_DX12
 #elif CRUDE_GFX_NAPI
 #else
 CRUDE_GFX_RHI_TO_IMPLEMENTIT
@@ -1346,6 +1352,13 @@ CRUDE_GFX_RHI_TO_IMPLEMENTIT
     CRUDE_GFX_RHI_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR );
 
   crude_memory_copy( scene_renderer->tlas_instances_hga.cpu_address, vk_acceleration_structure_instances, max_instance_count * sizeof( VkAccelerationStructureInstanceKHR ) );
+#elif CRUDE_GFX_DX12
+  scene_renderer->tlas_instances_hga = crude_gfx_memory_allocate_with_pname(
+    scene_renderer->gpu,
+    0,
+    CRUDE_GFX_MEMORY_TYPE_CPU_GPU, /* !TODO try gpu only and check if it affect perfomance*/
+    "tlas_instances_hga",
+    CRUDE_GFX_RHI_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR );
 #elif CRUDE_GFX_NAPI
   scene_renderer->tlas_instances_hga = crude_gfx_memory_allocate_with_pname(
     scene_renderer->gpu,
@@ -1436,6 +1449,7 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
 {
 #if CRUDE_GFX_VULKAN
   VkAccelerationStructureInstanceKHR                      *vk_acceleration_structure_instances;
+#elif CRUDE_GFX_DX12
 #elif CRUDE_GFX_NAPI
 #else
 CRUDE_GFX_RHI_TO_IMPLEMENTIT
@@ -1539,7 +1553,7 @@ CRUDE_GFX_RHI_TO_IMPLEMENTIT
   max_instance_count = CRUDE_ARRAY_LENGTH( vk_acceleration_structure_instances );
 
   crude_memory_copy( scene_renderer->tlas_instances_hga.cpu_address, vk_acceleration_structure_instances, sizeof( VkAccelerationStructureInstanceKHR ) * max_instance_count );
-  
+#elif CRUDE_GFX_DX12
 #elif CRUDE_GFX_NAPI
 #else
 CRUDE_GFX_RHI_TO_IMPLEMENTIT

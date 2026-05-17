@@ -94,6 +94,7 @@ crude_gfx_debug_pass_render
       CRUDE_OFFSETOF( crude_gfx_debug_counts, draw_indirect_2dline ),
       1u, sizeof( crude_gfx_debug_counts ) );
 #elif CRUDE_GFX_NAPI
+#elif CRUDE_GFX_DX12
 #else
     CRUDE_GFX_RHI_TO_IMPLEMENTIT
 #endif
@@ -120,6 +121,7 @@ crude_gfx_debug_pass_render
       CRUDE_OFFSETOF( crude_gfx_debug_counts, draw_indirect_cube ),
       1u, sizeof( crude_gfx_debug_counts ) );
 #elif CRUDE_GFX_NAPI
+#elif CRUDE_GFX_DX12
 #else
     CRUDE_GFX_RHI_TO_IMPLEMENTIT
 #endif

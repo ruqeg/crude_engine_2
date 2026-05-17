@@ -355,8 +355,12 @@ crude_gfx_cmd_set_scissor
     scissor.extent.y = cmd->gpu->renderer_size.y;
   }
   
-#if !CRUDE_GFX_NAPI
+#if CRUDE_GFX_VULKAN
   CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, scissor.extent.x > 0 && scissor.extent.y > 0 && scissor.offset.x >= 0 && scissor.offset.y >= 0, "vk_scissor issues!" );
+#elif CRUDE_GFX_DX12
+#elif CRUDE_GFX_NAPI
+#else
+  CRUDE_GFX_RHI_TO_IMPLEMENTIT
 #endif
   
   crude_gfx_rhi_command_buffer_set_scissor( cmd->rhi_cmd_buffer, &scissor );
@@ -494,8 +498,8 @@ crude_gfx_cmd_add_buffer_barrier
 
   buffer_memory_barrier = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_buffer_memory_barrier );
   
-  buffer_memory_barrier.src_queue_family_index = crude_gfx_rhi_queue_empty( ).vk_queue_family;
-  buffer_memory_barrier.dst_queue_family_index = crude_gfx_rhi_queue_empty( ).vk_queue_family;
+  buffer_memory_barrier.src_queue = crude_gfx_rhi_queue_empty( );
+  buffer_memory_barrier.dst_queue = crude_gfx_rhi_queue_empty( );
 
   buffer_memory_barrier.src_access_mask = crude_gfx_rhi_resource_state_to_access_flags( old_state );
   buffer_memory_barrier.src_stage_mask = crude_gfx_rhi_determine_pipeline_stage_flags(
@@ -629,8 +633,8 @@ crude_gfx_cmd_add_image_barrier_ext5
   image_memory_barrier.dst_access_mask = dst_access_mask;
   image_memory_barrier.old_layout = crude_gfx_rhi_resource_state_to_image_layout( old_state );
   image_memory_barrier.new_layout = crude_gfx_rhi_resource_state_to_image_layout( new_state );
-  image_memory_barrier.src_queue_family_index = source_queue.vk_queue_family;
-  image_memory_barrier.dst_queue_family_index = destination.vk_queue_family;
+  image_memory_barrier.src_queue = source_queue;
+  image_memory_barrier.dst_queue = destination;
   image_memory_barrier.image = rhi_image;
   image_memory_barrier.subresource_range.aspect_mask = is_depth ? CRUDE_GFX_RHI_IMAGE_ASPECT_DEPTH_BIT : CRUDE_GFX_RHI_IMAGE_ASPECT_COLOR_BIT;
   image_memory_barrier.subresource_range.base_mip_level = base_mip_level;
