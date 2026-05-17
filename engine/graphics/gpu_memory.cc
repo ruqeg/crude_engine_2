@@ -183,7 +183,10 @@ crude_gfx_memory_allocate_cpu_gpu_copy
 )
 {
   crude_gfx_memory_allocation allocation = crude_gfx_memory_allocate( gpu, size, CRUDE_GFX_MEMORY_TYPE_CPU_GPU, additional_flags );
+#if !CRUDE_GFX_NAPI
+  CRUDE_ASSERT( allocation.cpu_address );
   crude_memory_copy( allocation.cpu_address, data, size );
+#endif
   return allocation;
 }
 

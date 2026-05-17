@@ -1146,19 +1146,6 @@ static crude_gfx_rhi_buffer_usage_flags const CRUDE_GFX_RHI_BUFFER_USAGE_DATA_GR
 static crude_gfx_rhi_buffer_usage_flags const CRUDE_GFX_RHI_BUFFER_USAGE_TILE_MEMORY_BIT_QCOM = VK_BUFFER_USAGE_2_TILE_MEMORY_BIT_QCOM;
 static crude_gfx_rhi_buffer_usage_flags const CRUDE_GFX_RHI_BUFFER_USAGE_PREPROCESS_BUFFER_BIT_EXT = VK_BUFFER_USAGE_2_PREPROCESS_BUFFER_BIT_EXT;
 
-typedef struct crude_gfx_rhi_acceleration_structure_build_sizes_info
-{
-  crude_gfx_rhi_device_size                                acceleration_structure_size;
-  crude_gfx_rhi_device_size                                update_scratch_size;
-  crude_gfx_rhi_device_size                                build_scratch_size;
-} crude_gfx_rhi_acceleration_structure_build_sizes_info;
-
-typedef struct crude_gfx_rhi_surface_format
-{
-  crude_gfx_rhi_format                                     format;
-  crude_gfx_rhi_color_space                                color_space;
-} crude_gfx_rhi_surface_format;
-
 typedef struct crude_gfx_rhi_command_buffer
 {
   VkCommandBuffer                                          vk_command_buffer;
@@ -1203,8 +1190,7 @@ typedef struct crude_gfx_rhi_queue
   VkQueue                                                  vk_queue;
   uint32                                                   vk_queue_family;
 } crude_gfx_rhi_queue;
-  
-#define CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS       NULL
+
 
 typedef struct crude_gfx_rhi_device
 {
@@ -1284,15 +1270,7 @@ typedef struct crude_gfx_rhi_descriptor_set_layout
 typedef struct crude_gfx_rhi_command_pool
 {
   VkCommandPool                                            vk_command_pool;
-} crude_gfx_rhi_command_pool;
-
-typedef struct crude_gfx_rhi_descriptor_set_layout_binding
-{
-  uint32                                                   binding;
-  crude_gfx_rhi_descriptor_type                            descriptor_type;
-  uint32                                                   descriptor_count;
-  crude_gfx_rhi_shader_stage_flags                         stage_flags;
-} crude_gfx_rhi_descriptor_set_layout_binding;
+} crude_gfx_rhi_command_pool;  
 
 typedef struct crude_gfx_rhi_acceleration_structure
 {
@@ -1309,546 +1287,8 @@ typedef struct crude_gfx_rhi_surface
   VkSurfaceKHR                                             vk_surface;
 } crude_gfx_rhi_surface;
 
-typedef struct crude_gfx_rhi_image_subresource_layers
-{
-  crude_gfx_rhi_image_aspect_flags                         aspect_mask;
-  uint32                                                   mip_level;
-  uint32                                                   base_array_layer;
-  uint32                                                   layer_count;
-} crude_gfx_rhi_image_subresource_layers;
+#define CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS       NULL
 
-typedef struct crude_gfx_rhi_image_subresource_range
-{
-  crude_gfx_rhi_image_aspect_flags                         aspect_mask;
-  uint32                                                   base_mip_level;
-  uint32                                                   level_count;
-  uint32                                                   base_array_layer;
-  uint32                                                   layer_count;
-} crude_gfx_rhi_image_subresource_range;
-
-typedef struct crude_gfx_rhi_image_copy
-{
-  crude_gfx_rhi_image_subresource_layers                   src_subresource;
-  XMFLOAT3                                                 src_offset;
-  crude_gfx_rhi_image_subresource_layers                   dst_subresource;
-  XMFLOAT3                                                 dst_offset;
-  XMFLOAT3                                                 extent;
-} crude_gfx_rhi_image_copy;
-
-typedef struct crude_gfx_rhi_image_blit
-{
-  crude_gfx_rhi_image_subresource_layers                   src_subresource;
-  XMFLOAT3                                                 src_offsets[ 2 ];
-  crude_gfx_rhi_image_subresource_layers                   dst_subresource;
-  XMFLOAT3                                                 dst_offsets[ 2 ];
-} crude_gfx_rhi_image_blit;
-
-typedef struct crude_gfx_rhi_viewport
-{
-  float32                                                  x;
-  float32                                                  y;
-  float32                                                  width;
-  float32                                                  height;
-  float32                                                  min_depth;
-  float32                                                  max_depth;
-} crude_gfx_rhi_viewport;
-
-typedef struct crude_gfx_rhi_scissor
-{
-  XMFLOAT2                                                 offset;
-  XMFLOAT2                                                 extent;
-} crude_gfx_rhi_scissor;
-
-typedef struct crude_gfx_rhi_buffer_memory_barrier
-{
-  crude_gfx_rhi_pipeline_stage_flags                       src_stage_mask;
-  crude_gfx_rhi_access_flags                               src_access_mask;
-  crude_gfx_rhi_pipeline_stage_flags                       dst_stage_mask;
-  crude_gfx_rhi_access_flags                               dst_access_mask;
-  uint32                                                   src_queue_family_index;
-  uint32                                                   dst_queue_family_index;
-  crude_gfx_rhi_buffer                                    *buffer;
-  crude_gfx_rhi_device_size                                offset;
-  crude_gfx_rhi_device_size                                size;
-} crude_gfx_rhi_buffer_memory_barrier;
-
-typedef struct crude_gfx_rhi_image_memory_barrier
-{
-  crude_gfx_rhi_pipeline_stage_flags                       src_stage_mask;
-  crude_gfx_rhi_access_flags                               src_access_mask;
-  crude_gfx_rhi_pipeline_stage_flags                       dst_stage_mask;
-  crude_gfx_rhi_access_flags                               dst_access_mask;
-  crude_gfx_rhi_image_layout                               old_layout;
-  crude_gfx_rhi_image_layout                               new_layout;
-  uint32                                                   src_queue_family_index;
-  uint32                                                   dst_queue_family_index;
-  crude_gfx_rhi_image                                      image;
-  crude_gfx_rhi_image_subresource_range                    subresource_range;
-} crude_gfx_rhi_image_memory_barrier;
-
-typedef struct crude_gfx_rhi_buffer_image_copy
-{
-  crude_gfx_rhi_device_size                                buffer_offset;
-  uint32                                                   buffer_row_length;
-  uint32                                                   buffer_image_height;
-  crude_gfx_rhi_image_subresource_layers                   image_subresource;
-  XMFLOAT3                                                 image_offset;
-  XMFLOAT3                                                 image_extent;
-} crude_gfx_rhi_buffer_image_copy;
-
-typedef struct crude_gfx_rhi_buffer_copy
-{
-  crude_gfx_rhi_device_size                                src_offset;
-  crude_gfx_rhi_device_size                                dst_offset;
-  crude_gfx_rhi_device_size                                size;
-} crude_gfx_rhi_buffer_copy;
-
-typedef struct crude_gfx_rhi_debug_utils_label
-{
-  char const                                              *label_name;
-  float32                                                  color[ 4 ];
-} crude_gfx_rhi_debug_utils_label;
-
-typedef struct crude_gfx_rhi_strided_device_address_region
-{
-  crude_gfx_rhi_device_address                             device_address;
-  crude_gfx_rhi_device_size                                stride;
-  crude_gfx_rhi_device_size                                size;
-} crude_gfx_rhi_strided_device_address_region;
-
-typedef struct crude_gfx_rhi_semaphore_submit_info
-{
-  crude_gfx_rhi_semaphore                                  semaphore;
-  uint64                                                   value;
-  crude_gfx_rhi_pipeline_stage_flags                       stage_mask;
-  uint32                                                   device_index;
-} crude_gfx_rhi_semaphore_submit_info;
-
-typedef struct crude_gfx_rhi_command_buffer_submit_info
-{
-  crude_gfx_rhi_command_buffer                             command_buffer;
-  uint32                                                   device_mask;
-} crude_gfx_rhi_command_buffer_submit_info;
-
-typedef struct crude_gfx_rhi_submit_info
-{
-  crude_gfx_rhi_submit_flags                               flags;
-  uint32                                                   wait_semaphore_info_count;
-  crude_gfx_rhi_semaphore_submit_info const               *wait_semaphore_infos;
-  uint32                                                   command_buffer_info_count;
-  crude_gfx_rhi_command_buffer_submit_info                *command_buffer_infos;
-  uint32                                                   signal_semaphore_info_count;
-  crude_gfx_rhi_semaphore_submit_info const               *signal_semaphore_infos;
-} crude_gfx_rhi_submit_info;
-
-typedef struct crude_gfx_rhi_sampler_create_info
-{
-  crude_gfx_rhi_sampler_create_flags                       flags;
-  crude_gfx_rhi_filter                                     mag_filter;
-  crude_gfx_rhi_filter                                     min_filter;
-  crude_gfx_rhi_sampler_mipmap_mode                        mipmap_mode;
-  crude_gfx_rhi_sampler_address_mode                       address_mode_u;
-  crude_gfx_rhi_sampler_address_mode                       address_mode_v;
-  crude_gfx_rhi_sampler_address_mode                       address_mode_w;
-  float32                                                  mip_lod_bias;
-  bool                                                     anisotropy_enable;
-  float32                                                  max_anisotropy;
-  bool                                                     compare_enable;
-  crude_gfx_rhi_compare_op                                 compare_op;
-  float32                                                  min_lod;
-  float32                                                  max_lod;
-  crude_gfx_rhi_border_color                               border_color;
-  bool                                                     unnormalized_coordinates;
-  crude_gfx_rhi_sampler_reduction_mode                     reduction_mode;
-} crude_gfx_rhi_sampler_create_info;
-
-typedef struct crude_gfx_rhi_buffer_create_info
-{
-  crude_gfx_rhi_device_size                                size;
-  crude_gfx_rhi_buffer_usage_flags                         usage;
-  bool                                                     persistent;
-  bool                                                     device_only;
-} crude_gfx_rhi_buffer_create_info;
-
-typedef struct crude_gfx_rhi_image_create_info
-{
-  crude_gfx_rhi_image_create_flags                         flags;
-  crude_gfx_rhi_image_type                                 image_type;
-  crude_gfx_rhi_format                                     format;
-  XMFLOAT3                                                 extent;
-  uint32                                                   mip_levels;
-  uint32                                                   array_layers;
-  crude_gfx_rhi_sample_count_flag_bits                     samples;
-  crude_gfx_rhi_image_tiling                               tiling;
-  crude_gfx_rhi_image_usage_flags                          usage;
-  crude_gfx_rhi_sharing_mode                               sharing_mode;
-  crude_gfx_rhi_image                                     *alias_image;
-} crude_gfx_rhi_image_create_info;
-
-typedef struct crude_gfx_rhi_component_mapping
-{
-  crude_gfx_rhi_component_swizzle                          r;
-  crude_gfx_rhi_component_swizzle                          g;
-  crude_gfx_rhi_component_swizzle                          b;
-  crude_gfx_rhi_component_swizzle                          a;
-} crude_gfx_rhi_component_mapping;
-
-typedef struct crude_gfx_rhi_image_view_create_info
-{
-  crude_gfx_rhi_image_view_create_flags                    flags;
-  crude_gfx_rhi_image                                      image;
-  crude_gfx_rhi_image_view_type                            view_type;
-  crude_gfx_rhi_format                                     format;
-  crude_gfx_rhi_component_mapping                          components;
-  crude_gfx_rhi_image_subresource_range                    subresource_range;
-} crude_gfx_rhi_image_view_create_info;
-
-typedef struct crude_gfx_rhi_shader_module_create_info
-{
-  crude_gfx_rhi_shader_module_create_flags                 flags;
-  uint64                                                   code_size;
-  uint32 const                                            *code;
-} crude_gfx_rhi_shader_module_create_info;
-
-typedef struct crude_gfx_rhi_push_constant_range
-{
-  crude_gfx_rhi_shader_stage_flags                         stage_flags;
-  uint32                                                   offset;
-  uint32                                                   size;
-} crude_gfx_rhi_push_constant_range;
-
-typedef struct crude_gfx_rhi_pipeline_layout_create_info
-{
-  crude_gfx_rhi_pipeline_layout_create_flags               flags;
-  uint32                                                   set_layout_count;
-  crude_gfx_rhi_descriptor_set_layout                      set_layouts[ 4 ];
-  crude_gfx_rhi_push_constant_range                        push_constant_range;
-  bool                                                     has_push_constant_range;
-} crude_gfx_rhi_pipeline_layout_create_info;
-
-typedef struct crude_gfx_rhi_vertex_input_binding_description
-{
-  uint32                                                   binding;
-  uint32                                                   stride;
-  crude_gfx_rhi_vertex_input_rate                          input_rate;
-} crude_gfx_rhi_vertex_input_binding_description;
-
-typedef struct crude_gfx_rhi_pipeline_vertex_input_attribute_description
-{
-  uint32_t                                                 location;
-  uint32_t                                                 binding;
-  crude_gfx_rhi_format                                     format;
-  uint32_t                                                 offset;
-} crude_gfx_rhi_pipeline_vertex_input_attribute_description;
-
-typedef struct crude_gfx_rhi_pipeline_vertex_input_state_create_info
-{
-  uint32                                                   vertex_binding_description_count;
-  crude_gfx_rhi_vertex_input_binding_description           vertex_binding_descriptions[ 10 ];
-  uint32                                                   vertex_attribute_description_count;
-  crude_gfx_rhi_pipeline_vertex_input_attribute_description vertex_attribute_descriptions[ 10 ];
-} crude_gfx_rhi_pipeline_vertex_input_state_create_info;
-
-typedef struct crude_gfx_rhi_pipeline_shader_stage_create_info
-{
-  crude_gfx_rhi_shader_stage_flag_bits                     stage;
-  crude_gfx_rhi_shader_module                              rhi_module;
-  char const                                              *name;
-} crude_gfx_rhi_pipeline_shader_stage_create_info;
-
-typedef struct crude_gfx_rhi_pipeline_rendering_create_info
-{
-  uint32                                                   view_mask;
-  uint32                                                   color_attachment_count;
-  crude_gfx_rhi_format const                              *color_attachment_formats;
-  crude_gfx_rhi_format                                     depth_attachment_format;
-  crude_gfx_rhi_format                                     stencil_attachment_format;
-} crude_gfx_rhi_pipeline_rendering_create_info;
-
-typedef struct crude_gfx_rhi_pipeline_input_assembly_state_create_info
-{
-  crude_gfx_rhi_primitive_topology                         topology;
-  bool                                                     primitive_restart_enable;
-} crude_gfx_rhi_pipeline_input_assembly_state_create_info;
-
-typedef struct crude_gfx_rhi_pipeline_viewport_state_create_info
-{
-  uint32                                                   viewport_count;
-  uint32                                                   scissor_count;
-} crude_gfx_rhi_pipeline_viewport_state_create_info;
-
-typedef struct crude_gfx_rhi_pipeline_rasterization_state_create_info
-{
-  bool                                                     depth_clamp_enable;
-  bool                                                     rasterizer_discard_enable;
-  crude_gfx_rhi_polygon_mode                               polygon_mode;
-  crude_gfx_rhi_pipeline_cull_mode_flags                   cull_mode;
-  crude_gfx_rhi_front_face                                 front_face;
-  bool                                                     depth_bias_enable;
-  float32                                                  depth_bias_constant_factor;
-  float32                                                  depth_bias_clamp;
-  float32                                                  depth_bias_slope_factor;
-  float32                                                  line_width;
-} crude_gfx_rhi_pipeline_rasterization_state_create_info;
-
-typedef struct crude_gfx_rhi_pipeline_multisample_state_create_info
-{
-  crude_gfx_rhi_sample_count_flag_bits                     rasterization_samples;
-  bool                                                     sample_shading_enable;
-  float32                                                  min_sample_shading;
-  bool                                                     alpha_to_coverage_enable;
-  bool                                                     alpha_to_one_enable;
-} crude_gfx_rhi_pipeline_multisample_state_create_info;
-
-typedef struct crude_gfx_rhi_stencil_op_state
-{
-  crude_gfx_rhi_stencil_op                                 fail_op;
-  crude_gfx_rhi_stencil_op                                 pass_op;
-  crude_gfx_rhi_stencil_op                                 depth_fail_op;
-  crude_gfx_rhi_compare_op                                 compare_op;
-  uint32                                                   compare_mask;
-  uint32                                                   write_mask;
-  uint32                                                   reference;
-} crude_gfx_rhi_stencil_op_state;
-
-typedef struct crude_gfx_rhi_pipeline_depth_stencil_state_create_info
-{
-  bool                                                     depth_test_enable;
-  bool                                                     depth_write_enable;
-  crude_gfx_rhi_compare_op                                 depth_compare_op;
-  bool                                                     depth_bounds_test_enable;
-  bool                                                     stencil_test_enable;
-  crude_gfx_rhi_stencil_op_state                           front;
-  crude_gfx_rhi_stencil_op_state                           back;
-  float32                                                  min_depth_bounds;
-  float32                                                  max_depth_bounds;
-} crude_gfx_rhi_pipeline_depth_stencil_state_create_info;
-
-
-typedef struct crude_gfx_rhi_pipeline_color_blend_attachment_state
-{
-  bool                                                     blend_enable;
-  crude_gfx_rhi_blend_factor                               src_color_blend_factor;
-  crude_gfx_rhi_blend_factor                               dst_color_blend_factor;
-  crude_gfx_rhi_blend_op                                   color_blend_op;
-  crude_gfx_rhi_blend_factor                               src_alpha_blend_factor;
-  crude_gfx_rhi_blend_factor                               dst_alpha_blend_factor;
-  crude_gfx_rhi_blend_op                                   alpha_blend_op;
-  crude_gfx_rhi_color_component_flags                      color_write_mask;
-} crude_gfx_rhi_pipeline_color_blend_attachment_state;
-
-typedef struct crude_gfx_rhi_pipeline_color_blend_state_create_info
-{
-  bool                                                     logic_op_enable;
-  crude_gfx_rhi_logic_op                                   logic_op;
-  uint32                                                   attachments_count;
-  crude_gfx_rhi_pipeline_color_blend_attachment_state      attachments[ 8 ];
-  float32                                                  blend_constants[ 4 ];
-} crude_gfx_rhi_pipeline_color_blend_state_create_info;
-
-typedef struct crude_gfx_rhi_graphics_pipeline_create_info
-{
-  crude_gfx_rhi_pipeline_create_flags                      flags;
-  uint32                                                   stage_count;
-  crude_gfx_rhi_pipeline_shader_stage_create_info         *stages;
-  crude_gfx_rhi_pipeline_vertex_input_state_create_info   *vertex_input_state;
-  crude_gfx_rhi_pipeline_input_assembly_state_create_info *input_assembly_state;
-  crude_gfx_rhi_pipeline_viewport_state_create_info       *viewport_state;
-  crude_gfx_rhi_pipeline_rasterization_state_create_info  *rasterization_state;
-  crude_gfx_rhi_pipeline_multisample_state_create_info    *multisample_state;
-  crude_gfx_rhi_pipeline_depth_stencil_state_create_info  *depth_stencil_state;
-  crude_gfx_rhi_pipeline_color_blend_state_create_info    *color_blend_state;
-  crude_gfx_rhi_pipeline_rendering_create_info            *rendering_state;
-  crude_gfx_rhi_pipeline_layout                            pipeline_layout;
-} crude_gfx_rhi_graphics_pipeline_create_info;
-
-typedef struct crude_gfx_rhi_compute_pipeline_create_info
-{
-  crude_gfx_rhi_pipeline_shader_stage_create_info          stage;
-  crude_gfx_rhi_pipeline_layout                            pipeline_layout;
-} crude_gfx_rhi_compute_pipeline_create_info;
-
-typedef struct crude_gfx_rhi_ray_tracing_shader_group_create_info
-{
-  crude_gfx_rhi_ray_tracing_shader_group_type              type;
-  uint32                                                   general_shader;
-  uint32                                                   closest_hit_shader;
-  uint32                                                   any_hit_shader;
-  uint32                                                   intersection_shader;
-} crude_gfx_rhi_ray_tracing_shader_group_create_info;
-
-typedef struct crude_gfx_rhi_ray_tracing_pipeline_create_info
-{
-  uint32                                                   stage_count;
-  crude_gfx_rhi_pipeline_shader_stage_create_info         *stages;
-  uint32                                                   group_count;
-  crude_gfx_rhi_ray_tracing_shader_group_create_info      *groups;
-  uint32                                                   max_pipeline_ray_recursion_depth;
-  crude_gfx_rhi_pipeline_layout                            pipeline_layout;
-} crude_gfx_rhi_ray_tracing_pipeline_create_info;
-
-typedef struct crude_gfx_rhi_descriptor_set_layout_create_info
-{
-  uint32                                                   binding_count;
-  crude_gfx_rhi_descriptor_set_layout_binding             *bindings;
-  bool                                                     bindless;
-} crude_gfx_rhi_descriptor_set_layout_create_info;
-
-typedef struct crude_gfx_rhi_swapchain_create_info
-{
-  crude_gfx_rhi_surface                                    surface;
-} crude_gfx_rhi_swapchain_create_info;
-
-typedef struct crude_gfx_rhi_descriptor_set_create_info
-{
-  crude_gfx_rhi_descriptor_pool                            descriptor_pool;
-  crude_gfx_rhi_descriptor_set_layout                      descriptor_set_layout;
-  bool                                                     bindless;
-} crude_gfx_rhi_descriptor_set_create_info;
-
-typedef struct crude_gfx_rhi_command_pool_create_info
-{
-  crude_gfx_rhi_queue                                      queue;
-} crude_gfx_rhi_command_pool_create_info;
-
-typedef struct crude_gfx_rhi_command_buffer_create_info
-{
-  crude_gfx_rhi_command_pool                               command_pool;
-} crude_gfx_rhi_command_buffer_create_info;
-
-typedef struct crude_gfx_rhi_queru_pool_create_info
-{
-  crude_gfx_rhi_query_type                                 query_type;
-  uint32                                                   query_count;
-  crude_gfx_rhi_query_pipeline_statistics_flags            pipeline_statistics;
-} crude_gfx_rhi_queru_pool_create_info;
-
-typedef union crude_gfx_rhi_device_or_host_address
-{
-  crude_gfx_rhi_device_address                             device_address;
-  void                                                    *host_address;
-} crude_gfx_rhi_device_or_host_address;
-
-typedef union crude_gfx_rhi_device_or_host_address_const
-{
-  crude_gfx_rhi_device_address                             device_address;
-  void const                                              *host_address;
-} crude_gfx_rhi_device_or_host_address_const;
-
-typedef struct crude_gfx_rhi_acceleration_structure_geometry_triangles_data
-{
-  crude_gfx_rhi_format                                     vertex_format;
-  crude_gfx_rhi_device_or_host_address_const               vertex_data;
-  crude_gfx_rhi_device_size                                vertex_stride;
-  uint32                                                   max_vertex;
-  crude_gfx_rhi_index_type                                 index_type;
-  crude_gfx_rhi_device_or_host_address_const               index_data;
-  crude_gfx_rhi_device_or_host_address_const               transform_data;
-} crude_gfx_rhi_acceleration_structure_geometry_triangles_data;
-
-typedef struct crude_gfx_rhi_acceleration_structure_geometry_aabbs_data
-{
-  crude_gfx_rhi_device_or_host_address_const               data;
-  crude_gfx_rhi_device_size                                stride;
-} crude_gfx_rhi_acceleration_structure_geometry_aabbs_data;
-
-typedef struct crude_gfx_rhi_acceleration_structure_geometry_instances_data
-{
-  bool                                                     array_of_pointers;
-  crude_gfx_rhi_device_or_host_address_const               data;
-} crude_gfx_rhi_acceleration_structure_geometry_instances_data;
-
-typedef union crude_gfx_rhi_acceleration_structure_geometry_data
-{
-  crude_gfx_rhi_acceleration_structure_geometry_triangles_data triangles;
-  crude_gfx_rhi_acceleration_structure_geometry_aabbs_data aabbs;
-  crude_gfx_rhi_acceleration_structure_geometry_instances_data instances;
-} crude_gfx_rhi_acceleration_structure_geometry_data;
-
-typedef struct crude_gfx_rhi_acceleration_structure_geometry
-{
-  crude_gfx_rhi_geometry_type                              geometry_type;
-  crude_gfx_rhi_acceleration_structure_geometry_data       geometry;
-  crude_gfx_rhi_geometry_flags                             flags;
-} crude_gfx_rhi_acceleration_structure_geometry;
-
-typedef struct crude_gfx_rhi_acceleration_structure_build_geometry_info
-{
-  crude_gfx_rhi_acceleration_structure_type                type;
-  crude_gfx_rhi_build_acceleration_structure_flags         flags;
-  crude_gfx_rhi_build_acceleration_structure_mode          mode;
-  crude_gfx_rhi_acceleration_structure                     src_acceleration_structure;
-  crude_gfx_rhi_acceleration_structure                     dst_acceleration_structure;
-  uint32                                                   geometry_count;
-  crude_gfx_rhi_acceleration_structure_geometry const     *geometries;
-  crude_gfx_rhi_device_or_host_address                     scratch_data;
-} crude_gfx_rhi_acceleration_structure_build_geometry_info;
-
-typedef struct crude_gfx_rhi_acceleration_structure_build_range_info
-{
-  uint32                                                   primitive_count;
-  uint32                                                   primitive_offset;
-  uint32                                                   first_vertex;
-  uint32                                                   transform_offset;
-} crude_gfx_rhi_acceleration_structure_build_range_info;
-
-typedef struct crude_gfx_rhi_acceleration_structure_create_info
-{
-  crude_gfx_rhi_buffer                                     buffer;
-  crude_gfx_rhi_device_size                                offset;
-  crude_gfx_rhi_device_size                                size;
-  crude_gfx_rhi_acceleration_structure_type                type;
-  crude_gfx_rhi_device_address                             device_address;
-} crude_gfx_rhi_acceleration_structure_create_info;
-
-CRUDE_API crude_gfx_rhi_fence
-crude_gfx_rhi_fence_empty
-(
-);
-
-CRUDE_API crude_gfx_rhi_sampler
-crude_gfx_rhi_sampler_empty
-(
-);
-
-CRUDE_API crude_gfx_rhi_queue
-crude_gfx_rhi_queue_empty
-(
-);
-
-CRUDE_API crude_gfx_rhi_image_copy
-crude_gfx_rhi_image_copy_empty
-(
-);
-
-CRUDE_API crude_gfx_rhi_viewport
-crude_gfx_rhi_viewport_empty
-(
-);
-
-CRUDE_API bool
-crude_gfx_rhi_format_has_depth_or_stencil
-( 
-  _In_ crude_gfx_rhi_format                                value
-);
-
-CRUDE_API bool
-crude_gfx_rhi_format_has_depth
-( 
-  _In_ crude_gfx_rhi_format                                value
-);
-
-CRUDE_API crude_gfx_rhi_blend_factor
-crude_gfx_rhi_string_to_blend_factor
-(
-  _In_ char const                                         *factor
-);
-
-CRUDE_API crude_gfx_rhi_blend_op
-crude_gfx_rhi_string_to_blend_op
-(
-  _In_ char const                                         *op
-);
 
 CRUDE_API VkClearValue
 crude_gfx_rhi_clear_value_to_vk_clear_value
@@ -1863,6 +1303,7 @@ crude_gfx_rhi_rect_2d_to_vk_rect_2d
 );
 
 #elif CRUDE_GFX_NAPI
+
 typedef enum crude_gfx_rhi_format
 {
   CRUDE_GFX_RHI_FORMAT_UNDEFINED,
@@ -2675,6 +2116,88 @@ typedef enum crude_gfx_rhi_command_buffer_usage_flag_bits
   CRUDE_GFX_RHI_COMMAND_BUFFER_USAGE_FLAG_BITS_MAX_ENUM,
 } crude_gfx_rhi_command_buffer_usage_flag_bits;
 
+typedef enum crude_gfx_rhi_acceleration_structure_type
+{
+  CRUDE_GFX_RHI_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,
+  CRUDE_GFX_RHI_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
+  CRUDE_GFX_RHI_ACCELERATION_STRUCTURE_TYPE_GENERIC_KHR,
+  CRUDE_GFX_RHI_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_NV,
+  CRUDE_GFX_RHI_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_NV,
+  CRUDE_GFX_RHI_ACCELERATION_STRUCTURE_TYPE_MAX_ENUM_KHR,
+} crude_gfx_rhi_acceleration_structure_type;
+
+typedef enum crude_gfx_rhi_build_acceleration_structure_mode
+{
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR,
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_MODE_MAX_ENUM_KHR,
+} crude_gfx_rhi_build_acceleration_structure_mode;
+
+typedef enum crude_gfx_rhi_geometry_type
+{
+  CRUDE_GFX_RHI_GEOMETRY_TYPE_TRIANGLES_KHR,
+  CRUDE_GFX_RHI_GEOMETRY_TYPE_AABBS_KHR,
+  CRUDE_GFX_RHI_GEOMETRY_TYPE_INSTANCES_KHR,
+  CRUDE_GFX_RHI_GEOMETRY_TYPE_SPHERES_NV,
+  CRUDE_GFX_RHI_GEOMETRY_TYPE_LINEAR_SWEPT_SPHERES_NV,
+  CRUDE_GFX_RHI_GEOMETRY_TYPE_TRIANGLES_NV,
+  CRUDE_GFX_RHI_GEOMETRY_TYPE_AABBS_NV,
+  CRUDE_GFX_RHI_GEOMETRY_TYPE_MAX_ENUM_KHR,
+} crude_gfx_rhi_geometry_type;
+
+typedef enum crude_gfx_rhi_index_type
+{
+  CRUDE_GFX_RHI_INDEX_TYPE_UINT16,
+  CRUDE_GFX_RHI_INDEX_TYPE_UINT32,
+  CRUDE_GFX_RHI_INDEX_TYPE_UINT8,
+  CRUDE_GFX_RHI_INDEX_TYPE_NONE_KHR,
+  CRUDE_GFX_RHI_INDEX_TYPE_NONE_NV,
+  CRUDE_GFX_RHI_INDEX_TYPE_UINT8_EXT,
+  CRUDE_GFX_RHI_INDEX_TYPE_UINT8_KHR,
+  CRUDE_GFX_RHI_INDEX_TYPE_MAX_ENUM,
+} crude_gfx_rhi_index_type;
+
+typedef enum crude_gfx_rhi_acceleration_structure_build_type
+{
+  CRUDE_GFX_RHI_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR,
+  CRUDE_GFX_RHI_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+  CRUDE_GFX_RHI_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_OR_DEVICE_KHR,
+  CRUDE_GFX_RHI_ACCELERATION_STRUCTURE_BUILD_TYPE_MAX_ENUM_KHR,
+} crude_gfx_rhi_acceleration_structure_build_type;
+
+typedef enum crude_gfx_rhi_build_acceleration_structure_flag_bits
+{
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR,
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR,
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR,
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR,
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_LOW_MEMORY_BIT_KHR,
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_MOTION_BIT_NV,
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_ALLOW_OPACITY_MICROMAP_UPDATE_BIT_EXT,
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_ALLOW_DISABLE_OPACITY_MICROMAPS_BIT_EXT,
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_ALLOW_OPACITY_MICROMAP_DATA_UPDATE_BIT_EXT,
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_ALLOW_DATA_ACCESS_BIT_KHR,
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV,
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_NV,
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_NV,
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV,
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_LOW_MEMORY_BIT_NV,
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_ALLOW_OPACITY_MICROMAP_UPDATE_EXT,
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_ALLOW_DISABLE_OPACITY_MICROMAPS_EXT,
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_ALLOW_OPACITY_MICROMAP_DATA_UPDATE_EXT,
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_ALLOW_DATA_ACCESS_KHR,
+  CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_FLAG_BITS_MAX_ENUM_KHR,
+} crude_gfx_rhi_build_acceleration_structure_flag_bits;
+
+typedef enum crude_gfx_rhi_geometry_flag_bits
+{
+  CRUDE_GFX_RHI_GEOMETRY_OPAQUE_BIT_KHR,
+  CRUDE_GFX_RHI_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR,
+  CRUDE_GFX_RHI_GEOMETRY_OPAQUE_BIT_NV,
+  CRUDE_GFX_RHI_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_NV,
+  CRUDE_GFX_RHI_GEOMETRY_FLAG_BITS_MAX_ENUM_KHR,
+} crude_gfx_rhi_geometry_flag_bits;
+
 typedef uint64 crude_gfx_rhi_buffer_usage_flags;
 typedef uint64 crude_gfx_rhi_access_flags;
 typedef uint64 crude_gfx_rhi_pipeline_stage_flags;
@@ -2699,6 +2222,8 @@ typedef uint64 crude_gfx_rhi_color_component_flags;
 typedef uint64 crude_gfx_rhi_device_address;
 typedef uint64 crude_gfx_rhi_device_size;
 typedef uint64 crude_gfx_rhi_query_pipeline_statistics_flags;
+typedef uint64 crude_gfx_rhi_build_acceleration_structure_flags;
+typedef uint64 crude_gfx_rhi_geometry_flags;
 
 static crude_gfx_rhi_pipeline_stage_flag_bits const CRUDE_GFX_RHI_PIPELINE_STAGE_NONE = 0;
 static crude_gfx_rhi_pipeline_stage_flag_bits const CRUDE_GFX_RHI_PIPELINE_STAGE_TOP_OF_PIPE_BIT = 0;
@@ -2819,12 +2344,6 @@ static crude_gfx_rhi_buffer_usage_flags const CRUDE_GFX_RHI_BUFFER_USAGE_DATA_GR
 static crude_gfx_rhi_buffer_usage_flags const CRUDE_GFX_RHI_BUFFER_USAGE_TILE_MEMORY_BIT_QCOM = 0;
 static crude_gfx_rhi_buffer_usage_flags const CRUDE_GFX_RHI_BUFFER_USAGE_PREPROCESS_BUFFER_BIT_EXT = 0;
 
-typedef struct crude_gfx_rhi_surface_format
-{
-  crude_gfx_rhi_format                                     format;
-  crude_gfx_rhi_color_space                                color_space;
-} crude_gfx_rhi_surface_format;
-
 typedef struct crude_gfx_rhi_command_buffer
 {
 } crude_gfx_rhi_command_buffer;
@@ -2858,8 +2377,6 @@ typedef struct crude_gfx_rhi_queue
 {
   uint32                                                   vk_queue_family;
 } crude_gfx_rhi_queue;
-  
-#define CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS       NULL
 
 typedef struct crude_gfx_rhi_device
 {
@@ -2908,14 +2425,6 @@ typedef struct crude_gfx_rhi_command_pool
 {
 } crude_gfx_rhi_command_pool;
 
-typedef struct crude_gfx_rhi_descriptor_set_layout_binding
-{
-  uint32                                                   binding;
-  crude_gfx_rhi_descriptor_type                            descriptor_type;
-  uint32                                                   descriptor_count;
-  crude_gfx_rhi_shader_stage_flags                         stage_flags;
-} crude_gfx_rhi_descriptor_set_layout_binding;
-
 typedef struct crude_gfx_rhi_acceleration_structure
 {
 } crude_gfx_rhi_acceleration_structure;
@@ -2927,6 +2436,31 @@ typedef struct crude_gfx_rhi_query_pool
 typedef struct crude_gfx_rhi_surface
 {
 } crude_gfx_rhi_surface;
+
+#else
+CRUDE_GFX_RHI_TO_IMPLEMENTIT
+#endif
+
+typedef struct crude_gfx_rhi_acceleration_structure_build_sizes_info
+{
+  crude_gfx_rhi_device_size                                acceleration_structure_size;
+  crude_gfx_rhi_device_size                                update_scratch_size;
+  crude_gfx_rhi_device_size                                build_scratch_size;
+} crude_gfx_rhi_acceleration_structure_build_sizes_info;
+
+typedef struct crude_gfx_rhi_surface_format
+{
+  crude_gfx_rhi_format                                     format;
+  crude_gfx_rhi_color_space                                color_space;
+} crude_gfx_rhi_surface_format;
+
+typedef struct crude_gfx_rhi_descriptor_set_layout_binding
+{
+  uint32                                                   binding;
+  crude_gfx_rhi_descriptor_type                            descriptor_type;
+  uint32                                                   descriptor_count;
+  crude_gfx_rhi_shader_stage_flags                         stage_flags;
+} crude_gfx_rhi_descriptor_set_layout_binding;
 
 typedef struct crude_gfx_rhi_image_subresource_layers
 {
@@ -3342,6 +2876,145 @@ typedef struct crude_gfx_rhi_queru_pool_create_info
   crude_gfx_rhi_query_pipeline_statistics_flags            pipeline_statistics;
 } crude_gfx_rhi_queru_pool_create_info;
 
+typedef union crude_gfx_rhi_device_or_host_address
+{
+  crude_gfx_rhi_device_address                             device_address;
+  void                                                    *host_address;
+} crude_gfx_rhi_device_or_host_address;
+
+typedef union crude_gfx_rhi_device_or_host_address_const
+{
+  crude_gfx_rhi_device_address                             device_address;
+  void const                                              *host_address;
+} crude_gfx_rhi_device_or_host_address_const;
+
+typedef struct crude_gfx_rhi_acceleration_structure_geometry_triangles_data
+{
+  crude_gfx_rhi_format                                     vertex_format;
+  crude_gfx_rhi_device_or_host_address_const               vertex_data;
+  crude_gfx_rhi_device_size                                vertex_stride;
+  uint32                                                   max_vertex;
+  crude_gfx_rhi_index_type                                 index_type;
+  crude_gfx_rhi_device_or_host_address_const               index_data;
+  crude_gfx_rhi_device_or_host_address_const               transform_data;
+} crude_gfx_rhi_acceleration_structure_geometry_triangles_data;
+
+typedef struct crude_gfx_rhi_acceleration_structure_geometry_aabbs_data
+{
+  crude_gfx_rhi_device_or_host_address_const               data;
+  crude_gfx_rhi_device_size                                stride;
+} crude_gfx_rhi_acceleration_structure_geometry_aabbs_data;
+
+typedef struct crude_gfx_rhi_acceleration_structure_geometry_instances_data
+{
+  bool                                                     array_of_pointers;
+  crude_gfx_rhi_device_or_host_address_const               data;
+} crude_gfx_rhi_acceleration_structure_geometry_instances_data;
+
+typedef union crude_gfx_rhi_acceleration_structure_geometry_data
+{
+  crude_gfx_rhi_acceleration_structure_geometry_triangles_data triangles;
+  crude_gfx_rhi_acceleration_structure_geometry_aabbs_data aabbs;
+  crude_gfx_rhi_acceleration_structure_geometry_instances_data instances;
+} crude_gfx_rhi_acceleration_structure_geometry_data;
+
+typedef struct crude_gfx_rhi_acceleration_structure_geometry
+{
+  crude_gfx_rhi_geometry_type                              geometry_type;
+  crude_gfx_rhi_acceleration_structure_geometry_data       geometry;
+  crude_gfx_rhi_geometry_flags                             flags;
+} crude_gfx_rhi_acceleration_structure_geometry;
+
+typedef struct crude_gfx_rhi_acceleration_structure_build_geometry_info
+{
+  crude_gfx_rhi_acceleration_structure_type                type;
+  crude_gfx_rhi_build_acceleration_structure_flags         flags;
+  crude_gfx_rhi_build_acceleration_structure_mode          mode;
+  crude_gfx_rhi_acceleration_structure                     src_acceleration_structure;
+  crude_gfx_rhi_acceleration_structure                     dst_acceleration_structure;
+  uint32                                                   geometry_count;
+  crude_gfx_rhi_acceleration_structure_geometry const     *geometries;
+  crude_gfx_rhi_device_or_host_address                     scratch_data;
+} crude_gfx_rhi_acceleration_structure_build_geometry_info;
+
+typedef struct crude_gfx_rhi_acceleration_structure_build_range_info
+{
+  uint32                                                   primitive_count;
+  uint32                                                   primitive_offset;
+  uint32                                                   first_vertex;
+  uint32                                                   transform_offset;
+} crude_gfx_rhi_acceleration_structure_build_range_info;
+
+typedef struct crude_gfx_rhi_acceleration_structure_create_info
+{
+  crude_gfx_rhi_buffer                                     buffer;
+  crude_gfx_rhi_device_size                                offset;
+  crude_gfx_rhi_device_size                                size;
+  crude_gfx_rhi_acceleration_structure_type                type;
+  crude_gfx_rhi_device_address                             device_address;
+} crude_gfx_rhi_acceleration_structure_create_info;
+
+typedef struct crude_gfx_rhi_command_buffer_begin_info
+{
+  crude_gfx_rhi_command_buffer_usage_flags                     flags;
+} crude_gfx_rhi_command_buffer_begin_info;
+
+typedef struct crude_gfx_rhi_rendering_attachment_info
+{
+  void const                                              *next;
+  crude_gfx_rhi_image_view                                 image_view;
+  crude_gfx_rhi_image_layout                               image_layout;
+  crude_gfx_rhi_resolve_mode_flag_bits                     resolve_mode;
+  crude_gfx_rhi_image_view                                 resolve_image_view;
+  crude_gfx_rhi_image_view_layout                          resolve_image_layout;
+  crude_gfx_rhi_attachment_load_op                         load_op;
+  crude_gfx_rhi_attachment_store_op                        store_op;
+  crude_gfx_rhi_clear_value                                clear_value;
+} crude_gfx_rhi_rendering_attachment_info;
+
+typedef struct crude_gfx_rhi_rendering_info
+{
+  void const                                              *next;
+  crude_gfx_rhi_rendering_flags                            flags;
+  crude_gfx_rhi_rect_2d                                    render_area;
+  uint32                                                   layer_count;
+  uint32                                                   view_mask;
+  uint32                                                   color_attachment_count;
+  crude_gfx_rhi_rendering_attachment_info                  color_attachments[ 8 ];
+  crude_gfx_rhi_rendering_attachment_info                  depth_attachment;
+  bool                                                     has_depth_attachment;
+} crude_gfx_rhi_rendering_info;
+
+typedef struct crude_gfx_rhi_descriptor_buffer_info
+{
+  crude_gfx_rhi_buffer                                     buffer;
+  crude_gfx_rhi_device_size                                offset;
+  crude_gfx_rhi_device_size                                range;
+} crude_gfx_rhi_descriptor_buffer_info;
+
+typedef struct crude_gfx_rhi_descriptor_image_info
+{
+  crude_gfx_rhi_sampler                                    sampler;
+  crude_gfx_rhi_image_view                                 image_view;
+  crude_gfx_rhi_image_layout                               image_layout;
+} crude_gfx_rhi_descriptor_image_info;
+
+typedef struct crude_gfx_rhi_descriptor_acceleration_structure_info
+{
+  crude_gfx_rhi_acceleration_structure                     acceleration_sturcture;
+} crude_gfx_rhi_descriptor_acceleration_structure_info;
+
+typedef struct crude_gfx_rhi_write_descriptor_set
+{
+  uint32                                                   dst_binding;
+  uint32                                                   dst_array_element;
+  uint32                                                   descriptor_count;
+  crude_gfx_rhi_descriptor_type                            descriptor_type;
+  crude_gfx_rhi_descriptor_image_info                     *image_info;
+  crude_gfx_rhi_descriptor_buffer_info                    *buffer_info;
+  crude_gfx_rhi_descriptor_acceleration_structure_info    *acceleration_info;
+} crude_gfx_rhi_write_descriptor_set;
+
 CRUDE_API crude_gfx_rhi_fence
 crude_gfx_rhi_fence_empty
 (
@@ -3379,75 +3052,16 @@ crude_gfx_rhi_format_has_depth
   _In_ crude_gfx_rhi_format                                value
 );
 
-CRUDE_API crude_gfx_rhi_blend_factor
-crude_gfx_rhi_string_to_blend_factor
-(
-  _In_ char const                                         *factor
-);
-
 CRUDE_API crude_gfx_rhi_blend_op
 crude_gfx_rhi_string_to_blend_op
 (
   _In_ char const                                         *op
 );
 
-#else
-CRUDE_GFX_RHI_TO_IMPLEMENTIT
-#endif
-
-typedef struct crude_gfx_rhi_command_buffer_begin_info
-{
-  crude_gfx_rhi_command_buffer_usage_flags                     flags;
-} crude_gfx_rhi_command_buffer_begin_info;
-
-typedef struct crude_gfx_rhi_rendering_attachment_info
-{
-  void const                                              *next;
-  crude_gfx_rhi_image_view                                 image_view;
-  crude_gfx_rhi_image_layout                               image_layout;
-  crude_gfx_rhi_resolve_mode_flag_bits                     resolve_mode;
-  crude_gfx_rhi_image_view                                 resolve_image_view;
-  crude_gfx_rhi_image_view_layout                          resolve_image_layout;
-  crude_gfx_rhi_attachment_load_op                         load_op;
-  crude_gfx_rhi_attachment_store_op                        store_op;
-  crude_gfx_rhi_clear_value                                clear_value;
-} crude_gfx_rhi_rendering_attachment_info;
-
-typedef struct crude_gfx_rhi_rendering_info
-{
-  void const                                              *next;
-  crude_gfx_rhi_rendering_flags                            flags;
-  crude_gfx_rhi_rect_2d                                    render_area;
-  uint32                                                   layer_count;
-  uint32                                                   view_mask;
-  uint32                                                   color_attachment_count;
-  crude_gfx_rhi_rendering_attachment_info                  color_attachments[ 8 ];
-  crude_gfx_rhi_rendering_attachment_info                  depth_attachment;
-  bool                                                     has_depth_attachment;
-} crude_gfx_rhi_rendering_info;
-
-CRUDE_API bool
-crude_gfx_rhi_format_has_depth_or_stencil
-( 
-  _In_ crude_gfx_rhi_format                                    value
-);
-
-CRUDE_API bool
-crude_gfx_rhi_format_has_depth
-( 
-  _In_ crude_gfx_rhi_format                                    value
-);
-
 CRUDE_API crude_gfx_rhi_blend_factor
 crude_gfx_rhi_string_to_blend_factor
 (
   _In_ char const                                         *factor
-);
-
-CRUDE_API crude_gfx_rhi_blend_op
-crude_gfx_rhi_string_to_blend_op
-(
-  _In_ char const                                         *op
 );
 
 CRUDE_API crude_gfx_rhi_access_flags
@@ -3473,36 +3087,6 @@ CRUDE_API crude_gfx_rhi_command_buffer_begin_info
 crude_gfx_rhi_command_buffer_begin_info_empty
 (
 );
-
-typedef struct crude_gfx_rhi_descriptor_buffer_info
-{
-  crude_gfx_rhi_buffer                                     buffer;
-  crude_gfx_rhi_device_size                                offset;
-  crude_gfx_rhi_device_size                                range;
-} crude_gfx_rhi_descriptor_buffer_info;
-
-typedef struct crude_gfx_rhi_descriptor_image_info
-{
-  crude_gfx_rhi_sampler                                    sampler;
-  crude_gfx_rhi_image_view                                 image_view;
-  crude_gfx_rhi_image_layout                               image_layout;
-} crude_gfx_rhi_descriptor_image_info;
-
-typedef struct crude_gfx_rhi_descriptor_acceleration_structure_info
-{
-  crude_gfx_rhi_acceleration_structure                     acceleration_sturcture;
-} crude_gfx_rhi_descriptor_acceleration_structure_info;
-
-typedef struct crude_gfx_rhi_write_descriptor_set
-{
-  uint32                                                   dst_binding;
-  uint32                                                   dst_array_element;
-  uint32                                                   descriptor_count;
-  crude_gfx_rhi_descriptor_type                            descriptor_type;
-  crude_gfx_rhi_descriptor_image_info                     *image_info;
-  crude_gfx_rhi_descriptor_buffer_info                    *buffer_info;
-  crude_gfx_rhi_descriptor_acceleration_structure_info    *acceleration_info;
-} crude_gfx_rhi_write_descriptor_set;
 
 CRUDE_API bool
 crude_gfx_rhi_queue_submit
@@ -3831,13 +3415,6 @@ crude_gfx_rhi_destroy_swapchain
 );
 
 CRUDE_API void
-crude_gfx_rhi_destroy_surface
-(
-  _In_ crude_gfx_rhi_instance                              instance,
-  _In_ crude_gfx_rhi_surface                               surface
-);
-
-CRUDE_API void
 crude_gfx_rhi_create_descriptor_set_layout
 (
   _In_ crude_gfx_rhi_device                               *device,
@@ -4155,17 +3732,6 @@ crude_gfx_rhi_command_buffer_bind_pipeline
   _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_pipeline                              rhi_pipeline,
   _In_ crude_gfx_rhi_pipeline_bind_point                   rhi_pipeline_bind_point
-);
-
-CRUDE_API void
-crude_gfx_rhi_command_buffer_copy_image
-(
-  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
-  _In_ crude_gfx_rhi_image                                 src_image,
-  _In_ crude_gfx_rhi_image_layout                          src_image_layout,
-  _In_ crude_gfx_rhi_image                                 dst_image,
-  _In_ crude_gfx_rhi_image_layout                          dst_image_layout,
-  _In_ crude_gfx_rhi_image_copy const                     *image_copy
 );
 
 CRUDE_API void

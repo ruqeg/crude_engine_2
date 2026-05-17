@@ -34,8 +34,6 @@ typedef struct crude_gfx_resource_cache
 typedef struct crude_gfx_device_creation
 {
   SDL_Window                                              *sdl_window;
-  char const                                              *vk_application_name;
-  uint32                                                   vk_application_version;
   crude_heap_allocator                                    *allocator;
   
   char const                                              *temporary_absolute_directory;

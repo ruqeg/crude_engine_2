@@ -85,7 +85,7 @@ crude_gfx_asynchronous_loader_initialize
   crude_memory_set( asynloader->file_load_requests, 0, CRUDE_GFX_ASYNCHRONOUS_LOADER_FILE_LOAD_REQUESTS_LIMIT * sizeof( asynloader->file_load_requests[ 0 ] ) );
   crude_memory_set( asynloader->upload_requests, 0, CRUDE_GFX_ASYNCHRONOUS_LOADER_FILE_LOAD_REQUESTS_LIMIT * sizeof( asynloader->upload_requests[ 0 ] ) );
 
-  asynloader->staging_allocation = crude_gfx_memory_allocate( asynloader->gpu, 64 * 1024 * 1024, CRUDE_GFX_MEMORY_TYPE_CPU_GPU, 0 );
+  asynloader->staging_allocation = crude_gfx_memory_allocate_with_pname( asynloader->gpu, 64 * 1024 * 1024, CRUDE_GFX_MEMORY_TYPE_CPU_GPU, "staging_allocation", 0 );
 
   crude_gfx_rhi_create_fence( &gpu->rhi_device, false, &asynloader->rhi_transfer_completed_fence );
   crude_gfx_rhi_set_fence_debug_name( &gpu->rhi_device, asynloader->rhi_transfer_completed_fence, "rhi_transfer_completed_fence" );
@@ -252,7 +252,10 @@ crude_gfx_asynchronous_loader_update
       aligned_image_size = crude_memory_align( texture->width * texture->height * texture_channels, texture_alignment );
 
       CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Texture %s %i start copy", texture->name, aligned_image_size );
+      
+#if !CRUDE_GFX_NAPI
       crude_memory_copy( asynloader->staging_allocation.cpu_address, request.data, aligned_image_size );
+#endif
 
       crude_gfx_cmd_memory_copy_to_texture( cmd, texture->handle, asynloader->staging_allocation );
       CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Texture %s end copy", texture->name );

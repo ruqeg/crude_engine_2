@@ -540,8 +540,10 @@ crude_gfx_scene_renderer_update_dynamic_buffers
 {
   CRUDE_PROFILER_ZONE_NAME( "crude_gfx_scene_renderer_update_dynamic_buffers" );
   crude_gfx_cmd_push_marker( scene_renderer->primary_cmd, "crude_gfx_scene_renderer_update_dynamic_buffers" );
+#if !CRUDE_GFX_NAPI
   crude_scene_renderer_cull_lights_( scene_renderer );
   crude_gfx_scene_renderer_update_dynamic_buffers_( scene_renderer, scene_renderer->primary_cmd );
+#endif
   crude_gfx_cmd_pop_marker( scene_renderer->primary_cmd );
   CRUDE_PROFILER_ZONE_END;
 }
@@ -1233,20 +1235,26 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
+#if CRUDE_GFX_VULKAN
   VkAccelerationStructureInstanceKHR                      *vk_acceleration_structure_instances;
-  VkAccelerationStructureBuildRangeInfoKHR                 vk_acceleration_structure_build_range_info;
-  VkAccelerationStructureCreateInfoKHR                     vk_acceleration_structure_create_info;
-  VkAccelerationStructureBuildSizesInfoKHR                 vk_acceleration_structure_build_sizes_info;
-  VkAccelerationStructureBuildGeometryInfoKHR              vk_acceleration_build_geometry_info;
-  VkAccelerationStructureGeometryKHR                       vk_acceleration_structure_geometry;
+#elif CRUDE_GFX_NAPI
+#else
+CRUDE_GFX_RHI_TO_IMPLEMENTIT
+#endif
+  crude_gfx_rhi_acceleration_structure_create_info         acceleration_structure_create_info;
+  crude_gfx_rhi_acceleration_structure_build_geometry_info acceleration_build_geometry_info;
+  crude_gfx_rhi_acceleration_structure_geometry            acceleration_structure_geometry;
+  crude_gfx_rhi_acceleration_structure_build_sizes_info    acceleration_structure_build_sizes_info;
+  crude_gfx_rhi_acceleration_structure_build_range_info    acceleration_structure_build_range_info;
   uint64                                                   temporary_allocator_marker;
   uint32                                                   max_instance_count;
   uint32                                                   instance_custom_index;
 
   temporary_allocator_marker = crude_stack_allocator_get_marker( scene_renderer->temporary_allocator );
-
+  
+#if CRUDE_GFX_VULKAN
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( vk_acceleration_structure_instances, scene_renderer->total_visible_meshes_instances_count, crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
-
+  
   instance_custom_index = 0u;
   for ( uint32 model_instance_index = 0u; model_instance_index < CRUDE_ARRAY_LENGTH( scene_renderer->model_renderer_resoruces_instances ); ++model_instance_index )
   {
@@ -1329,84 +1337,91 @@ crude_gfx_scene_renderer_create_top_level_acceleration_structure_
   }
 
   max_instance_count = CRUDE_ARRAY_LENGTH( vk_acceleration_structure_instances );
-
+  
   scene_renderer->tlas_instances_hga = crude_gfx_memory_allocate_with_pname(
     scene_renderer->gpu,
     max_instance_count * sizeof( VkAccelerationStructureInstanceKHR ),
     CRUDE_GFX_MEMORY_TYPE_CPU_GPU, /* !TODO try gpu only and check if it affect perfomance*/
     "tlas_instances_hga",
-    VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR );
+    CRUDE_GFX_RHI_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR );
 
   crude_memory_copy( scene_renderer->tlas_instances_hga.cpu_address, vk_acceleration_structure_instances, max_instance_count * sizeof( VkAccelerationStructureInstanceKHR ) );
+#elif CRUDE_GFX_NAPI
+  scene_renderer->tlas_instances_hga = crude_gfx_memory_allocate_with_pname(
+    scene_renderer->gpu,
+    0,
+    CRUDE_GFX_MEMORY_TYPE_CPU_GPU, /* !TODO try gpu only and check if it affect perfomance*/
+    "tlas_instances_hga",
+    CRUDE_GFX_RHI_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR );
+#else
+CRUDE_GFX_RHI_TO_IMPLEMENTIT
+#endif
 
-  vk_acceleration_structure_geometry = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureGeometryKHR );
-  vk_acceleration_structure_geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
-  vk_acceleration_structure_geometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
-  vk_acceleration_structure_geometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
-  vk_acceleration_structure_geometry.geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
-  vk_acceleration_structure_geometry.geometry.instances.arrayOfPointers = VK_FALSE;
-  vk_acceleration_structure_geometry.geometry.instances.data.deviceAddress = scene_renderer->tlas_instances_hga.gpu_address;
+  acceleration_structure_geometry = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_acceleration_structure_geometry );
+  acceleration_structure_geometry.geometry_type = CRUDE_GFX_RHI_GEOMETRY_TYPE_INSTANCES_KHR;
+  acceleration_structure_geometry.flags = CRUDE_GFX_RHI_GEOMETRY_OPAQUE_BIT_KHR;
+  acceleration_structure_geometry.geometry.instances.array_of_pointers = false;
+  acceleration_structure_geometry.geometry.instances.data.device_address = scene_renderer->tlas_instances_hga.gpu_address;
 
-  vk_acceleration_build_geometry_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildGeometryInfoKHR );
-  vk_acceleration_build_geometry_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
-  vk_acceleration_build_geometry_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
-  vk_acceleration_build_geometry_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DATA_ACCESS_KHR | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
-  vk_acceleration_build_geometry_info.geometryCount = 1;
-  vk_acceleration_build_geometry_info.pGeometries = &vk_acceleration_structure_geometry;
-
-  vk_acceleration_structure_build_sizes_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildSizesInfoKHR );
-  vk_acceleration_structure_build_sizes_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+  acceleration_build_geometry_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_acceleration_structure_build_geometry_info );
+  acceleration_build_geometry_info.type = CRUDE_GFX_RHI_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+  acceleration_build_geometry_info.flags = CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_ALLOW_DATA_ACCESS_KHR | CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
+  acceleration_build_geometry_info.geometry_count = 1;
+  acceleration_build_geometry_info.geometries = &acceleration_structure_geometry;
+  
+  acceleration_structure_build_sizes_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_acceleration_structure_build_sizes_info );  
   
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
 
-  scene_renderer->gpu->rhi_device.vkGetAccelerationStructureBuildSizesKHR( scene_renderer->gpu->rhi_device.vk_device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &vk_acceleration_build_geometry_info, &max_instance_count, &vk_acceleration_structure_build_sizes_info );
+  crude_gfx_rhi_get_acceleration_structure_build_sizes(
+    &scene_renderer->gpu->rhi_device, scene_renderer->allocator,
+    CRUDE_GFX_RHI_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+    &acceleration_build_geometry_info,
+    &max_instance_count,
+    &acceleration_structure_build_sizes_info );
   
   scene_renderer->tlas_hga = crude_gfx_memory_allocate_with_pname(
     scene_renderer->gpu,
-    vk_acceleration_structure_build_sizes_info.accelerationStructureSize,
+    acceleration_structure_build_sizes_info.acceleration_structure_size,
     CRUDE_GFX_MEMORY_TYPE_GPU,
     "tlas_hga",
-    VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR );
+    CRUDE_GFX_RHI_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR );
   
-  vk_acceleration_structure_create_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureCreateInfoKHR );
-  vk_acceleration_structure_create_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
-  vk_acceleration_structure_create_info.buffer = crude_gfx_access_buffer( scene_renderer->gpu, scene_renderer->tlas_hga.buffer_handle )->rhi_buffer.vk_buffer;
-  vk_acceleration_structure_create_info.size = vk_acceleration_structure_build_sizes_info.accelerationStructureSize;
-  vk_acceleration_structure_create_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+  acceleration_structure_create_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_acceleration_structure_create_info );
+  acceleration_structure_create_info.buffer = crude_gfx_access_buffer( scene_renderer->gpu, scene_renderer->tlas_hga.buffer_handle )->rhi_buffer;
+  acceleration_structure_create_info.size = acceleration_structure_build_sizes_info.acceleration_structure_size;
+  acceleration_structure_create_info.type = CRUDE_GFX_RHI_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
 
-  scene_renderer->gpu->rhi_device.vkCreateAccelerationStructureKHR( scene_renderer->gpu->rhi_device.vk_device, &vk_acceleration_structure_create_info, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &scene_renderer->rhi_tlas.vk_acceleration_structure );
+  crude_gfx_rhi_create_acceleration_structure( &scene_renderer->gpu->rhi_device, &acceleration_structure_create_info, &scene_renderer->rhi_tlas );
 
   scene_renderer->tlas_scratch_hga = crude_gfx_memory_allocate_with_pname(
     scene_renderer->gpu, 
-    vk_acceleration_structure_build_sizes_info.buildScratchSize,
+    acceleration_structure_build_sizes_info.build_scratch_size,
     CRUDE_GFX_MEMORY_TYPE_GPU,
     "tlas_scratch_hga",
-    VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR );
+    CRUDE_GFX_RHI_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR );
 
-  vk_acceleration_build_geometry_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildGeometryInfoKHR );
-  vk_acceleration_build_geometry_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
-  vk_acceleration_build_geometry_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
-  vk_acceleration_build_geometry_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DATA_ACCESS_KHR | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
-  vk_acceleration_build_geometry_info.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
-  vk_acceleration_build_geometry_info.dstAccelerationStructure = scene_renderer->rhi_tlas.vk_acceleration_structure;
-  vk_acceleration_build_geometry_info.geometryCount = 1;
-  vk_acceleration_build_geometry_info.pGeometries = &vk_acceleration_structure_geometry;
-  vk_acceleration_build_geometry_info.scratchData.deviceAddress = scene_renderer->tlas_scratch_hga.gpu_address;
+  acceleration_build_geometry_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_acceleration_structure_build_geometry_info );
+  acceleration_build_geometry_info.type = CRUDE_GFX_RHI_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+  acceleration_build_geometry_info.flags = CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_ALLOW_DATA_ACCESS_KHR | CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
+  acceleration_build_geometry_info.mode = CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+  acceleration_build_geometry_info.dst_acceleration_structure = scene_renderer->rhi_tlas;
+  acceleration_build_geometry_info.geometry_count = 1;
+  acceleration_build_geometry_info.geometries = &acceleration_structure_geometry;
+  acceleration_build_geometry_info.scratch_data.device_address = scene_renderer->tlas_scratch_hga.gpu_address;
   
-  vk_acceleration_structure_build_range_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildRangeInfoKHR );
-  vk_acceleration_structure_build_range_info.primitiveCount = max_instance_count;
-  vk_acceleration_structure_build_range_info.primitiveOffset = 0;
-  vk_acceleration_structure_build_range_info.firstVertex = 0;
-  vk_acceleration_structure_build_range_info.transformOffset = 0;
-
-  VkAccelerationStructureBuildRangeInfoKHR *tlas_ranges[ ] = {
-    &vk_acceleration_structure_build_range_info
-  };
+  acceleration_structure_build_range_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_acceleration_structure_build_range_info );
+  acceleration_structure_build_range_info.primitive_count = max_instance_count;
   
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
 
-  scene_renderer->gpu->rhi_device.vkCmdBuildAccelerationStructuresKHR( primary_cmd->rhi_cmd_buffer.vk_command_buffer, 1, &vk_acceleration_build_geometry_info, tlas_ranges );
-  
+  crude_gfx_rhi_command_buffer_build_acceleration_structures(
+    &scene_renderer->gpu->rhi_device, scene_renderer->allocator,
+    primary_cmd->rhi_cmd_buffer,
+    1u,
+    &acceleration_build_geometry_info,
+    &acceleration_structure_build_range_info );
+
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
 
   crude_stack_allocator_free_marker( scene_renderer->temporary_allocator, temporary_allocator_marker );
@@ -1419,18 +1434,24 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
-  crude_gfx_buffer                                        *tlas_buffer;
+#if CRUDE_GFX_VULKAN
   VkAccelerationStructureInstanceKHR                      *vk_acceleration_structure_instances;
-  VkAccelerationStructureBuildRangeInfoKHR                 vk_acceleration_structure_build_range_info;
-  VkAccelerationStructureBuildSizesInfoKHR                 vk_acceleration_structure_build_sizes_info;
-  VkAccelerationStructureBuildGeometryInfoKHR              vk_acceleration_build_geometry_info;
-  VkAccelerationStructureGeometryKHR                       vk_acceleration_structure_geometry;
+#elif CRUDE_GFX_NAPI
+#else
+CRUDE_GFX_RHI_TO_IMPLEMENTIT
+#endif
+  crude_gfx_buffer                                        *tlas_buffer;
+  crude_gfx_rhi_acceleration_structure_build_geometry_info acceleration_build_geometry_info;
+  crude_gfx_rhi_acceleration_structure_geometry            acceleration_structure_geometry;
+  crude_gfx_rhi_acceleration_structure_build_sizes_info    acceleration_structure_build_sizes_info;
+  crude_gfx_rhi_acceleration_structure_build_range_info    acceleration_structure_build_range_info;
   uint64                                                   temporary_allocator_marker;
   uint32                                                   max_instance_count;
   uint32                                                   instance_custom_index;
   
   temporary_allocator_marker = crude_stack_allocator_get_marker( scene_renderer->temporary_allocator );
-
+  
+#if CRUDE_GFX_VULKAN
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( vk_acceleration_structure_instances, scene_renderer->total_visible_meshes_instances_count, crude_stack_allocator_pack( scene_renderer->temporary_allocator ) );
   
   instance_custom_index = 0u;
@@ -1519,39 +1540,39 @@ crude_gfx_scene_renderer_update_top_level_acceleration_structure_
 
   crude_memory_copy( scene_renderer->tlas_instances_hga.cpu_address, vk_acceleration_structure_instances, sizeof( VkAccelerationStructureInstanceKHR ) * max_instance_count );
   
-  vk_acceleration_structure_geometry = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureGeometryKHR );
-  vk_acceleration_structure_geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
-  vk_acceleration_structure_geometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
-  vk_acceleration_structure_geometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
-  vk_acceleration_structure_geometry.geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
-  vk_acceleration_structure_geometry.geometry.instances.arrayOfPointers = VK_FALSE;
-  vk_acceleration_structure_geometry.geometry.instances.data.deviceAddress = scene_renderer->tlas_instances_hga.gpu_address;
+#elif CRUDE_GFX_NAPI
+#else
+CRUDE_GFX_RHI_TO_IMPLEMENTIT
+#endif
 
-  vk_acceleration_build_geometry_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildGeometryInfoKHR );
-  vk_acceleration_build_geometry_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
-  vk_acceleration_build_geometry_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
-  vk_acceleration_build_geometry_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DATA_ACCESS_KHR | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
-  vk_acceleration_build_geometry_info.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR;
-  vk_acceleration_build_geometry_info.dstAccelerationStructure = scene_renderer->rhi_tlas.vk_acceleration_structure;
-  vk_acceleration_build_geometry_info.srcAccelerationStructure = scene_renderer->rhi_tlas.vk_acceleration_structure;
-  vk_acceleration_build_geometry_info.geometryCount = 1;
-  vk_acceleration_build_geometry_info.pGeometries = &vk_acceleration_structure_geometry;
-  vk_acceleration_build_geometry_info.scratchData.deviceAddress = scene_renderer->tlas_scratch_hga.gpu_address;
+  acceleration_structure_geometry = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_acceleration_structure_geometry );
+  acceleration_structure_geometry.geometry_type = CRUDE_GFX_RHI_GEOMETRY_TYPE_INSTANCES_KHR;
+  acceleration_structure_geometry.flags = CRUDE_GFX_RHI_GEOMETRY_OPAQUE_BIT_KHR;
+  acceleration_structure_geometry.geometry.instances.array_of_pointers = false;
+  acceleration_structure_geometry.geometry.instances.data.device_address = scene_renderer->tlas_instances_hga.gpu_address;
 
-  vk_acceleration_structure_build_range_info = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildRangeInfoKHR );
-  vk_acceleration_structure_build_range_info.primitiveCount = max_instance_count;
-  vk_acceleration_structure_build_range_info.primitiveOffset = 0;
-  vk_acceleration_structure_build_range_info.firstVertex = 0;
-  vk_acceleration_structure_build_range_info.transformOffset = 0;
+  acceleration_build_geometry_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_acceleration_structure_build_geometry_info );
+  acceleration_build_geometry_info.type = CRUDE_GFX_RHI_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+  acceleration_build_geometry_info.flags = CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_ALLOW_DATA_ACCESS_KHR | CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
+  acceleration_build_geometry_info.mode = CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR;
+  acceleration_build_geometry_info.dst_acceleration_structure = scene_renderer->rhi_tlas;
+  acceleration_build_geometry_info.src_acceleration_structure = scene_renderer->rhi_tlas;
+  acceleration_build_geometry_info.geometry_count = 1;
+  acceleration_build_geometry_info.geometries = &acceleration_structure_geometry;
+  acceleration_build_geometry_info.scratch_data.device_address = scene_renderer->tlas_scratch_hga.gpu_address;
 
-  VkAccelerationStructureBuildRangeInfoKHR *tlas_ranges[ ] = {
-    &vk_acceleration_structure_build_range_info
-  };
-  
+  acceleration_structure_build_range_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_acceleration_structure_build_range_info );
+  acceleration_structure_build_range_info.primitive_count = max_instance_count;
+
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
 
-  scene_renderer->gpu->rhi_device.vkCmdBuildAccelerationStructuresKHR( primary_cmd->rhi_cmd_buffer.vk_command_buffer, 1, &vk_acceleration_build_geometry_info, tlas_ranges );
-  
+  crude_gfx_rhi_command_buffer_build_acceleration_structures(
+    &scene_renderer->gpu->rhi_device, scene_renderer->allocator,
+    primary_cmd->rhi_cmd_buffer,
+    1u,
+    &acceleration_build_geometry_info,
+    &acceleration_structure_build_range_info );
+
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
 
   crude_stack_allocator_free_marker( scene_renderer->temporary_allocator, temporary_allocator_marker );

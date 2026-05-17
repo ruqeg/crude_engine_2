@@ -588,8 +588,6 @@ crude_engine_initialize_graphics_
   
   device_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_device_creation );
   device_creation.sdl_window = engine->platform.sdl_window;
-  device_creation.vk_application_name = "CrudeEngine";
-  device_creation.vk_application_version = VK_MAKE_VERSION( 1, 0, 0 );
   device_creation.allocator = &engine->common_allocator;
   device_creation.shaders_absolute_directory = engine->environment.directories.shaders_absolute_directory;
   device_creation.techniques_absolute_directory = engine->environment.directories.techniques_absolute_directory;
@@ -636,7 +634,7 @@ crude_engine_initialize_graphics_
 #if CRUDE_GFX_RAY_TRACING_SOLID_DEBUG_ENABLED
   crude_gfx_technique_load_from_file( "ray_tracing_debug.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
 #endif
-  
+
   crude_gfx_texture_manager_initialize( &engine->texture_manager, &engine->async_loader, &engine->common_allocator );
 
   model_renderer_resources_manager_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_model_renderer_resources_manager_creation );
@@ -888,8 +886,10 @@ crude_engine_graphics_main_thread_loop_
   engine->scene_renderer.options.absolute_time = engine->graphics_absolute_time;
 
   crude_gfx_new_frame( &engine->gpu );
-
+  
+#if !CRUDE_GFX_NAPI
   crude_engine_gui_queue_draw_( engine );
+#endif
   
   new_buffers_recrteated_or_model_initialized = crude_gfx_scene_renderer_update_instances_from_node( &engine->scene_renderer, engine->world, engine->main_node );
   engine->scene_renderer.options.scene.camera = *CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( engine->world, engine->camera_node, crude_camera );
@@ -934,8 +934,10 @@ crude_engine_graphics_task_set_thread_loop_
   CRUDE_PROFILER_ZONE_NAME( "crude_engine_graphics_task_set_thread_loop_" );
   
   final_render_texture = crude_gfx_access_texture( &engine->gpu, crude_gfx_render_graph_builder_access_resource_by_name( engine->scene_renderer.render_graph->builder, CRUDE_GFX_PRESENT_TEXTURE_NAME )->resource_info.texture.handle );
-
+  
+#if !CRUDE_GFX_NAPI
   crude_gfx_scene_renderer_render( &engine->scene_renderer );
+#endif
   crude_gfx_scene_renderer_queue( &engine->scene_renderer );
 
   crude_gfx_present( &engine->gpu, final_render_texture );

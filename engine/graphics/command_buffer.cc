@@ -354,8 +354,10 @@ crude_gfx_cmd_set_scissor
     scissor.extent.x = cmd->gpu->renderer_size.x;
     scissor.extent.y = cmd->gpu->renderer_size.y;
   }
-
+  
+#if !CRUDE_GFX_NAPI
   CRUDE_ASSERTM( CRUDE_CHANNEL_GRAPHICS, scissor.extent.x > 0 && scissor.extent.y > 0 && scissor.offset.x >= 0 && scissor.offset.y >= 0, "vk_scissor issues!" );
+#endif
   
   crude_gfx_rhi_command_buffer_set_scissor( cmd->rhi_cmd_buffer, &scissor );
 }

@@ -318,7 +318,10 @@ crude_gfx_device_deinitialize
     for ( uint32 i = 0; i < gpu->buffers.pool_size; ++i )
     {
       crude_gfx_buffer *buffer = CRUDE_CAST( crude_gfx_buffer*, crude_resource_pool_access_resource( &gpu->buffers, i ) );
-      CRUDE_LOG_ERROR( CRUDE_CHANNEL_CORE, "\tBUFFER MAY NOT BE FREE %s", buffer->name );
+      if ( buffer->name[ 0 ] )
+      {
+        CRUDE_LOG_ERROR( CRUDE_CHANNEL_CORE, "\tBUFFER MAY NOT BE FREE %s", buffer->name );
+      }
     }
   }
 
@@ -1242,7 +1245,9 @@ crude_gfx_create_texture
     crude_gfx_rhi_create_buffer( &gpu->rhi_device, &buffre_creation, &staging_buffer );
     
     crude_gfx_rhi_map_buffer( &gpu->rhi_device, staging_buffer, &destination_data );
+#if !CRUDE_GFX_NAPI
     memcpy( destination_data, creation->initial_data, image_size );
+#endif
     crude_gfx_rhi_unmap_buffer( &gpu->rhi_device, staging_buffer );
     
     cmd = crude_gfx_access_cmd_buffer( gpu, gpu->immediate_transfer_cmd_buffer );
@@ -2094,8 +2099,8 @@ crude_gfx_destroy_buffer_instant
 {
   crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, handle );
   
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Destroy buffer %s", buffer->name ? buffer->name : "Unknown" );
   buffer->name[ 0 ] = 0;
-  //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Destroy buffer %s", buffer->name ? buffer->name : "Unknown" );
 
   if ( buffer )
   {
