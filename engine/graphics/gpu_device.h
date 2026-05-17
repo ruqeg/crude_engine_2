@@ -83,6 +83,7 @@ typedef struct crude_gfx_device
   crude_gfx_texture_handle                                 textures_to_update[ 128 ];
   uint32                                                   num_textures_to_update;
   mtx_t                                                    texture_update_mutex;
+  mtx_t                                                    resource_deletion_queue_mutex;
   crude_gfx_resource_cache                                 resource_cache;
   crude_gfx_cmd_pool_handle                                immediate_transfer_cmd_pool;
   crude_gfx_cmd_buffer_handle                              immediate_transfer_cmd_buffer;

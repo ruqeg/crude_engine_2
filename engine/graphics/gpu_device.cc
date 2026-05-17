@@ -89,10 +89,17 @@ crude_gfx_destroy_resources_instant_
   _In_ crude_gfx_resource_index                            handle
 );
 
-void
+static void
 crude_gfx_update_frame_counters_
 (
   _In_ crude_gfx_device                                   *gpu
+);
+
+static void
+crude_gfx_push_resource_update_
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_resource_update const                    *update
 );
 
 /************************************************
@@ -241,6 +248,7 @@ crude_gfx_device_initialize
   
   gpu->num_textures_to_update = 0;
   mtx_init( &gpu->texture_update_mutex, mtx_plain );
+  mtx_init( &gpu->resource_deletion_queue_mutex, mtx_plain );
 
   gpu->mesh_shaders_extension_present = crude_gfx_rhi_get_device_optional_extensions( &gpu->rhi_device )->mesh_shaders_extension_present;
 }
@@ -269,6 +277,7 @@ crude_gfx_device_deinitialize
   CRUDE_HASHMAPSTR_DEINITIALIZE( gpu->resource_cache.techniques );
   
   mtx_destroy( &gpu->texture_update_mutex );
+  mtx_destroy( &gpu->resource_deletion_queue_mutex );
 
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( gpu->resource_deletion_queue ); ++i )
   {
@@ -830,6 +839,18 @@ crude_gfx_update_frame_counters_
 }
 
 void
+crude_gfx_push_resource_update_
+(
+  _In_ crude_gfx_device                                   *gpu,
+  _In_ crude_gfx_resource_update const                    *update
+)
+{
+  mtx_lock( &gpu->resource_deletion_queue_mutex );
+  CRUDE_ARRAY_PUSH( gpu->resource_deletion_queue, *update );
+  mtx_unlock( &gpu->resource_deletion_queue_mutex );
+}
+
+void
 crude_gfx_resize_framebuffer
 (
   _In_ crude_gfx_device                                   *gpu,
@@ -1190,7 +1211,7 @@ crude_gfx_destroy_sampler
     .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_SAMPLER,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  CRUDE_ARRAY_PUSH( gpu->resource_deletion_queue, sampler_update_event );
+  crude_gfx_push_resource_update_( gpu, &sampler_update_event );
 }
 
 void
@@ -1301,7 +1322,7 @@ crude_gfx_destroy_texture
     .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_TEXTURE,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  CRUDE_ARRAY_PUSH( gpu->resource_deletion_queue, texture_update_event );
+  crude_gfx_push_resource_update_( gpu, &texture_update_event );
   
   crude_gfx_texture* buffer = crude_gfx_access_texture( gpu, handle );
   crude_gfx_resource_update texture_update_bindless_event = { 
@@ -1559,7 +1580,7 @@ crude_gfx_destroy_shader_state
     .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_SHADER_STATE,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  CRUDE_ARRAY_PUSH( gpu->resource_deletion_queue, shader_state_update_event );
+  crude_gfx_push_resource_update_( gpu, &shader_state_update_event );
 }
 
 void
@@ -1634,7 +1655,7 @@ crude_gfx_destroy_render_pass
     .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_RENDER_PASS,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  CRUDE_ARRAY_PUSH( gpu->resource_deletion_queue, render_pass_update_event );
+  crude_gfx_push_resource_update_( gpu, &render_pass_update_event );
 }
 
 void
@@ -1982,7 +2003,7 @@ crude_gfx_destroy_pipeline
     .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_PIPELINE,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  CRUDE_ARRAY_PUSH( gpu->resource_deletion_queue, pipeline_update_event );
+  crude_gfx_push_resource_update_( gpu, &pipeline_update_event );
 
   crude_gfx_pipeline *pipeline = crude_gfx_access_pipeline( gpu, handle );
   crude_gfx_destroy_shader_state( gpu, pipeline->shader_state );
@@ -2082,16 +2103,21 @@ crude_gfx_destroy_buffer
   _In_ crude_gfx_buffer_handle                             handle
 )
 {
+  mtx_lock( &gpu->texture_update_mutex );
+  mtx_unlock( &gpu->texture_update_mutex );
+
   if ( handle.index >= gpu->buffers.pool_size )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Trying to free invalid buffer %u", handle.index );
     return;
   }
+  
   crude_gfx_resource_update buffer_update_event = { 
     .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_BUFFER,
     .handle        = handle.index,
-    .current_frame = gpu->current_frame };
-  CRUDE_ARRAY_PUSH( gpu->resource_deletion_queue, buffer_update_event );
+    .current_frame = gpu->current_frame
+  };
+  crude_gfx_push_resource_update_( gpu, &buffer_update_event );
 }
 
 void
@@ -2195,7 +2221,7 @@ crude_gfx_destroy_descriptor_set_layout
     .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_DESCRIPTOR_SET_LAYOUT,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  CRUDE_ARRAY_PUSH( gpu->resource_deletion_queue, descriptor_set_layout_update_event );
+  crude_gfx_push_resource_update_( gpu, &descriptor_set_layout_update_event );
 }
 
 void
@@ -2385,7 +2411,7 @@ crude_gfx_destroy_descriptor_set
     .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_DESCRIPTOR_SET,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  CRUDE_ARRAY_PUSH( gpu->resource_deletion_queue, descriptor_set_update_event );
+  crude_gfx_push_resource_update_( gpu, &descriptor_set_update_event );
 }
 
 void
@@ -2446,7 +2472,7 @@ crude_gfx_destroy_framebuffer
     .type          = CRUDE_GFX_RESOURCE_DELETION_TYPE_FRAMEBUFFER,
     .handle        = handle.index,
     .current_frame = gpu->current_frame };
-  CRUDE_ARRAY_PUSH( gpu->resource_deletion_queue, framebuffer_update_event );
+  crude_gfx_push_resource_update_( gpu, &framebuffer_update_event );
 }
 
 void
