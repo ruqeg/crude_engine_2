@@ -5503,6 +5503,103 @@ crude_gfx_rhi_create_task_pipeline
   _Out_ crude_gfx_rhi_pipeline                            *pipeline
 )
 {
+  D3D12_PIPELINE_STATE_STREAM_DESC                         stream_description;
+  D3DX12_MESH_SHADER_PIPELINE_STATE_DESC                   dx12_pipeline_creation;
+
+  dx12_pipeline_creation = CRUDE_COMPOUNT_EMPTY( D3DX12_MESH_SHADER_PIPELINE_STATE_DESC );
+
+  dx12_pipeline_creation.BlendState = CRUDE_COMPOUNT_EMPTY( D3D12_BLEND_DESC );
+  dx12_pipeline_creation.BlendState.AlphaToCoverageEnable = creation->multisample_state->alpha_to_coverage_enable ? TRUE : FALSE;
+  dx12_pipeline_creation.BlendState.IndependentBlendEnable = TRUE;
+  for ( uint32 i = 0; i < creation->color_blend_state->attachments_count; ++i )
+  {
+    crude_gfx_rhi_pipeline_color_blend_attachment_state const       *rhi_attachment_state;
+
+    rhi_attachment_state = &creation->color_blend_state->attachments[ i ];
+
+    dx12_pipeline_creation.BlendState.RenderTarget[ i ] = CRUDE_COMPOUNT_EMPTY( D3D12_RENDER_TARGET_BLEND_DESC );
+    dx12_pipeline_creation.BlendState.RenderTarget[ i ].BlendEnable = rhi_attachment_state->blend_enable ? TRUE : FALSE;
+    dx12_pipeline_creation.BlendState.RenderTarget[ i ].LogicOpEnable = creation->color_blend_state->logic_op_enable ? TRUE : FALSE;
+    dx12_pipeline_creation.BlendState.RenderTarget[ i ].SrcBlend = CRUDE_CAST( D3D12_BLEND, rhi_attachment_state->src_color_blend_factor );
+    dx12_pipeline_creation.BlendState.RenderTarget[ i ].DestBlend = CRUDE_CAST( D3D12_BLEND, rhi_attachment_state->dst_color_blend_factor );
+    dx12_pipeline_creation.BlendState.RenderTarget[ i ].BlendOp = CRUDE_CAST( D3D12_BLEND_OP, rhi_attachment_state->color_blend_op );
+    dx12_pipeline_creation.BlendState.RenderTarget[ i ].SrcBlendAlpha = CRUDE_CAST( D3D12_BLEND, rhi_attachment_state->src_alpha_blend_factor );
+    dx12_pipeline_creation.BlendState.RenderTarget[ i ].DestBlendAlpha = CRUDE_CAST( D3D12_BLEND, rhi_attachment_state->dst_alpha_blend_factor );
+    dx12_pipeline_creation.BlendState.RenderTarget[ i ].BlendOpAlpha = CRUDE_CAST( D3D12_BLEND_OP, rhi_attachment_state->alpha_blend_op );
+    dx12_pipeline_creation.BlendState.RenderTarget[ i ].RenderTargetWriteMask = rhi_attachment_state->color_write_mask;
+  }
+
+  dx12_pipeline_creation.RasterizerState = CRUDE_COMPOUNT_EMPTY( D3D12_RASTERIZER_DESC );
+  dx12_pipeline_creation.RasterizerState.FillMode = CRUDE_CAST( D3D12_FILL_MODE, creation->rasterization_state->polygon_mode );
+  dx12_pipeline_creation.RasterizerState.CullMode = ( creation->rasterization_state->cull_mode & CRUDE_GFX_RHI_CULL_MODE_FRONT_BIT ) ? D3D12_CULL_MODE_FRONT : ( ( creation->rasterization_state->cull_mode & CRUDE_GFX_RHI_CULL_MODE_BACK_BIT ) ? D3D12_CULL_MODE_BACK : D3D12_CULL_MODE_NONE );
+  dx12_pipeline_creation.RasterizerState.FrontCounterClockwise = ( creation->rasterization_state->front_face == CRUDE_GFX_RHI_FRONT_FACE_COUNTER_CLOCKWISE );
+  dx12_pipeline_creation.RasterizerState.DepthBias = creation->rasterization_state->depth_bias_constant_factor;
+  dx12_pipeline_creation.RasterizerState.DepthBiasClamp = creation->rasterization_state->depth_bias_clamp;
+  dx12_pipeline_creation.RasterizerState.SlopeScaledDepthBias = creation->rasterization_state->depth_bias_slope_factor;
+  dx12_pipeline_creation.RasterizerState.DepthClipEnable = creation->rasterization_state->depth_clamp_enable ? FALSE : TRUE;
+  dx12_pipeline_creation.RasterizerState.MultisampleEnable = creation->multisample_state->rasterization_samples > 1 ? TRUE : FALSE;
+  dx12_pipeline_creation.RasterizerState.AntialiasedLineEnable = FALSE;
+  dx12_pipeline_creation.RasterizerState.ForcedSampleCount = 0;
+
+  dx12_pipeline_creation.DepthStencilState = CRUDE_COMPOUNT_EMPTY( D3D12_DEPTH_STENCIL_DESC );
+  dx12_pipeline_creation.DepthStencilState.DepthEnable = creation->depth_stencil_state->depth_test_enable ? TRUE : FALSE;
+  dx12_pipeline_creation.DepthStencilState.DepthWriteMask = creation->depth_stencil_state->depth_write_enable ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
+  dx12_pipeline_creation.DepthStencilState.DepthFunc = CRUDE_CAST( D3D12_COMPARISON_FUNC, creation->depth_stencil_state->depth_compare_op );
+  dx12_pipeline_creation.DepthStencilState.StencilEnable = creation->depth_stencil_state->stencil_test_enable ? TRUE : FALSE;
+  dx12_pipeline_creation.DepthStencilState.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+  dx12_pipeline_creation.DepthStencilState.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+  dx12_pipeline_creation.DepthStencilState.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+  dx12_pipeline_creation.DepthStencilState.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+  dx12_pipeline_creation.DepthStencilState.BackFace = dx12_pipeline_creation.DepthStencilState.FrontFace;
+
+  dx12_pipeline_creation.SampleDesc.Count = creation->multisample_state->rasterization_samples;
+  dx12_pipeline_creation.SampleDesc.Quality = 0;
+
+  dx12_pipeline_creation.pRootSignature = creation->pipeline_layout.dx12_root_signature;
+  for ( uint32 i = 0; i < creation->stage_count; ++i )
+  {
+    switch ( creation->stages[ i ].stage )
+    {
+    case CRUDE_GFX_RHI_SHADER_STAGE_TASK_BIT_EXT:
+    {
+      dx12_pipeline_creation.AS.pShaderBytecode = creation->stages[ i ].rhi_module.code;
+      dx12_pipeline_creation.AS.BytecodeLength = creation->stages[ i ].rhi_module.code_size;
+      break;
+    }
+    case CRUDE_GFX_RHI_SHADER_STAGE_MESH_BIT_EXT:
+    {
+      dx12_pipeline_creation.MS.pShaderBytecode = creation->stages[ i ].rhi_module.code;
+      dx12_pipeline_creation.MS.BytecodeLength = creation->stages[ i ].rhi_module.code_size;
+      break;
+    }
+    case CRUDE_GFX_RHI_SHADER_STAGE_FRAGMENT_BIT:
+    {
+      dx12_pipeline_creation.PS.pShaderBytecode = creation->stages[ i ].rhi_module.code;
+      dx12_pipeline_creation.PS.BytecodeLength = creation->stages[ i ].rhi_module.code_size;
+      break;
+    }
+    default:
+    {
+      break;
+    }
+    }
+  }
+  
+  dx12_pipeline_creation.SampleMask = UINT_MAX;
+  dx12_pipeline_creation.PrimitiveTopologyType = CRUDE_CAST( D3D12_PRIMITIVE_TOPOLOGY_TYPE, creation->input_assembly_state->topology );
+  
+  dx12_pipeline_creation.NumRenderTargets = creation->rendering_state->color_attachment_count;
+  for ( uint32 i = 0; i < creation->rendering_state->color_attachment_count; ++i )
+  {
+    dx12_pipeline_creation.RTVFormats[ i ] = CRUDE_CAST( DXGI_FORMAT, creation->rendering_state->color_attachment_formats[ i ] );
+  }
+  dx12_pipeline_creation.DSVFormat = CRUDE_CAST( DXGI_FORMAT, creation->rendering_state->depth_attachment_format );
+  
+  stream_description = CRUDE_COMPOUNT_EMPTY( D3D12_PIPELINE_STATE_STREAM_DESC );
+  stream_description.SizeInBytes = sizeof( dx12_pipeline_creation );
+  stream_description.pPipelineStateSubobjectStream = &dx12_pipeline_creation;
+
+  CRUDE_GFX_RHI_HANDLE_DX12_RESULT( device->dx12_device->CreatePipelineState( &stream_description, IID_PPV_ARGS( &pipeline->dx12_pipeline ) ), "Failed to create graphics pipeline" );
 }
 
 void
