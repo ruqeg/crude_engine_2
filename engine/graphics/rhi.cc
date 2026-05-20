@@ -78,6 +78,7 @@ static VkValidationFeatureEnableEXT const vk_features_requested[ ] =
 #endif
   //VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT,
 };
+#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
 
 static char const *const crude_gfx_rhi_vk_device_required_extensions[] = 
 { 
@@ -97,6 +98,30 @@ static char const *const crude_gfx_rhi_vk_device_required_extensions[] =
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
 };
 
+VkDescriptorPoolSize crude_gfx_rhi_vk_pool_sizes_bindless_[ ] =
+{
+  { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT },
+  { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT }
+};
+
+VkDescriptorPoolSize crude_gfx_rhi_vk_pool_sizes_[] =
+{
+  { VK_DESCRIPTOR_TYPE_SAMPLER, 100 },
+  { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 },
+  { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 100 },
+  { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 100 },
+  { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 100 },
+  { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 100 },
+  { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100 },
+  { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 11000 },
+  { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 100 },
+  { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 100 },
+  { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 11000 },
+#if CRUDE_GFX_RAY_TRACING_ENABLED
+  { VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 100 },
+#endif
+};
+
 static VKAPI_ATTR VkBool32
 crude_gfx_rhi_vk_debug_callback_
 (
@@ -105,7 +130,6 @@ crude_gfx_rhi_vk_debug_callback_
   _In_ VkDebugUtilsMessengerCallbackDataEXT const         *pCallbackData,
   _In_ void                                               *pUserData
 );
-#endif
 
 static bool
 crude_gfx_rhi_vk_pick_physical_device_
@@ -145,6 +169,12 @@ crude_gfx_rhi_vk_check_support_required_features_
 (
   _In_ VkPhysicalDevice                                    vk_physical_device
 );
+
+#elif /* CRUDE_GFX_VULKAN */ CRUDE_GFX_DX12
+
+#endif /* CRUDE_GFX_DX12 */
+
+#if CRUDE_GFX_VULKAN
 
 crude_gfx_rhi_fence
 crude_gfx_rhi_fence_empty
@@ -736,28 +766,6 @@ crude_gfx_rhi_create_descriptor_pool
   _Out_ crude_gfx_rhi_descriptor_pool                     *descriptor_pool
 )
 {
-  VkDescriptorPoolSize vk_pool_sizes_bindless[ ] =
-  {
-    { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT },
-    { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT }
-  };
-  VkDescriptorPoolSize vk_pool_sizes[] =
-  {
-    { VK_DESCRIPTOR_TYPE_SAMPLER, 100 },
-    { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 },
-    { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 100 },
-    { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 100 },
-    { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 100 },
-    { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 100 },
-    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100 },
-    { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 11000 },
-    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 100 },
-    { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 100 },
-    { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 11000 },
-#if CRUDE_GFX_RAY_TRACING_ENABLED
-    { VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 100 },
-#endif
-  };
   VkDescriptorPoolCreateInfo                               vk_creation;
 
   if ( bindless )
@@ -765,9 +773,9 @@ crude_gfx_rhi_create_descriptor_pool
     vk_creation = CRUDE_COMPOUNT_EMPTY( VkDescriptorPoolCreateInfo );
     vk_creation.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     vk_creation.flags         = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT | VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-    vk_creation.maxSets       = CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT * CRUDE_COUNTOF( vk_pool_sizes_bindless );
-    vk_creation.poolSizeCount = CRUDE_COUNTOF( vk_pool_sizes_bindless );
-    vk_creation.pPoolSizes    = vk_pool_sizes_bindless;
+    vk_creation.maxSets       = CRUDE_GFX_BINDLESS_RESOURCES_MAX_COUNT * CRUDE_COUNTOF( crude_gfx_rhi_vk_pool_sizes_bindless_ );
+    vk_creation.poolSizeCount = CRUDE_COUNTOF( crude_gfx_rhi_vk_pool_sizes_bindless_ );
+    vk_creation.pPoolSizes    = crude_gfx_rhi_vk_pool_sizes_bindless_;
   }
   else
   {
@@ -775,8 +783,8 @@ crude_gfx_rhi_create_descriptor_pool
     vk_creation.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     vk_creation.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
     vk_creation.maxSets = 4096;
-    vk_creation.poolSizeCount = CRUDE_COUNTOF( vk_pool_sizes );
-    vk_creation.pPoolSizes = vk_pool_sizes;
+    vk_creation.poolSizeCount = CRUDE_COUNTOF( crude_gfx_rhi_vk_pool_sizes_ );
+    vk_creation.pPoolSizes = crude_gfx_rhi_vk_pool_sizes_;
   }
   CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateDescriptorPool( device->vk_device, &vk_creation, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &descriptor_pool->vk_descriptor_pool ), "Failed create descriptor pool" );
 }
@@ -894,6 +902,15 @@ crude_gfx_rhi_create_command_buffer
   vk_cmd_allocation_info.commandBufferCount = 1;
     
   CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkAllocateCommandBuffers( device->vk_device, &vk_cmd_allocation_info, &command_buffer->vk_command_buffer ), "Failed to allocate command buffer" );
+}
+
+void
+crude_gfx_rhi_destroy_command_buffer
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer
+)
+{
 }
 
 void
@@ -1591,6 +1608,7 @@ crude_gfx_rhi_create_shader_module
 (
   _In_ crude_gfx_rhi_device                               *device,
   _In_ crude_gfx_rhi_shader_module_create_info const      *creation,
+  _In_ crude_heap_allocator                               *allocator,
   _Out_ crude_gfx_rhi_shader_module                       *shader_module
 )
 {
@@ -1682,10 +1700,144 @@ crude_gfx_rhi_set_pipeline_layout_debug_name
 }
 
 void
-crude_gfx_rhi_create_graphics_pipeline
+crude_gfx_rhi_create_task_pipeline
 (
   _In_ crude_gfx_rhi_device                               *device,
-  _In_ crude_gfx_rhi_graphics_pipeline_create_info const  *creation,
+  _In_ crude_gfx_rhi_task_pipeline_create_info const      *creation,
+  _Out_ crude_gfx_rhi_pipeline                            *pipeline
+)
+{
+  VkDynamicState                                           vk_dynamic_states[ ] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+
+  VkGraphicsPipelineCreateInfo                             vk_pipeline_info;  
+  VkPipelineInputAssemblyStateCreateInfo                   vk_input_assembly;
+  VkPipelineViewportStateCreateInfo                        vk_viewport_state;
+  VkPipelineDynamicStateCreateInfo                         vk_dynamic_state;
+  VkPipelineRenderingCreateInfoKHR                         vk_pipeline_rendering_create_info;
+  VkPipelineRasterizationStateCreateInfo                   vk_rasterizer;
+  VkPipelineMultisampleStateCreateInfo                     vk_multisampling;
+  VkPipelineDepthStencilStateCreateInfo                    vk_depth_stencil;
+  VkPipelineColorBlendStateCreateInfo                      vk_color_blending;
+  VkPipelineColorBlendAttachmentState                      vk_color_blend_attachment[ 8 ];
+  VkFormat                                                 vk_color_attachment_formats[ 8 ];
+  VkPipelineShaderStageCreateInfo                          vk_stages[ 8 ];
+
+  vk_input_assembly = CRUDE_COMPOUNT_EMPTY( VkPipelineInputAssemblyStateCreateInfo );
+  vk_input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+  vk_input_assembly.topology = CRUDE_CAST( VkPrimitiveTopology, creation->input_assembly_state->topology );
+  vk_input_assembly.primitiveRestartEnable = creation->input_assembly_state->primitive_restart_enable;
+
+  for ( uint32 i = 0; i < creation->color_blend_state->attachments_count; ++i )
+  {
+    vk_color_blend_attachment[ i ] = CRUDE_COMPOUNT_EMPTY( VkPipelineColorBlendAttachmentState );
+    vk_color_blend_attachment[ i ].blendEnable = creation->color_blend_state->attachments[ i ].blend_enable;
+    vk_color_blend_attachment[ i ].colorWriteMask = creation->color_blend_state->attachments[ i ].color_write_mask;
+    vk_color_blend_attachment[ i ].srcColorBlendFactor = CRUDE_CAST( VkBlendFactor, creation->color_blend_state->attachments[ i ].src_color_blend_factor );
+    vk_color_blend_attachment[ i ].dstColorBlendFactor = CRUDE_CAST( VkBlendFactor, creation->color_blend_state->attachments[ i ].dst_color_blend_factor );
+    vk_color_blend_attachment[ i ].colorBlendOp = CRUDE_CAST( VkBlendOp, creation->color_blend_state->attachments[ i ].color_blend_op );
+    vk_color_blend_attachment[ i ].srcAlphaBlendFactor = CRUDE_CAST( VkBlendFactor, creation->color_blend_state->attachments[ i ].src_alpha_blend_factor );
+    vk_color_blend_attachment[ i ].dstAlphaBlendFactor = CRUDE_CAST( VkBlendFactor, creation->color_blend_state->attachments[ i ].dst_alpha_blend_factor );
+    vk_color_blend_attachment[ i ].alphaBlendOp = CRUDE_CAST( VkBlendOp, creation->color_blend_state->attachments[ i ].alpha_blend_op );
+  }
+    
+  vk_color_blending = CRUDE_COMPOUNT_EMPTY( VkPipelineColorBlendStateCreateInfo );
+  vk_color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+  vk_color_blending.logicOpEnable = creation->color_blend_state->logic_op_enable ? VK_TRUE : VK_FALSE;
+  vk_color_blending.logicOp = CRUDE_CAST( VkLogicOp, creation->color_blend_state->logic_op );
+  vk_color_blending.attachmentCount = creation->color_blend_state->attachments_count;
+  vk_color_blending.pAttachments = vk_color_blend_attachment;
+  vk_color_blending.blendConstants[ 0 ] = creation->color_blend_state->blend_constants[ 0 ];
+  vk_color_blending.blendConstants[ 1 ] = creation->color_blend_state->blend_constants[ 1 ];
+  vk_color_blending.blendConstants[ 2 ] = creation->color_blend_state->blend_constants[ 2 ];
+  vk_color_blending.blendConstants[ 3 ] = creation->color_blend_state->blend_constants[ 3 ];
+    
+  vk_depth_stencil = CRUDE_COMPOUNT_EMPTY( VkPipelineDepthStencilStateCreateInfo );
+  vk_depth_stencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+  vk_depth_stencil.depthTestEnable = creation->depth_stencil_state->depth_test_enable ? VK_TRUE : VK_FALSE;
+  vk_depth_stencil.depthWriteEnable = creation->depth_stencil_state->depth_write_enable ? VK_TRUE : VK_FALSE;
+  vk_depth_stencil.depthCompareOp = CRUDE_CAST( VkCompareOp, creation->depth_stencil_state->depth_compare_op );
+  vk_depth_stencil.stencilTestEnable = creation->depth_stencil_state->stencil_test_enable ? VK_TRUE : VK_FALSE;
+
+  vk_multisampling = CRUDE_COMPOUNT_EMPTY( VkPipelineMultisampleStateCreateInfo );
+  vk_multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+  vk_multisampling.rasterizationSamples = CRUDE_CAST( VkSampleCountFlagBits, creation->multisample_state->rasterization_samples );
+  vk_multisampling.pSampleMask = NULL;
+  vk_multisampling.alphaToCoverageEnable = creation->multisample_state->alpha_to_coverage_enable ? VK_TRUE : VK_FALSE;
+  vk_multisampling.alphaToOneEnable = creation->multisample_state->alpha_to_one_enable ? VK_TRUE : VK_FALSE;
+  vk_multisampling.sampleShadingEnable = creation->multisample_state->sample_shading_enable ? VK_TRUE : VK_FALSE;
+  vk_multisampling.minSampleShading = creation->multisample_state->min_sample_shading;
+    
+  vk_rasterizer = CRUDE_COMPOUNT_EMPTY( VkPipelineRasterizationStateCreateInfo );
+  vk_rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+  vk_rasterizer.depthClampEnable = creation->rasterization_state->depth_clamp_enable ? VK_TRUE : VK_FALSE;
+  vk_rasterizer.rasterizerDiscardEnable = creation->rasterization_state->rasterizer_discard_enable ? VK_TRUE : VK_FALSE;
+  vk_rasterizer.polygonMode = CRUDE_CAST( VkPolygonMode, creation->rasterization_state->polygon_mode );
+  vk_rasterizer.cullMode = CRUDE_STATIC_CAST( VkCullModeFlags, creation->rasterization_state->cull_mode );
+  vk_rasterizer.frontFace = CRUDE_CAST( VkFrontFace, creation->rasterization_state->front_face );
+  vk_rasterizer.depthBiasEnable = creation->rasterization_state->depth_bias_enable ? VK_TRUE : VK_FALSE;
+  vk_rasterizer.depthBiasConstantFactor = creation->rasterization_state->depth_bias_constant_factor;
+  vk_rasterizer.depthBiasClamp = creation->rasterization_state->depth_bias_clamp;
+  vk_rasterizer.depthBiasSlopeFactor = creation->rasterization_state->depth_bias_slope_factor;
+  vk_rasterizer.lineWidth = creation->rasterization_state->line_width;
+    
+  vk_viewport_state = CRUDE_COMPOUNT_EMPTY( VkPipelineViewportStateCreateInfo ); 
+  vk_viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+  vk_viewport_state.viewportCount = creation->viewport_state->viewport_count;
+  vk_viewport_state.scissorCount = creation->viewport_state->scissor_count;
+    
+  vk_dynamic_state = CRUDE_COMPOUNT_EMPTY( VkPipelineDynamicStateCreateInfo ); 
+  vk_dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+  vk_dynamic_state.dynamicStateCount = CRUDE_COUNTOF( vk_dynamic_states );
+  vk_dynamic_state.pDynamicStates = vk_dynamic_states;
+    
+  CRUDE_ASSERT( creation->rendering_state->color_attachment_count < CRUDE_COUNTOF( vk_color_attachment_formats ) );
+  for ( uint32 i = 0; i < creation->rendering_state->color_attachment_count; ++i )
+  {
+    vk_color_attachment_formats[ i ] = CRUDE_CAST( VkFormat, creation->rendering_state->color_attachment_formats[ i ] );
+  }
+
+  vk_pipeline_rendering_create_info = CRUDE_COMPOUNT_EMPTY( VkPipelineRenderingCreateInfoKHR );
+  vk_pipeline_rendering_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
+  vk_pipeline_rendering_create_info.viewMask = creation->rendering_state->view_mask;
+  vk_pipeline_rendering_create_info.colorAttachmentCount = creation->rendering_state->color_attachment_count;
+  vk_pipeline_rendering_create_info.pColorAttachmentFormats = vk_color_attachment_formats;
+  vk_pipeline_rendering_create_info.depthAttachmentFormat = CRUDE_CAST( VkFormat, creation->rendering_state->depth_attachment_format );
+  vk_pipeline_rendering_create_info.stencilAttachmentFormat = CRUDE_CAST( VkFormat, creation->rendering_state->stencil_attachment_format );
+  
+  CRUDE_ASSERT( creation->stage_count < CRUDE_COUNTOF( vk_stages ) );
+  for ( uint32 i = 0; i < creation->stage_count; ++i )
+  {
+    vk_stages[ i ] = CRUDE_COMPOUNT_EMPTY( VkPipelineShaderStageCreateInfo );
+    vk_stages[ i ].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vk_stages[ i ].module = creation->stages[ i ].rhi_module.vk_shader_module;
+    vk_stages[ i ].stage  = CRUDE_CAST( VkShaderStageFlagBits, creation->stages[ i ].stage );
+    vk_stages[ i ].pName  = creation->stages[ i ].name;
+  }
+
+  vk_pipeline_info = CRUDE_COMPOUNT_EMPTY( VkGraphicsPipelineCreateInfo );
+  vk_pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+  vk_pipeline_info.pNext = &vk_pipeline_rendering_create_info;
+  vk_pipeline_info.stageCount = creation->stage_count;
+  vk_pipeline_info.pStages = vk_stages;
+  vk_pipeline_info.pVertexInputState = NULL;
+  vk_pipeline_info.pInputAssemblyState = &vk_input_assembly;
+  vk_pipeline_info.pViewportState = &vk_viewport_state;
+  vk_pipeline_info.pRasterizationState = &vk_rasterizer;
+  vk_pipeline_info.pMultisampleState = &vk_multisampling;
+  vk_pipeline_info.pDepthStencilState = &vk_depth_stencil;
+  vk_pipeline_info.pColorBlendState = &vk_color_blending;
+  vk_pipeline_info.pDynamicState = &vk_dynamic_state;
+  vk_pipeline_info.layout = creation->pipeline_layout.vk_pipeline_layout;
+  vk_pipeline_info.renderPass = NULL;
+    
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateGraphicsPipelines( device->vk_device, VK_NULL_HANDLE, 1, &vk_pipeline_info, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &pipeline->vk_pipeline ), "Failed to create task pipeline" );
+}
+
+void
+crude_gfx_rhi_create_classic_pipeline
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_classic_pipeline_create_info const   *creation,
   _Out_ crude_gfx_rhi_pipeline                            *pipeline
 )
 {
@@ -1839,7 +1991,7 @@ crude_gfx_rhi_create_graphics_pipeline
   vk_pipeline_info.layout = creation->pipeline_layout.vk_pipeline_layout;
   vk_pipeline_info.renderPass = NULL;
     
-  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateGraphicsPipelines( device->vk_device, VK_NULL_HANDLE, 1, &vk_pipeline_info, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &pipeline->vk_pipeline ), "Failed to create graphics pipeline" );
+  CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vkCreateGraphicsPipelines( device->vk_device, VK_NULL_HANDLE, 1, &vk_pipeline_info, CRUDE_GFX_RHI_DEVICE_VK_ALLOCATION_CALLBACKS, &pipeline->vk_pipeline ), "Failed to create geometry pipeline" );
 }
 
 void
@@ -2532,6 +2684,7 @@ crude_gfx_rhi_reset_command_pool
 void
 crude_gfx_rhi_begin_command_buffer
 (
+  _In_ crude_gfx_rhi_command_pool                          command_pool,
   _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_command_buffer_begin_info const      *begin_info
 )
@@ -2791,8 +2944,8 @@ crude_gfx_rhi_command_buffer_pipeline_image_barrier
   vk_image_barrier.dstAccessMask = image_memory_barriers->dst_access_mask;
   vk_image_barrier.oldLayout = CRUDE_CAST( VkImageLayout, image_memory_barriers->old_layout );
   vk_image_barrier.newLayout = CRUDE_CAST( VkImageLayout, image_memory_barriers->new_layout );
-  vk_image_barrier.srcQueueFamilyIndex = image_memory_barriers->src_queue_family_index;
-  vk_image_barrier.dstQueueFamilyIndex = image_memory_barriers->dst_queue_family_index;
+  vk_image_barrier.srcQueueFamilyIndex = image_memory_barriers->src_queue.vk_queue_family;
+  vk_image_barrier.dstQueueFamilyIndex = image_memory_barriers->dst_queue.vk_queue_family;
   vk_image_barrier.image = image_memory_barriers->image.vk_image;
   vk_image_barrier.subresourceRange.aspectMask = image_memory_barriers->subresource_range.aspect_mask;
   vk_image_barrier.subresourceRange.baseArrayLayer = image_memory_barriers->subresource_range.base_array_layer;
@@ -2825,8 +2978,8 @@ crude_gfx_rhi_command_buffer_pipeline_buffer_barrier
   vk_buffer_barrier.srcAccessMask = buffer_memory_barriers->src_access_mask;
   vk_buffer_barrier.dstStageMask = buffer_memory_barriers->dst_stage_mask;
   vk_buffer_barrier.dstAccessMask = buffer_memory_barriers->dst_access_mask;
-  vk_buffer_barrier.srcQueueFamilyIndex = buffer_memory_barriers->src_queue_family_index;
-  vk_buffer_barrier.dstQueueFamilyIndex = buffer_memory_barriers->dst_queue_family_index;
+  vk_buffer_barrier.srcQueueFamilyIndex = buffer_memory_barriers->src_queue.vk_queue_family;
+  vk_buffer_barrier.dstQueueFamilyIndex = buffer_memory_barriers->dst_queue.vk_queue_family;
   vk_buffer_barrier.buffer = buffer_memory_barriers->buffer->vk_buffer;
   vk_buffer_barrier.offset = buffer_memory_barriers->offset;
   vk_buffer_barrier.size = buffer_memory_barriers->size;
@@ -3924,6 +4077,7 @@ crude_gfx_rhi_create_shader_module
 (
   _In_ crude_gfx_rhi_device                               *device,
   _In_ crude_gfx_rhi_shader_module_create_info const      *creation,
+  _In_ crude_heap_allocator                               *allocator,
   _Out_ crude_gfx_rhi_shader_module                       *shader_module
 )
 {
@@ -3979,10 +4133,10 @@ crude_gfx_rhi_set_pipeline_layout_debug_name
 }
 
 void
-crude_gfx_rhi_create_graphics_pipeline
+crude_gfx_rhi_create_classic_pipeline
 (
   _In_ crude_gfx_rhi_device                               *device,
-  _In_ crude_gfx_rhi_graphics_pipeline_create_info const  *creation,
+  _In_ crude_gfx_rhi_classic_pipeline_create_info const   *creation,
   _Out_ crude_gfx_rhi_pipeline                            *pipeline
 )
 {
@@ -4186,6 +4340,15 @@ crude_gfx_rhi_create_command_buffer
   _In_ crude_gfx_rhi_device                               *device,
   _In_ crude_gfx_rhi_command_buffer_create_info const     *creation,
   _Out_ crude_gfx_rhi_command_buffer                      *command_buffer
+)
+{
+}
+
+void
+crude_gfx_rhi_destroy_command_buffer
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer
 )
 {
 }
@@ -4436,6 +4599,7 @@ crude_gfx_rhi_reset_command_pool
 void
 crude_gfx_rhi_begin_command_buffer
 (
+  _In_ crude_gfx_rhi_command_pool                          command_pool,
   _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_command_buffer_begin_info const      *begin_info
 )
@@ -4798,7 +4962,7 @@ crude_gfx_rhi_dx12_pick_physical_device_
 (
   _In_ crude_heap_allocator                               *allocator,
   _In_ IDXGIFactory6                                      *dxgi_factory,
-  _Out_ ID3D12Device                                     **dx12_device,
+  _Out_ ID3D12Device2                                    **dx12_device,
   _Out_ IDXGIAdapter4                                    **dx12_adapter,
   _Out_ uint32                                            *dx12_device_index,
   _Out_ crude_gfx_rhi_physical_device_optional_extensions *selected_physical_devices_optional_extenstions
@@ -4992,13 +5156,7 @@ crude_gfx_rhi_create_surface
   _Out_ crude_gfx_rhi_surface                             *surface
 )
 {
-//  if ( !SDL_GetDXGIOutputInfo( SDL_GetDisplayForWindow( window ), &adapterIndex, &outputIndex ) )
-//{
-//    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-//        "SDL_DXGIGetOutputInfo() failed: %s",
-//        SDL_GetError());
-//    return false;
-//}
+  surface->sdl_window = window;
 }
 
 void
@@ -5230,9 +5388,14 @@ crude_gfx_rhi_create_shader_module
 (
   _In_ crude_gfx_rhi_device                               *device,
   _In_ crude_gfx_rhi_shader_module_create_info const      *creation,
+  _In_ crude_heap_allocator                               *allocator,
   _Out_ crude_gfx_rhi_shader_module                       *shader_module
 )
 {
+  shader_module->allocator = allocator;
+  shader_module->code = crude_heap_allocator_allocate( allocator, creation->code_size );
+  shader_module->code_size = creation->code_size;
+  crude_memory_copy( shader_module->code, creation->code, creation->code_size );
   return true;
 }
 
@@ -5243,6 +5406,7 @@ crude_gfx_rhi_destroy_shader_module
   _In_ crude_gfx_rhi_shader_module                         shader_module
 )
 {
+  crude_heap_allocator_deallocate( shader_module.allocator, shader_module.code );
 }
 
 void
@@ -5263,6 +5427,52 @@ crude_gfx_rhi_create_pipeline_layout
   _Out_ crude_gfx_rhi_pipeline_layout                     *pipeline_layout
 )
 {
+  D3D12_ROOT_SIGNATURE_DESC                                dx12_root_signature_description;
+  D3D12_DESCRIPTOR_RANGE                                   dx12_descriptor_ranges[ 5 ];
+  D3D12_ROOT_PARAMETER                                     dx12_root_parameters[ 5 ];
+  uint32                                                   dx12_parameters_count;
+  ID3DBlob                                                *dx12_serialized_blob;
+  
+  dx12_parameters_count = 0; //creation->set_layout_count;
+  
+  //for ( uint32 i = 0; i < dx12_parameters_count; ++i )
+  //{
+  //  dx12_descriptor_ranges[ i ] = CRUDE_COMPOUNT_EMPTY( D3D12_DESCRIPTOR_RANGE );
+  //  dx12_descriptor_ranges[ i ].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+  //  dx12_descriptor_ranges[ i ].NumDescriptors = creation->set_layouts[ i ].num_descriptors;
+  //  dx12_descriptor_ranges[ i ].BaseShaderRegister = creation->set_layouts[ i ].base_register;
+  //  dx12_descriptor_ranges[ i ].RegisterSpace = creation->set_layouts[ i ].register_space;
+  //  dx12_descriptor_ranges[ i ].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+  //
+  //  dx12_root_parameters[ i ] = CRUDE_COMPOUNT_EMPTY( D3D12_ROOT_PARAMETER );
+  //  dx12_root_parameters[ i ].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+  //  dx12_root_parameters[ i ].DescriptorTable.NumDescriptorRanges = 1;
+  //  dx12_root_parameters[ i ].DescriptorTable.pDescriptorRanges = &dx12_descriptor_ranges[ i ];
+  //  dx12_root_parameters[ i ].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+  //}
+  
+  if ( creation->has_push_constant_range )
+  {
+    dx12_root_parameters[ dx12_parameters_count ] = CRUDE_COMPOUNT_EMPTY( D3D12_ROOT_PARAMETER );
+    dx12_root_parameters[ dx12_parameters_count].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+    dx12_root_parameters[ dx12_parameters_count].Constants.ShaderRegister = 0;
+    dx12_root_parameters[ dx12_parameters_count].Constants.RegisterSpace = 0;
+    dx12_root_parameters[ dx12_parameters_count].Constants.Num32BitValues = ( creation->push_constant_range.size + 3 ) / 4;
+    dx12_root_parameters[ dx12_parameters_count].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    ++dx12_parameters_count;
+  }
+  
+  dx12_root_signature_description = CRUDE_COMPOUNT_EMPTY( D3D12_ROOT_SIGNATURE_DESC );
+  dx12_root_signature_description.NumParameters = dx12_parameters_count;
+  dx12_root_signature_description.pParameters = dx12_root_parameters;
+  dx12_root_signature_description.NumStaticSamplers = 0;
+  dx12_root_signature_description.pStaticSamplers = NULL;
+  dx12_root_signature_description.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+  
+  CRUDE_GFX_RHI_HANDLE_DX12_RESULT( D3D12SerializeRootSignature( &dx12_root_signature_description, D3D_ROOT_SIGNATURE_VERSION_1, &dx12_serialized_blob, NULL ), "Failed D3D12SerializeRootSignature" );
+  CRUDE_GFX_RHI_HANDLE_DX12_RESULT( device->dx12_device->CreateRootSignature( 0, dx12_serialized_blob->GetBufferPointer( ), dx12_serialized_blob->GetBufferSize( ), IID_PPV_ARGS( &pipeline_layout->dx12_root_signature ) ), "Failed CreateRootSignature" );
+  
+  dx12_serialized_blob->Release( );
 }
 
 void
@@ -5272,6 +5482,7 @@ crude_gfx_rhi_destroy_pipeline_layout
   _In_ crude_gfx_rhi_pipeline_layout                       pipeline_layout
 )
 {
+  pipeline_layout.dx12_root_signature->Release( );
 }
 
 void
@@ -5285,13 +5496,135 @@ crude_gfx_rhi_set_pipeline_layout_debug_name
 }
 
 void
-crude_gfx_rhi_create_graphics_pipeline
+crude_gfx_rhi_create_task_pipeline
 (
   _In_ crude_gfx_rhi_device                               *device,
-  _In_ crude_gfx_rhi_graphics_pipeline_create_info const  *creation,
+  _In_ crude_gfx_rhi_task_pipeline_create_info const      *creation,
   _Out_ crude_gfx_rhi_pipeline                            *pipeline
 )
 {
+}
+
+void
+crude_gfx_rhi_create_classic_pipeline
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_classic_pipeline_create_info const   *creation,
+  _Out_ crude_gfx_rhi_pipeline                            *pipeline
+)
+{
+  D3D12_GRAPHICS_PIPELINE_STATE_DESC                       dx12_pipeline_creation;
+  D3D12_INPUT_ELEMENT_DESC                                 dx12_input_elements[ 10 ];
+  uint32                                                   dx12_input_elements_count;
+
+  dx12_input_elements_count = creation->vertex_input_state->vertex_attribute_description_count;
+  CRUDE_ASSERT( dx12_input_elements_count < CRUDE_COUNTOF( dx12_input_elements ) );
+  CRUDE_ASSERT( creation->vertex_input_state->vertex_attribute_description_count == creation->vertex_input_state->vertex_binding_description_count );
+  
+  dx12_pipeline_creation = CRUDE_COMPOUNT_EMPTY( D3D12_GRAPHICS_PIPELINE_STATE_DESC );
+
+  for ( uint32 i = 0; i < dx12_input_elements_count; ++i )
+  {
+    crude_gfx_rhi_pipeline_vertex_input_attribute_description const *rhi_vertex_attribute_description;
+    crude_gfx_rhi_vertex_input_binding_description const            *rhi_vertex_input_binding_description;
+
+    rhi_vertex_attribute_description = &creation->vertex_input_state->vertex_attribute_descriptions[ i ];
+    rhi_vertex_input_binding_description = &creation->vertex_input_state->vertex_binding_descriptions[ i ];
+
+    dx12_input_elements[ i ] = CRUDE_COMPOUNT_EMPTY( D3D12_INPUT_ELEMENT_DESC );
+    dx12_input_elements[ i ].SemanticName = "UNKNOWN";
+    dx12_input_elements[ i ].SemanticIndex = i;
+    dx12_input_elements[ i ].Format = CRUDE_CAST( DXGI_FORMAT, rhi_vertex_attribute_description->format );
+    dx12_input_elements[ i ].InputSlot = rhi_vertex_attribute_description->binding;
+    dx12_input_elements[ i ].AlignedByteOffset = rhi_vertex_attribute_description->offset;
+    dx12_input_elements[ i ].InputSlotClass = ( rhi_vertex_input_binding_description->input_rate == CRUDE_GFX_RHI_VERTEX_INPUT_RATE_VERTEX ) ? D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA : D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA;
+    dx12_input_elements[ i ].InstanceDataStepRate = rhi_vertex_input_binding_description->stride;
+  }
+  dx12_pipeline_creation.InputLayout.pInputElementDescs = dx12_input_elements;
+  dx12_pipeline_creation.InputLayout.NumElements = dx12_input_elements_count;
+
+  dx12_pipeline_creation.BlendState = CRUDE_COMPOUNT_EMPTY( D3D12_BLEND_DESC );
+  dx12_pipeline_creation.BlendState.AlphaToCoverageEnable = creation->multisample_state->alpha_to_coverage_enable ? TRUE : FALSE;
+  dx12_pipeline_creation.BlendState.IndependentBlendEnable = TRUE;
+  for ( uint32 i = 0; i < creation->color_blend_state->attachments_count; ++i )
+  {
+    crude_gfx_rhi_pipeline_color_blend_attachment_state const       *rhi_attachment_state;
+
+    rhi_attachment_state = &creation->color_blend_state->attachments[ i ];
+
+    dx12_pipeline_creation.BlendState.RenderTarget[ i ] = CRUDE_COMPOUNT_EMPTY( D3D12_RENDER_TARGET_BLEND_DESC );
+    dx12_pipeline_creation.BlendState.RenderTarget[ i ].BlendEnable = rhi_attachment_state->blend_enable ? TRUE : FALSE;
+    dx12_pipeline_creation.BlendState.RenderTarget[ i ].LogicOpEnable = creation->color_blend_state->logic_op_enable ? TRUE : FALSE;
+    dx12_pipeline_creation.BlendState.RenderTarget[ i ].SrcBlend = CRUDE_CAST( D3D12_BLEND, rhi_attachment_state->src_color_blend_factor );
+    dx12_pipeline_creation.BlendState.RenderTarget[ i ].DestBlend = CRUDE_CAST( D3D12_BLEND, rhi_attachment_state->dst_color_blend_factor );
+    dx12_pipeline_creation.BlendState.RenderTarget[ i ].BlendOp = CRUDE_CAST( D3D12_BLEND_OP, rhi_attachment_state->color_blend_op );
+    dx12_pipeline_creation.BlendState.RenderTarget[ i ].SrcBlendAlpha = CRUDE_CAST( D3D12_BLEND, rhi_attachment_state->src_alpha_blend_factor );
+    dx12_pipeline_creation.BlendState.RenderTarget[ i ].DestBlendAlpha = CRUDE_CAST( D3D12_BLEND, rhi_attachment_state->dst_alpha_blend_factor );
+    dx12_pipeline_creation.BlendState.RenderTarget[ i ].BlendOpAlpha = CRUDE_CAST( D3D12_BLEND_OP, rhi_attachment_state->alpha_blend_op );
+    dx12_pipeline_creation.BlendState.RenderTarget[ i ].RenderTargetWriteMask = rhi_attachment_state->color_write_mask;
+  }
+
+  dx12_pipeline_creation.RasterizerState = CRUDE_COMPOUNT_EMPTY( D3D12_RASTERIZER_DESC );
+  dx12_pipeline_creation.RasterizerState.FillMode = CRUDE_CAST( D3D12_FILL_MODE, creation->rasterization_state->polygon_mode );
+  dx12_pipeline_creation.RasterizerState.CullMode = ( creation->rasterization_state->cull_mode & CRUDE_GFX_RHI_CULL_MODE_FRONT_BIT ) ? D3D12_CULL_MODE_FRONT : ( ( creation->rasterization_state->cull_mode & CRUDE_GFX_RHI_CULL_MODE_BACK_BIT ) ? D3D12_CULL_MODE_BACK : D3D12_CULL_MODE_NONE );
+  dx12_pipeline_creation.RasterizerState.FrontCounterClockwise = ( creation->rasterization_state->front_face == CRUDE_GFX_RHI_FRONT_FACE_COUNTER_CLOCKWISE );
+  dx12_pipeline_creation.RasterizerState.DepthBias = creation->rasterization_state->depth_bias_constant_factor;
+  dx12_pipeline_creation.RasterizerState.DepthBiasClamp = creation->rasterization_state->depth_bias_clamp;
+  dx12_pipeline_creation.RasterizerState.SlopeScaledDepthBias = creation->rasterization_state->depth_bias_slope_factor;
+  dx12_pipeline_creation.RasterizerState.DepthClipEnable = creation->rasterization_state->depth_clamp_enable ? FALSE : TRUE;
+  dx12_pipeline_creation.RasterizerState.MultisampleEnable = creation->multisample_state->rasterization_samples > 1 ? TRUE : FALSE;
+  dx12_pipeline_creation.RasterizerState.AntialiasedLineEnable = FALSE;
+  dx12_pipeline_creation.RasterizerState.ForcedSampleCount = 0;
+
+  dx12_pipeline_creation.DepthStencilState = CRUDE_COMPOUNT_EMPTY( D3D12_DEPTH_STENCIL_DESC );
+  dx12_pipeline_creation.DepthStencilState.DepthEnable = creation->depth_stencil_state->depth_test_enable ? TRUE : FALSE;
+  dx12_pipeline_creation.DepthStencilState.DepthWriteMask = creation->depth_stencil_state->depth_write_enable ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
+  dx12_pipeline_creation.DepthStencilState.DepthFunc = CRUDE_CAST( D3D12_COMPARISON_FUNC, creation->depth_stencil_state->depth_compare_op );
+  dx12_pipeline_creation.DepthStencilState.StencilEnable = creation->depth_stencil_state->stencil_test_enable ? TRUE : FALSE;
+  dx12_pipeline_creation.DepthStencilState.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+  dx12_pipeline_creation.DepthStencilState.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+  dx12_pipeline_creation.DepthStencilState.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+  dx12_pipeline_creation.DepthStencilState.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+  dx12_pipeline_creation.DepthStencilState.BackFace = dx12_pipeline_creation.DepthStencilState.FrontFace;
+
+  dx12_pipeline_creation.SampleDesc.Count = creation->multisample_state->rasterization_samples;
+  dx12_pipeline_creation.SampleDesc.Quality = 0;
+
+  dx12_pipeline_creation.pRootSignature = creation->pipeline_layout.dx12_root_signature;
+  for ( uint32 i = 0; i < creation->stage_count; ++i )
+  {
+    switch ( creation->stages[ i ].stage )
+    {
+    case CRUDE_GFX_RHI_SHADER_STAGE_VERTEX_BIT:
+    {
+      dx12_pipeline_creation.VS.pShaderBytecode = creation->stages[ i ].rhi_module.code;
+      dx12_pipeline_creation.VS.BytecodeLength = creation->stages[ i ].rhi_module.code_size;
+      break;
+    }
+    case CRUDE_GFX_RHI_SHADER_STAGE_FRAGMENT_BIT:
+    {
+      dx12_pipeline_creation.PS.pShaderBytecode = creation->stages[ i ].rhi_module.code;
+      dx12_pipeline_creation.PS.BytecodeLength = creation->stages[ i ].rhi_module.code_size;
+      break;
+    }
+    default:
+    {
+      break;
+    }
+    }
+  }
+  
+  dx12_pipeline_creation.SampleMask = UINT_MAX;
+  dx12_pipeline_creation.PrimitiveTopologyType = CRUDE_CAST( D3D12_PRIMITIVE_TOPOLOGY_TYPE, creation->input_assembly_state->topology );
+  
+  dx12_pipeline_creation.NumRenderTargets = creation->rendering_state->color_attachment_count;
+  for ( uint32 i = 0; i < creation->rendering_state->color_attachment_count; ++i )
+  {
+    dx12_pipeline_creation.RTVFormats[ i ] = CRUDE_CAST( DXGI_FORMAT, creation->rendering_state->color_attachment_formats[ i ] );
+  }
+  dx12_pipeline_creation.DSVFormat = CRUDE_CAST( DXGI_FORMAT, creation->rendering_state->depth_attachment_format );
+  
+  CRUDE_GFX_RHI_HANDLE_DX12_RESULT( device->dx12_device->CreateGraphicsPipelineState( &dx12_pipeline_creation, IID_PPV_ARGS( &pipeline->dx12_pipeline ) ), "Failed to create graphics pipeline" );
 }
 
 void
@@ -5321,6 +5654,7 @@ crude_gfx_rhi_destroy_pipeline
   _In_ crude_gfx_rhi_pipeline                              pipeline
 )
 {
+  pipeline.dx12_pipeline->Release( );
 }
 
 void
@@ -5358,34 +5692,37 @@ crude_gfx_rhi_create_swapchain
   _Out_ crude_gfx_rhi_image                                swapchain_images[ CRUDE_GFX_SWAPCHAIN_IMAGES_MAX_COUNT ]
 )
 {
+  DXGI_SWAP_CHAIN_DESC1                                    dxgi_swapchain_creation;
+  HWND                                                     hwnd;
+  SDL_PropertiesID                                         sdl_window_properties;
+  int32                                                    window_width, window_height;
+  
   *swapchain_images_count = 3;
-//  DXGI_SWAP_CHAIN_DESC1                                    dxgi_swapchain_creation;
-//
-//
-//  dxgi_swapchain_creation = CRUDE_COMPOUNT_EMPTY( DXGI_SWAP_CHAIN_DESC1 );
-//  dxgi_swapchain_creation.BufferCount = FrameCount;
-//  dxgi_swapchain_creation.Width = m_width;
-//  dxgi_swapchain_creation.Height = m_height;
-//  dxgi_swapchain_creation.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-//  dxgi_swapchain_creation.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-//  dxgi_swapchain_creation.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-//  dxgi_swapchain_creation.SampleDesc.Count = 1;
-//
-//  
-//    ComPtr<IDXGISwapChain1> swapChain;
-//  CRUDE_GFX_RHI_HANDLE_DX12_RESULT( device->dxgi_factory->CreateSwapChain(
-//        Win32Application::GetHwnd(),
-//        &swapChainDesc,
-//        nullptr,
-//        nullptr,
-//        &swapChain
-//        ));
-//
-//    // This sample does not support fullscreen transitions.
-//    ThrowIfFailed(factory->MakeWindowAssociation(Win32Application::GetHwnd(), DXGI_MWA_NO_ALT_ENTER));
-//
-//    ThrowIfFailed(swapChain.As(&m_swapChain));
-//    m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
+
+  SDL_GetWindowSize( creation->surface.sdl_window, &window_width, &window_height );
+  
+  swapchain_extent->x = window_width;
+  swapchain_extent->y = window_height;
+
+  dxgi_swapchain_creation = CRUDE_COMPOUNT_EMPTY( DXGI_SWAP_CHAIN_DESC1 );
+  dxgi_swapchain_creation.Width = window_width;
+  dxgi_swapchain_creation.Height = window_height;
+  dxgi_swapchain_creation.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+  dxgi_swapchain_creation.SampleDesc.Count = 1;
+  dxgi_swapchain_creation.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+  dxgi_swapchain_creation.BufferCount = *swapchain_images_count;
+  dxgi_swapchain_creation.Scaling = DXGI_SCALING_STRETCH;
+  dxgi_swapchain_creation.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+  dxgi_swapchain_creation.Flags = 0;
+  
+  sdl_window_properties = SDL_GetWindowProperties( creation->surface.sdl_window );
+  hwnd = CRUDE_CAST( HWND, SDL_GetPointerProperty( sdl_window_properties, SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL ) );
+
+  device->dxgi_factory->CreateSwapChainForHwnd( device->main_queue.dx12_queue, hwnd, &dxgi_swapchain_creation, NULL, NULL, &swapchain->dxgi_swapchain );
+  
+  CRUDE_GFX_RHI_HANDLE_DX12_RESULT( swapchain->dxgi_swapchain->GetBuffer( 0, IID_PPV_ARGS( &swapchain_images[ 0 ].dx12_resource ) ), "Faied to acquire swapchain image 0" );
+  CRUDE_GFX_RHI_HANDLE_DX12_RESULT( swapchain->dxgi_swapchain->GetBuffer( 1, IID_PPV_ARGS( &swapchain_images[ 1 ].dx12_resource ) ), "Faied to acquire swapchain image 1" );
+  CRUDE_GFX_RHI_HANDLE_DX12_RESULT( swapchain->dxgi_swapchain->GetBuffer( 2, IID_PPV_ARGS( &swapchain_images[ 2 ].dx12_resource ) ), "Faied to acquire swapchain image 2" );
 }
 
 void
@@ -5395,6 +5732,8 @@ crude_gfx_rhi_destroy_swapchain
   _In_ crude_gfx_rhi_swapchain                             swapchain
 )
 {
+  CRUDE_ASSERT( false && "We need to release swapchain_images" );
+  swapchain.dxgi_swapchain->Release( );
 }
 
 void
@@ -5483,6 +5822,7 @@ crude_gfx_rhi_create_command_pool
   _Out_ crude_gfx_rhi_command_pool                        *command_pool
 )
 {
+  CRUDE_GFX_RHI_HANDLE_DX12_RESULT( device->dx12_device->CreateCommandAllocator( D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS( &command_pool->dx12_command_allocator ) ), "Failed create comand allocator" );
 }
 
 void
@@ -5492,6 +5832,7 @@ crude_gfx_rhi_destroy_command_pool
   _In_ crude_gfx_rhi_command_pool                          command_pool
 )
 {
+  command_pool.dx12_command_allocator->Release( );
 }
 
 void
@@ -5521,6 +5862,18 @@ crude_gfx_rhi_create_command_buffer
   _Out_ crude_gfx_rhi_command_buffer                      *command_buffer
 )
 {
+  CRUDE_GFX_RHI_HANDLE_DX12_RESULT( device->dx12_device->CreateCommandList( 0, D3D12_COMMAND_LIST_TYPE_DIRECT, creation->command_pool.dx12_command_allocator, NULL, IID_PPV_ARGS( &command_buffer->dx12_command_list ) ), "Failed to create commmand list" );
+  command_buffer->dx12_command_list->Close( );
+}
+
+void
+crude_gfx_rhi_destroy_command_buffer
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer
+)
+{
+  command_buffer.dx12_command_list->Release( );
 }
 
 void
@@ -5531,6 +5884,9 @@ crude_gfx_rhi_set_command_buffer_debug_name
   _In_ char const                                         *name
 )
 {
+  WCHAR                                                    wname[ 1024 ];
+  mbstowcs( wname, name, sizeof( wname ) - 1 );
+  command_buffer.dx12_command_list->SetName( wname );
 }
 
 crude_gfx_rhi_queue
@@ -5769,10 +6125,12 @@ crude_gfx_rhi_reset_command_pool
 void
 crude_gfx_rhi_begin_command_buffer
 (
+  _In_ crude_gfx_rhi_command_pool                          command_pool,
   _In_ crude_gfx_rhi_command_buffer                        command_buffer,
   _In_ crude_gfx_rhi_command_buffer_begin_info const      *begin_info
 )
 {
+  CRUDE_GFX_RHI_HANDLE_DX12_RESULT( command_buffer.dx12_command_list->Reset( command_pool.dx12_command_allocator, NULL ), "Failed restecommand list" );
 }
 
 void
@@ -5781,6 +6139,7 @@ crude_gfx_rhi_end_command_buffer
   _In_ crude_gfx_rhi_command_buffer                        command_buffer
 )
 {
+  CRUDE_GFX_RHI_HANDLE_DX12_RESULT( command_buffer.dx12_command_list->Close( ), "Failed close command list" );
 }
 
 void
@@ -5808,6 +6167,7 @@ crude_gfx_rhi_command_buffer_bind_pipeline
   _In_ crude_gfx_rhi_pipeline_bind_point                   rhi_pipeline_bind_point
 )
 {
+  //command_buffer.dx12_command_list->SetGraphicsRootSignature( );
 }
 
 void
@@ -6128,7 +6488,7 @@ crude_gfx_rhi_dx12_pick_physical_device_
 (
   _In_ crude_heap_allocator                               *allocator,
   _In_ IDXGIFactory6                                      *dxgi_factory,
-  _Out_ ID3D12Device                                     **dx12_device,
+  _Out_ ID3D12Device2                                    **dx12_device,
   _Out_ IDXGIAdapter4                                    **dx12_adapter,
   _Out_ uint32                                            *dx12_device_index,
   _Out_ crude_gfx_rhi_physical_device_optional_extensions *selected_physical_devices_optional_extenstions
@@ -6199,7 +6559,7 @@ crude_gfx_rhi_dx12_pick_physical_device_
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( dxgi_adapters_packed ); ++i )
     {
       IDXGIAdapter4                                       *dxgi_picked_adapter4;
-      ID3D12Device                                        *dx12_test_device;
+      ID3D12Device2                                       *dx12_test_device;
       D3D12_FEATURE_DATA_SHADER_MODEL                      dx12_shader_module;
       D3D12_FEATURE_DATA_D3D12_OPTIONS7                    dx12_feature_data_options7;
       D3D12_FEATURE_DATA_D3D12_OPTIONS6                    dx12_feature_data_options6;
@@ -6250,7 +6610,7 @@ crude_gfx_rhi_dx12_pick_physical_device_
       }
 
       dx12_test_device = NULL;
-      if ( FAILED( D3D12CreateDevice( dxgi_picked_adapter4, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS( &dx12_test_device ) ) ) )
+      if ( FAILED( D3D12CreateDevice( dxgi_picked_adapter4, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS( &dx12_test_device ) ) ) )
       {
         if ( dx12_test_device )
         {

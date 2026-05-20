@@ -43,6 +43,7 @@ crude_gfx_cmd_begin_primary
   _In_ crude_gfx_cmd_buffer                               *cmd
 )
 {
+  crude_gfx_cmd_pool                                      *cmd_pool;
   crude_gfx_rhi_command_buffer_begin_info                  begin_info;
 
   if ( cmd->is_recording )
@@ -52,9 +53,11 @@ crude_gfx_cmd_begin_primary
 
   cmd->is_recording = true;
 
+  cmd_pool = crude_gfx_access_cmd_pool( cmd->gpu, cmd->cmd_pool );
+
   begin_info = crude_gfx_rhi_command_buffer_begin_info_empty( );
   begin_info.flags = CRUDE_GFX_RHI_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-  crude_gfx_rhi_begin_command_buffer( cmd->rhi_cmd_buffer, &begin_info );
+  crude_gfx_rhi_begin_command_buffer( cmd_pool->rhi_cmd_pool, cmd->rhi_cmd_buffer, &begin_info );
 
   //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "crude_gfx_cmd_begin_primary( %s )", cmd->name );
 }

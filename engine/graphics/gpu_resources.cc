@@ -367,7 +367,6 @@ crude_gfx_string_to_format
   if ( strcmp( format, "FORMAT_R16G16B16A16_SFLOAT" ) == 0 ) return CRUDE_GFX_RHI_FORMAT_R16G16B16A16_SFLOAT;
   if ( strcmp( format, "FORMAT_D32_SFLOAT" ) == 0 ) return CRUDE_GFX_RHI_FORMAT_D32_SFLOAT;
   if ( strcmp( format, "FORMAT_D16_UNORM" ) == 0 ) return CRUDE_GFX_RHI_FORMAT_D16_UNORM;
-  if ( strcmp( format, "FORMAT_R8G8B8_SRGB" ) == 0 ) return CRUDE_GFX_RHI_FORMAT_R8G8B8_SRGB;
   if ( strcmp( format, "FORMAT_R8G8B8A8_SRGB" ) == 0 ) return CRUDE_GFX_RHI_FORMAT_R8G8B8A8_SRGB;
   if ( strcmp( format, "FORMAT_R8G8B8A8_UNORM" ) == 0 ) return CRUDE_GFX_RHI_FORMAT_R8G8B8A8_UNORM;
   if ( strcmp( format, "FORMAT_R16G16_SNORM" ) == 0 ) return CRUDE_GFX_RHI_FORMAT_R16G16_SNORM;

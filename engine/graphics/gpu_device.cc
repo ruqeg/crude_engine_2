@@ -1414,7 +1414,7 @@ crude_gfx_create_shader_state
   compiled_shaders_count = 0u;
 
   shader_state = crude_gfx_access_shader_state( gpu, shader_state_handle );
-  shader_state->pipeline_type = CRUDE_GFX_PIPELINE_TYPE_GRAPHICS;
+  shader_state->pipeline_type = CRUDE_GFX_PIPELINE_TYPE_COUNT;
   shader_state->active_shaders = 0;
   
   crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 1 ), crude_heap_allocator_pack( gpu->allocator ) );
@@ -1432,6 +1432,16 @@ crude_gfx_create_shader_state
 
     stage = &creation->stages[ compiled_shaders_count ];
   
+    if ( stage->type == CRUDE_GFX_RHI_SHADER_STAGE_VERTEX_BIT )
+    {
+      shader_state->pipeline_type = CRUDE_GFX_PIPELINE_TYPE_CLASSIC;
+    }
+
+    if ( stage->type == CRUDE_GFX_RHI_SHADER_STAGE_MESH_BIT_EXT || stage->type == CRUDE_GFX_RHI_SHADER_STAGE_TASK_BIT_EXT )
+    {
+      shader_state->pipeline_type = CRUDE_GFX_PIPELINE_TYPE_TASK;
+    }
+
     if ( stage->type == CRUDE_GFX_RHI_SHADER_STAGE_COMPUTE_BIT )
     {
       shader_state->pipeline_type = CRUDE_GFX_PIPELINE_TYPE_COMPUTE;
@@ -1473,7 +1483,7 @@ crude_gfx_create_shader_state
     shader_stage_info->name = "main";
     shader_stage_info->stage = stage->type;
     
-    if ( !crude_gfx_rhi_create_shader_module( &gpu->rhi_device, &rhi_creation_info, &shader_state->shader_stage_info[ compiled_shaders_count ].rhi_module ) )
+    if ( !crude_gfx_rhi_create_shader_module( &gpu->rhi_device, &rhi_creation_info, gpu->allocator, &shader_state->shader_stage_info[ compiled_shaders_count ].rhi_module ) )
     {
       break;
     }
@@ -1734,11 +1744,10 @@ crude_gfx_create_pipeline
 
   pipeline->num_active_layouts = shader_state->reflect.descriptor.sets_count;
 
-  if ( shader_state->pipeline_type == CRUDE_GFX_PIPELINE_TYPE_GRAPHICS )
+  if ( shader_state->pipeline_type == CRUDE_GFX_PIPELINE_TYPE_CLASSIC || shader_state->pipeline_type == CRUDE_GFX_PIPELINE_TYPE_TASK )
   {
     crude_gfx_vertex_stream const                         *vertex_streams;
     crude_gfx_vertex_attribute const                      *vertex_attributes;
-    crude_gfx_rhi_graphics_pipeline_create_info            rhi_pipeline_creation;
     crude_gfx_rhi_pipeline_viewport_state_create_info      rhi_viewport_creation;
     crude_gfx_rhi_pipeline_input_assembly_state_create_info rhi_input_assembly_creation;
     crude_gfx_rhi_pipeline_vertex_input_state_create_info  rhi_vertex_input_creation;
@@ -1905,20 +1914,43 @@ crude_gfx_create_pipeline
     rhi_rendering_creation.depth_attachment_format = creation->render_pass_output.depth_stencil_format;
     rhi_rendering_creation.stencil_attachment_format = CRUDE_GFX_RHI_FORMAT_UNDEFINED;
     
-    rhi_pipeline_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_graphics_pipeline_create_info );
-    rhi_pipeline_creation.stage_count = shader_state->active_shaders;
-    rhi_pipeline_creation.stages = shader_state->shader_stage_info;
-    rhi_pipeline_creation.vertex_input_state = &rhi_vertex_input_creation;
-    rhi_pipeline_creation.input_assembly_state = &rhi_input_assembly_creation;
-    rhi_pipeline_creation.viewport_state = &rhi_viewport_creation;
-    rhi_pipeline_creation.rasterization_state = &rhi_rasterization_creation;
-    rhi_pipeline_creation.multisample_state = &rhi_multisample_state;
-    rhi_pipeline_creation.depth_stencil_state = &rhi_depth_creation;
-    rhi_pipeline_creation.color_blend_state = &rhi_color_blending_creation;
-    rhi_pipeline_creation.rendering_state = &rhi_rendering_creation;
-    rhi_pipeline_creation.pipeline_layout = pipeline->rhi_pipeline_layout;
-    
-    crude_gfx_rhi_create_graphics_pipeline( &gpu->rhi_device, &rhi_pipeline_creation, &pipeline->rhi_pipeline );
+    if ( shader_state->pipeline_type == CRUDE_GFX_PIPELINE_TYPE_CLASSIC )
+    {
+      crude_gfx_rhi_classic_pipeline_create_info           rhi_pipeline_creation;
+
+      rhi_pipeline_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_classic_pipeline_create_info );
+      rhi_pipeline_creation.stage_count = shader_state->active_shaders;
+      rhi_pipeline_creation.stages = shader_state->shader_stage_info;
+      rhi_pipeline_creation.vertex_input_state = &rhi_vertex_input_creation;
+      rhi_pipeline_creation.input_assembly_state = &rhi_input_assembly_creation;
+      rhi_pipeline_creation.viewport_state = &rhi_viewport_creation;
+      rhi_pipeline_creation.rasterization_state = &rhi_rasterization_creation;
+      rhi_pipeline_creation.multisample_state = &rhi_multisample_state;
+      rhi_pipeline_creation.depth_stencil_state = &rhi_depth_creation;
+      rhi_pipeline_creation.color_blend_state = &rhi_color_blending_creation;
+      rhi_pipeline_creation.rendering_state = &rhi_rendering_creation;
+      rhi_pipeline_creation.pipeline_layout = pipeline->rhi_pipeline_layout;
+      
+      crude_gfx_rhi_create_classic_pipeline( &gpu->rhi_device, &rhi_pipeline_creation, &pipeline->rhi_pipeline );
+    }
+    else if ( shader_state->pipeline_type == CRUDE_GFX_PIPELINE_TYPE_TASK )
+    {
+      crude_gfx_rhi_task_pipeline_create_info              rhi_pipeline_creation;
+
+      rhi_pipeline_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_task_pipeline_create_info );
+      rhi_pipeline_creation.stage_count = shader_state->active_shaders;
+      rhi_pipeline_creation.stages = shader_state->shader_stage_info;
+      rhi_pipeline_creation.input_assembly_state = &rhi_input_assembly_creation;
+      rhi_pipeline_creation.viewport_state = &rhi_viewport_creation;
+      rhi_pipeline_creation.rasterization_state = &rhi_rasterization_creation;
+      rhi_pipeline_creation.multisample_state = &rhi_multisample_state;
+      rhi_pipeline_creation.depth_stencil_state = &rhi_depth_creation;
+      rhi_pipeline_creation.color_blend_state = &rhi_color_blending_creation;
+      rhi_pipeline_creation.rendering_state = &rhi_rendering_creation;
+      rhi_pipeline_creation.pipeline_layout = pipeline->rhi_pipeline_layout;
+      
+      crude_gfx_rhi_create_task_pipeline( &gpu->rhi_device, &rhi_pipeline_creation, &pipeline->rhi_pipeline );
+    }
     
     pipeline->bind_point = CRUDE_GFX_RHI_PIPELINE_BIND_POINT_GRAPHICS;
   }
@@ -2621,6 +2653,11 @@ crude_gfx_destroy_cmd_buffer_instant
   _In_ crude_gfx_cmd_buffer_handle                         handle
 )
 {
+  crude_gfx_cmd_buffer                                    *cmd_buffer;
+
+  cmd_buffer = crude_gfx_access_cmd_buffer( gpu, handle );
+  crude_gfx_rhi_destroy_command_buffer( &gpu->rhi_device, cmd_buffer->rhi_cmd_buffer );
+
   crude_resource_pool_release_resource( &gpu->cmd_buffers, handle.index );
 }
 

@@ -25,7 +25,7 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 install(FILES "${NsightAftermath_DLL}" DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}\\..\\)
-target_link_libraries(${PROJECT_NAME} PUBLIC ${Vulkan_LIBRARY} imgui imguizmo flecs SDL3-static stb tlsf VulkanMemoryAllocator cgltf spirv-reflect-static miniaudio enkiTS TracyClient cjson meshoptimizer nfd DirectXMath imgui-node-editor NsightAftermath::NsightAftermath Jolt d3d12.lib dxgi.lib)
+target_link_libraries(${PROJECT_NAME} PUBLIC ${Vulkan_LIBRARY} imgui imguizmo flecs SDL3-static stb tlsf VulkanMemoryAllocator cgltf spirv-reflect-static miniaudio enkiTS TracyClient cjson meshoptimizer nfd DirectXMath imgui-node-editor NsightAftermath::NsightAftermath Jolt dxgi.lib DirectX-Headers)
 
 # Also install the library to the installation directory
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${CRUDE_SOURCES})
