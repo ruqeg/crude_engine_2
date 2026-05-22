@@ -6724,11 +6724,12 @@ crude_gfx_rhi_compile_shader_glsl_to_spirv
   char const                                              *spirv_optimizer_arguments;
   char const                                              *spirv_optimized_absolute_filepath;
   char const                                              *spirv_debug_absolute_filepath;
+  char const                                              *spirv_absolute_filepath_ref;
   char const                                              *vk_binaries_path;
   char                                                     pass_name_upper[ CRUDE_GFX_PASS_NAME_MAX_LENGTH ];
   char                                                     vk_env[ 512 ];
   crude_string_buffer                                      temporary_string_buffer;
-  uint32                                                   i;
+  uint32                                                   spirv_absolute_filepath_length, i;
 
   crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 2 ), crude_heap_allocator_pack( allocator ) );
 
@@ -6805,23 +6806,24 @@ crude_gfx_rhi_compile_shader_glsl_to_spirv
       crude_gfx_rhi_shader_stage_to_compiler_extension( desc->stage ) );
 
     spirv_optimizer_absolute_filepath = crude_string_buffer_append_use_f( &temporary_string_buffer, "%sspirv-opt.exe", vk_binaries_path );
-    spirv_optimizer_arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "spirv-opt.exe --preserve-bindings --relax-block-layout --scalar-block-layout -O %s -o %s", final_spirv_filename, optimized_spirv_filename );
+    spirv_optimizer_arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "spirv-opt.exe --preserve-bindings --relax-block-layout --scalar-block-layout -O %s -o %s", spirv_debug_absolute_filepath, spirv_optimized_absolute_filepath );
 
     crude_process_execute( ".", spirv_optimizer_absolute_filepath, spirv_optimizer_arguments, "" );
   }
   
   if ( desc->optimized )
   {
-    uint32 length = crude_string_length( spirv_optimized_absolute_filepath );
-    *spirv_absolute_filepath = CRUDE_CAST( char*, crude_heap_allocator_allocate( allocator, length ) );
-    crude_string_copy( *spirv_absolute_filepath, spirv_optimized_absolute_filepath, length );
+    spirv_absolute_filepath_ref = spirv_optimized_absolute_filepath;
   }
   else
   {
-    uint32 length = crude_string_length( spirv_debug_absolute_filepath );
-    *spirv_absolute_filepath = CRUDE_CAST( char*, crude_heap_allocator_allocate( allocator, length ) );
-    crude_string_copy( *spirv_absolute_filepath, spirv_debug_absolute_filepath, length );
+    spirv_absolute_filepath_ref = spirv_debug_absolute_filepath;
   }
+
+  spirv_absolute_filepath_length = crude_string_length( spirv_absolute_filepath_ref );
+  *spirv_absolute_filepath = CRUDE_CAST( char*, crude_heap_allocator_allocate( allocator, spirv_absolute_filepath_length + 1 ) );
+  crude_string_copy( *spirv_absolute_filepath, spirv_absolute_filepath_ref, spirv_absolute_filepath_length );
+  (*spirv_absolute_filepath)[ spirv_absolute_filepath_length ] = 0;
 
   crude_string_buffer_deinitialize( &temporary_string_buffer );
 }

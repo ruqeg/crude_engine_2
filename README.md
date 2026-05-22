@@ -52,6 +52,9 @@ To edit shaders in VSCode, download the [GLSL Lints](https://marketplace.visuals
 ],
 ```
 
+## Screenshots
+![Editor](https://github.com/ruqeg/crude_engine_2/blob/main/docs/images/editor.png?raw=true)
+
 ## Games
 
 [![RB7](https://github.com/ruqeg/crude_engine_2/blob/main/docs/images/rb7.png?raw=true)](https://attila-dev.itch.io/red-ball-1-ce2-remake)
