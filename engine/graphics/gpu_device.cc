@@ -11,26 +11,6 @@
 
 #include <engine/graphics/gpu_device.h>
 
-/************************************************
- *
- * Constants
- * 
- ***********************************************/
-#if CRUDE_GRAPHICS_OPTIMAIZE_SHADERS
-#define CRUDE_GRAPHICS_GLSLLANG_VALIDATIO_ADDITIONAL_ARGS ""
-#else
-#if CRUDE_DEVELOP
-#define CRUDE_GRAPHICS_GLSLLANG_VALIDATIO_ADDITIONAL_ARGS "-gVS --D CRUDE_DEVELOP=1"
-#else
-#define CRUDE_GRAPHICS_GLSLLANG_VALIDATIO_ADDITIONAL_ARGS "-gVS"
-#endif
-#endif
-
-/************************************************
- *
- * Local Vulkan Helper Functions Declaration.
- * 
- ***********************************************/
 static void
 crude_gfx_create_swapchain_internal_
 ( 
@@ -762,7 +742,7 @@ crude_gfx_texture_ready
   return texture->ready;
 }
 
-char const*
+void
 crude_gfx_compile_shader
 (
   _In_ crude_gfx_device                                   *gpu,
@@ -770,61 +750,21 @@ crude_gfx_compile_shader
   _In_ uint32                                              code_size,
   _In_ crude_gfx_rhi_shader_stage_flag_bits                stage,
   _In_ char const                                         *name,
-  _In_ crude_heap_allocator                               *allocator
+  _In_ crude_heap_allocator                               *allocator,
+  _Out_ char                                             **spirv_absolute_filepath
 )
 {
-  uint8                                                   *spirv_code;
-  char const                                              *optimized_spirv_filename;
-  crude_string_buffer                                      temporary_string_buffer;
-  uint32                                                   spirv_codesize;
+  crude_gfx_rhi_compile_glsl_to_spirv_description          description;
   
-  spirv_code = NULL;
-  spirv_codesize = 0u;
-
-  crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 1 ), crude_heap_allocator_pack( allocator ) );
-  
-  optimized_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\%s.%s.shader_opt.spv", gpu->compiled_shaders_absolute_directory, name ? name : "unknown", crude_gfx_shader_stage_to_compiler_extension( stage ) );
-
-  char const                                              *temp_filename;
-  char                                                    *vulkan_binaries_path, *glsl_compiler_path, *final_spirv_filename, *arguments;
-  char                                                     technique_name_upper[ CRUDE_GFX_TECHNIQUE_NAME_MAX_LENGTH ];
-  uint32                                                   i;
-  
-  temp_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\%s.%s", gpu->temporary_absolute_directory, name ? name : "unknown", crude_gfx_shader_stage_to_compiler_extension( stage ) );
-  crude_write_file( temp_filename, code, code_size );
-
-  technique_name_upper[ 0 ] = 0;
-  for ( i = 0; name && name[ i ] != '\0'; i++ )
-  {
-    technique_name_upper[ i ] = toupper( name[ i ] );
-  }
-  technique_name_upper[ i ] = 0;
-
-  {
-    char vulkan_env[ 512 ];
-    crude_process_expand_environment_strings( "%VULKAN_SDK%", vulkan_env, 512 );
-    vulkan_binaries_path = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\Bin\\", vulkan_env );
-  }
-
-#if defined(_MSC_VER)
-  glsl_compiler_path = crude_string_buffer_append_use_f( &temporary_string_buffer, "%sglslangValidator.exe", vulkan_binaries_path );
-  final_spirv_filename = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\shader_final.spv", gpu->temporary_absolute_directory ); 
-  arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "glslangValidator.exe %s -V --target-env vulkan1.2 --glsl-version 460 -o %s -S %s --D %s --D %s --D %s " CRUDE_GRAPHICS_GLSLLANG_VALIDATIO_ADDITIONAL_ARGS, temp_filename, final_spirv_filename, crude_gfx_shader_stage_to_compiler_extension( stage ), crude_gfx_shader_stage_to_defines( stage ), technique_name_upper, crude_gfx_rhi_current_graphics_api_str( ) );
-#endif
-  crude_process_execute( ".", glsl_compiler_path, arguments, "" );
-
-#if CRUDE_GRAPHICS_OPTIMAIZE_SHADERS
-  char* spirv_optimizer_path = crude_string_buffer_append_use_f( &temporary_string_buffer, "%sspirv-opt.exe", vulkan_binaries_path );
-  char* spirv_opt_arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "spirv-opt.exe --preserve-bindings --relax-block-layout --scalar-block-layout -O %s -o %s", final_spirv_filename, optimized_spirv_filename );
-
-  crude_process_execute( ".", spirv_optimizer_path, spirv_opt_arguments, "" );
-  crude_read_file_binary( optimized_spirv_filename, crude_stack_allocator_pack( temporary_allocator ), &spirv_code, &spirv_codesize );
-#else
-#endif
-
-  crude_string_buffer_deinitialize( &temporary_string_buffer );
-
-  return "shader_final.spv";
+  description = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_compile_glsl_to_spirv_description );
+  description.code = code;
+  description.code_size = code_size;
+  description.stage = stage;
+  description.pass_name = name;
+  description.temporary_absolute_directory = gpu->temporary_absolute_directory;
+  description.compiled_absolute_directory = gpu->compiled_shaders_absolute_directory;
+  description.optimized = CRUDE_GFX_OPTIMIZE_SHADERS;
+  crude_gfx_rhi_compile_shader_glsl_to_spirv( &description, allocator, spirv_absolute_filepath );
 }
 
 void
@@ -1423,7 +1363,6 @@ crude_gfx_create_shader_state
   {
     crude_gfx_shader_stage const                          *stage;
     crude_gfx_rhi_pipeline_shader_stage_create_info       *shader_stage_info;
-    char const                                            *spirv_absolute_filepath;
     uint32                                                *code;
     uint32                                                 code_size;
     crude_gfx_rhi_shader_module_create_info                rhi_creation_info;
@@ -1449,24 +1388,26 @@ crude_gfx_create_shader_state
   
     if ( !creation->spv_input )
     {
-      spirv_absolute_filepath = crude_gfx_compile_shader( gpu, stage->code, stage->code_size, stage->type, creation->name, gpu->allocator );
-      spirv_absolute_filepath = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\%s", gpu->temporary_absolute_directory, spirv_absolute_filepath );
+      char                                                *spirv_absolute_filepath;
+
+      crude_gfx_compile_shader( gpu, stage->code, stage->code_size, stage->type, creation->name, gpu->allocator, &spirv_absolute_filepath );
+      
+      code = NULL;
+      code_size = 0;
+      
+      crude_read_file_binary( spirv_absolute_filepath, NULL, &code_size );
+      
+      code = CRUDE_CAST( uint32*, crude_heap_allocator_allocate( gpu->allocator, code_size ) );
+      
+      crude_read_file_binary( spirv_absolute_filepath, CRUDE_CAST( uint8*, code ), &code_size );
+      
+      crude_heap_allocator_deallocate( gpu->allocator, spirv_absolute_filepath );
     }
     else
     {
       CRUDE_ASSERT( false );
-      spirv_absolute_filepath = creation->name;
     }
 
-    code = NULL;
-    code_size = 0;
-    
-    crude_read_file_binary( spirv_absolute_filepath, NULL, &code_size );
-    
-    code = CRUDE_CAST( uint32*, crude_heap_allocator_allocate( gpu->allocator, code_size ) );
-    
-    crude_read_file_binary( spirv_absolute_filepath, CRUDE_CAST( uint8*, code ), &code_size );
-    
     rhi_creation_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_shader_module_create_info );
     rhi_creation_info.code = code;
     rhi_creation_info.code_size = code_size;
@@ -3072,11 +3013,6 @@ crude_gfx_release_technique
   crude_resource_pool_release_resource( &gpu->techniques, handle.index );
 }
 
-/************************************************
- *
- * Local Vulkan Helper Functions Implementation.
- * 
- ***********************************************/
 void
 crude_gfx_create_swapchain_internal_
 ( 

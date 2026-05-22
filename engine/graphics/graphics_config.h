@@ -17,6 +17,8 @@
 #define CRUDE_GFX_TEXTURE_COPY_FROM_BUFFER_THREAD_ID       ( 0 )
 #define CRUDE_GFX_TEXTURE_UPDATE_COMMANDS_THREAD_ID        ( 1 )
 
+#define CRUDE_GFX_SPIRV_MAX_RELATIVE_FILEPATH              ( 2048 )
+#define CRUDE_GFX_PASS_NAME_MAX_LENGTH                     ( 1024 )
 #define CRUDE_GFX_TECHNIQUE_NAME_MAX_LENGTH                ( 1024 )
 #define CRUDE_GFX_TECHNIQUE_RELATIIVE_FILEPATH_MAX_LENGTH  ( 1024 )
 
@@ -73,12 +75,18 @@
 #define CRUDE_GFX_GPU_AV_ENABLE                            0
 #endif
 
+#if CRUDE_DEBUG
+#define CRUDE_GFX_OPTIMIZE_SHADERS                         0
+#else
+#define CRUDE_GFX_OPTIMIZE_SHADERS                         1
+#endif
+
 #define CRUDE_GFX_GPU_PROFILER CRUDE_DEVELOP
 
 #define CRUDE_GFX_RAY_TRACING_ENABLED                      1
 #define CRUDE_GFX_RAY_TRACING_DDGI_ENABLED                 1 && CRUDE_GFX_RAY_TRACING_ENABLED
 #define CRUDE_GFX_RAY_TRACING_SOLID_DEBUG_ENABLED          1 && CRUDE_GFX_RAY_TRACING_ENABLED
 
-#define CRUDE_GFX_VULKAN                                   0
-#define CRUDE_GFX_DX12                                     1
+#define CRUDE_GFX_VULKAN                                   1
+#define CRUDE_GFX_DX12                                     0
 #define CRUDE_GFX_NAPI                                     0

@@ -70,12 +70,12 @@ set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,Develop>:EditAndContin
 # Debug Configuration
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /D_DEBUG")
 add_compile_definitions("$<$<CONFIG:Debug>:CRUDE_DEVELOP=1>")
+add_compile_definitions("$<$<CONFIG:Debug>:CRUDE_DEBUG=1>")
 add_compile_definitions("$<$<CONFIG:Debug>:CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED=1>")
 
 # Develop Configuration
 set(CMAKE_CXX_FLAGS_DEVELOP "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
 add_compile_definitions("$<$<CONFIG:Develop>:CRUDE_DEVELOP=1>")
-add_compile_definitions("$<$<CONFIG:Develop>:CRUDE_GRAPHICS_OPTIMAIZE_SHADERS=1>")
 add_compile_definitions("$<$<CONFIG:Develop>:IMGUI_DISABLE_DEBUG_TOOLS=1>")
 add_compile_definitions("$<$<CONFIG:Develop>:IMGUI_DISABLE_DEMO_WINDOWS=1>")
 
@@ -83,7 +83,6 @@ add_compile_definitions("$<$<CONFIG:Develop>:IMGUI_DISABLE_DEMO_WINDOWS=1>")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
 add_compile_definitions("$<$<CONFIG:Release>:CRUDE_DEVELOP=1>")
 add_compile_definitions("$<$<CONFIG:Release>:CRUDE_PRODUCTION=1>")
-add_compile_definitions("$<$<CONFIG:Release>:CRUDE_GRAPHICS_OPTIMAIZE_SHADERS=1>")
 add_compile_definitions("$<$<CONFIG:Release>:IMGUI_DISABLE_DEBUG_TOOLS=1>")
 add_compile_definitions("$<$<CONFIG:Release>:IMGUI_DISABLE_DEMO_WINDOWS=1>")
 
@@ -91,7 +90,6 @@ add_compile_definitions("$<$<CONFIG:Release>:IMGUI_DISABLE_DEMO_WINDOWS=1>")
 set(CMAKE_CXX_FLAGS_PRODUCTION "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
 add_compile_definitions("$<$<CONFIG:Production>:CRUDE_DEVELOP=0>")
 add_compile_definitions("$<$<CONFIG:Production>:CRUDE_PRODUCTION=1>")
-add_compile_definitions("$<$<CONFIG:Production>:CRUDE_GRAPHICS_OPTIMAIZE_SHADERS=1>")
 add_compile_definitions("$<$<CONFIG:Production>:IMGUI_DISABLE_DEBUG_TOOLS=1>")
 add_compile_definitions("$<$<CONFIG:Production>:IMGUI_DISABLE_DEMO_WINDOWS=1>")
 

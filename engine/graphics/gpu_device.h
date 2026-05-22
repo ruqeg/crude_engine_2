@@ -242,7 +242,7 @@ crude_gfx_texture_ready
   _In_ crude_gfx_texture_handle                            texture_handle
 );
 
-CRUDE_API char const*
+CRUDE_API void
 crude_gfx_compile_shader
 (
   _In_ crude_gfx_device                                   *gpu,
@@ -250,7 +250,8 @@ crude_gfx_compile_shader
   _In_ uint32                                              code_size,
   _In_ crude_gfx_rhi_shader_stage_flag_bits                stage,
   _In_ char const                                         *name,
-  _In_ crude_heap_allocator                               *allocator
+  _In_ crude_heap_allocator                               *allocator,
+  _Out_ char                                             **spirv_absolute_filepath
 );
 
 CRUDE_API void

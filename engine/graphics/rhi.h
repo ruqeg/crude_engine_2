@@ -4230,18 +4230,6 @@ crude_gfx_rhi_format_has_depth
   _In_ crude_gfx_rhi_format                                value
 );
 
-CRUDE_API crude_gfx_rhi_blend_op
-crude_gfx_rhi_string_to_blend_op
-(
-  _In_ char const                                         *op
-);
-
-CRUDE_API crude_gfx_rhi_blend_factor
-crude_gfx_rhi_string_to_blend_factor
-(
-  _In_ char const                                         *factor
-);
-
 CRUDE_API crude_gfx_rhi_access_flags
 crude_gfx_rhi_resource_state_to_access_flags
 (
@@ -4887,6 +4875,25 @@ crude_gfx_rhi_get_acceleration_structure_build_sizes
   _Out_ crude_gfx_rhi_acceleration_structure_build_sizes_info *build_size_info
 );
 
+typedef struct crude_gfx_rhi_compile_glsl_to_spirv_description
+{
+  char const                                              *code;
+  uint32                                                   code_size;
+  crude_gfx_rhi_shader_stage_flag_bits                     stage;
+  char const                                              *pass_name;
+  char const                                              *temporary_absolute_directory;
+  char const                                              *compiled_absolute_directory;
+  bool                                                     optimized;
+} crude_gfx_rhi_compile_glsl_to_spirv_description;
+
+CRUDE_API void
+crude_gfx_rhi_compile_shader_glsl_to_spirv
+(
+  _In_ crude_gfx_rhi_compile_glsl_to_spirv_description const *desc,
+  _In_ crude_heap_allocator                               *allocator,
+  _Out_ char                                             **spirv_absolute_filepath
+);
+
 CRUDE_API void
 crude_gfx_rhi_reset_command_pool
 (
@@ -5183,4 +5190,28 @@ crude_gfx_rhi_command_buffer_build_acceleration_structures
 CRUDE_API char const*
 crude_gfx_rhi_current_graphics_api_str
 (
+);
+
+CRUDE_API char const*
+crude_gfx_rhi_shader_stage_to_compiler_extension
+(
+  _In_ crude_gfx_rhi_shader_stage_flag_bits                value
+);
+
+CRUDE_API crude_gfx_rhi_blend_op
+crude_gfx_rhi_string_to_blend_op
+(
+  _In_ char const                                         *op
+);
+
+CRUDE_API crude_gfx_rhi_blend_factor
+crude_gfx_rhi_string_to_blend_factor
+(
+  _In_ char const                                         *factor
+);
+
+CRUDE_API char const*
+crude_gfx_rhi_shader_stage_to_defines
+(
+  _In_ crude_gfx_rhi_shader_stage_flag_bits                value
 );

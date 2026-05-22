@@ -410,46 +410,6 @@ crude_gfx_string_to_primitive_topology
   return CRUDE_GFX_RHI_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 }
 
-char const*
-crude_gfx_shader_stage_to_defines
-(
-  _In_ crude_gfx_rhi_shader_stage_flag_bits                    value
-)
-{
-  switch ( value )
-  {
-    case CRUDE_GFX_RHI_SHADER_STAGE_VERTEX_BIT:          return "CRUDE_STAGE_VERTEX";
-    case CRUDE_GFX_RHI_SHADER_STAGE_FRAGMENT_BIT:        return "CRUDE_STAGE_FRAGMENT";
-    case CRUDE_GFX_RHI_SHADER_STAGE_COMPUTE_BIT:         return "CRUDE_STAGE_COMPUTE";
-    case CRUDE_GFX_RHI_SHADER_STAGE_MESH_BIT_EXT:        return "CRUDE_STAGE_MESH";
-    case CRUDE_GFX_RHI_SHADER_STAGE_TASK_BIT_EXT:        return "CRUDE_STAGE_TASK";
-    case CRUDE_GFX_RHI_SHADER_STAGE_CLOSEST_HIT_BIT_KHR: return "CRUDE_CLOSEST_HIT";
-    case CRUDE_GFX_RHI_SHADER_STAGE_RAYGEN_BIT_KHR:      return "CRUDE_RAYGEN";
-    case CRUDE_GFX_RHI_SHADER_STAGE_MISS_BIT_KHR:        return "CRUDE_MISS";
-  }
-   return "";
-}
-
-char const*
-crude_gfx_shader_stage_to_compiler_extension
-(
-  _In_ crude_gfx_rhi_shader_stage_flag_bits                    value
-)
-{
-  switch ( value )
-  {
-    case CRUDE_GFX_RHI_SHADER_STAGE_VERTEX_BIT:          return "vert";
-    case CRUDE_GFX_RHI_SHADER_STAGE_MESH_BIT_EXT:        return "mesh";
-    case CRUDE_GFX_RHI_SHADER_STAGE_TASK_BIT_EXT:        return "task";
-    case CRUDE_GFX_RHI_SHADER_STAGE_FRAGMENT_BIT:        return "frag";
-    case CRUDE_GFX_RHI_SHADER_STAGE_COMPUTE_BIT:         return "comp";
-    case CRUDE_GFX_RHI_SHADER_STAGE_CLOSEST_HIT_BIT_KHR: return "rchit";
-    case CRUDE_GFX_RHI_SHADER_STAGE_RAYGEN_BIT_KHR:      return "rgen";
-    case CRUDE_GFX_RHI_SHADER_STAGE_MISS_BIT_KHR:        return "rmiss";
-  }
-   return "";
-}
-
 crude_gfx_render_pass_operation
 crude_gfx_string_to_render_pass_operation
 (
