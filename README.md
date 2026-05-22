@@ -25,10 +25,6 @@ cd build
 cmake ../ -G "Visual Studio 17 2022"
 cmake ../ -G "Visual Studio 17 2022"
 ```
-or
-```
-python build.py
-```
 open generated `.sln` file in Visual Studio 2022 and build solution. 
 
 To edit shaders in VS download the [GLSL language integration (for VS2022)](https://marketplace.visualstudio.com/items?itemName=DanielScherzer.GLSL2022) extension and configure:
