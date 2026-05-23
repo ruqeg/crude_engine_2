@@ -2102,7 +2102,7 @@ crude_gfx_destroy_buffer_instant
 {
   crude_gfx_buffer *buffer = crude_gfx_access_buffer( gpu, handle );
   
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Destroy buffer %s", buffer->name ? buffer->name : "Unknown" );
+  //CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Destroy buffer %s", buffer->name ? buffer->name : "Unknown" );
   buffer->name[ 0 ] = 0;
 
   if ( buffer )

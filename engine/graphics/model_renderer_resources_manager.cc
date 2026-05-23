@@ -2006,7 +2006,8 @@ crude_gfx_model_renderer_resources_manager_create_bottom_level_acceleration_stru
     acceleration_structure_create_info.size = acceleration_structure_build_sizes_info.acceleration_structure_size;
     acceleration_structure_create_info.type = CRUDE_GFX_RHI_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
     crude_gfx_rhi_create_acceleration_structure( &manager->gpu->rhi_device, &acceleration_structure_create_info, &model_renderer_resources->rhi_blases[ i ] );
-    
+    crude_gfx_rhi_set_acceleration_structure_debug_name( &manager->gpu->rhi_device, model_renderer_resources->rhi_blases[ i ], "model_renderer_resources->rhi_blases[ i ]" );
+
     // TODO maybe we can use only one scratch buffer? idk for now
     blas_scratch_buffers_hga[ i ] = crude_gfx_memory_allocate_with_pname( manager->gpu, acceleration_structure_build_sizes_info.build_scratch_size, CRUDE_GFX_MEMORY_TYPE_GPU, "blas_scratch_hga", CRUDE_GFX_RHI_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR );
   

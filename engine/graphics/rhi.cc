@@ -789,6 +789,17 @@ crude_gfx_rhi_destroy_acceleration_structure
 }
 
 void
+crude_gfx_rhi_set_acceleration_structure_debug_name
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_acceleration_structure                acceleration_structure,
+  _In_ char const                                         *name
+)
+{
+  crude_gfx_rhi_set_debug_utils_object_name( device, CRUDE_GFX_RHI_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR, CRUDE_CAST( uint64, acceleration_structure.vk_acceleration_structure ), name );
+}
+
+void
 crude_gfx_rhi_create_command_pool
 (
   _In_ crude_gfx_rhi_device                               *device,

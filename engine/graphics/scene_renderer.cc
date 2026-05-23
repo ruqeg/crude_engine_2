@@ -332,6 +332,7 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->joint_matrices_hga );
   
 #if CRUDE_GFX_RAY_TRACING_ENABLED
+  crude_gfx_rhi_destroy_acceleration_structure( &scene_renderer->gpu->rhi_device, scene_renderer->rhi_tlas );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_instances_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_scratch_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->tlas_hga );
@@ -1406,6 +1407,7 @@ CRUDE_GFX_RHI_TO_IMPLEMENTIT
   acceleration_structure_create_info.type = CRUDE_GFX_RHI_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
 
   crude_gfx_rhi_create_acceleration_structure( &scene_renderer->gpu->rhi_device, &acceleration_structure_create_info, &scene_renderer->rhi_tlas );
+    crude_gfx_rhi_set_acceleration_structure_debug_name( &scene_renderer->gpu->rhi_device, scene_renderer->rhi_tlas, "scene_renderer->rhi_tlas" );
 
   scene_renderer->tlas_scratch_hga = crude_gfx_memory_allocate_with_pname(
     scene_renderer->gpu, 
