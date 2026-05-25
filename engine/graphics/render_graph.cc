@@ -562,7 +562,7 @@ crude_gfx_render_graph_compile
     }
     
     /* Create framebuffer */
-    if ( ( node->type == CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_GRAPHICS ) && CRUDE_RESOURCE_HANDLE_IS_INVALID( node->framebuffer ) )
+    if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( node->framebuffer ) )
     {
       crude_gfx_framebuffer_creation                       framebuffer_creation;
       uint32                                               width, height;

@@ -8,10 +8,6 @@
 #include <engine/graphics/rhi.h>
 #endif
 
-#if defined( Vulkan )
-#define CRUDE_GFX_VULKAN 1
-#endif
-
 #define CRUDE_SHADER_DEVELOP 1
 
 #define CRUDE_BINDLESS_DESCRIPTOR_SET_INDEX 0

@@ -433,6 +433,35 @@ crude_gfx_rhi_determine_pipeline_stage_flags
   return flags;
 }
 
+crude_gfx_rhi_blend_factor
+crude_gfx_rhi_string_to_blend_factor
+(
+  _In_ char const                                         *factor
+)
+{
+  if ( strcmp( factor, "ZERO" ) == 0 )                     return CRUDE_GFX_RHI_BLEND_FACTOR_ZERO;
+  if ( strcmp( factor, "ONE" ) == 0 )                      return CRUDE_GFX_RHI_BLEND_FACTOR_ONE;
+  if ( strcmp( factor, "SRC_COLOR" ) == 0 )                return CRUDE_GFX_RHI_BLEND_FACTOR_SRC_COLOR;
+  if ( strcmp( factor, "ONE_MINUS_SRC_COLOR" ) == 0 )      return CRUDE_GFX_RHI_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+  if ( strcmp( factor, "DST_COLOR" ) == 0 )                return CRUDE_GFX_RHI_BLEND_FACTOR_DST_COLOR;
+  if ( strcmp( factor, "ONE_MINUS_DST_COLOR" ) == 0 )      return CRUDE_GFX_RHI_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+  if ( strcmp( factor, "SRC_ALPHA" ) == 0 )                return CRUDE_GFX_RHI_BLEND_FACTOR_SRC_ALPHA;
+  if ( strcmp( factor, "ONE_MINUS_SRC_ALPHA" ) == 0 )      return CRUDE_GFX_RHI_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+  if ( strcmp( factor, "DST_ALPHA" ) == 0 )                return CRUDE_GFX_RHI_BLEND_FACTOR_DST_ALPHA;
+  if ( strcmp( factor, "ONE_MINUS_DST_ALPHA" ) == 0 )      return CRUDE_GFX_RHI_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+  if ( strcmp( factor, "CONSTANT_COLOR" ) == 0 )           return CRUDE_GFX_RHI_BLEND_FACTOR_CONSTANT_COLOR;
+  if ( strcmp( factor, "ONE_MINUS_CONSTANT_COLOR" ) == 0 ) return CRUDE_GFX_RHI_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
+  if ( strcmp( factor, "CONSTANT_ALPHA" ) == 0 )           return CRUDE_GFX_RHI_BLEND_FACTOR_CONSTANT_ALPHA;
+  if ( strcmp( factor, "ONE_MINUS_CONSTANT_ALPHA" ) == 0 ) return CRUDE_GFX_RHI_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
+  if ( strcmp( factor, "SRC_ALPHA_SATURATE" ) == 0 )       return CRUDE_GFX_RHI_BLEND_FACTOR_SRC_ALPHA_SATURATE;
+  if ( strcmp( factor, "SRC1_COLOR" ) == 0 )               return CRUDE_GFX_RHI_BLEND_FACTOR_SRC1_COLOR;
+  if ( strcmp( factor, "ONE_MINUS_SRC1_COLOR" ) == 0 )     return CRUDE_GFX_RHI_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR;
+  if ( strcmp( factor, "SRC1_ALPHA" ) == 0 )               return CRUDE_GFX_RHI_BLEND_FACTOR_SRC1_ALPHA;
+  if ( strcmp( factor, "ONE_MINUS_SRC1_ALPHA" ) == 0 )     return CRUDE_GFX_RHI_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA;
+  
+  return CRUDE_GFX_RHI_BLEND_FACTOR_ONE;
+}
+
 crude_gfx_rhi_command_buffer_begin_info
 crude_gfx_rhi_command_buffer_begin_info_empty
 (
@@ -3747,6 +3776,15 @@ crude_gfx_rhi_determine_pipeline_stage_flags
   return CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_pipeline_stage_flags );
 }
 
+crude_gfx_rhi_blend_factor
+crude_gfx_rhi_string_to_blend_factor
+(
+  _In_ char const                                         *factor
+)
+{
+  return 0;
+}
+
 crude_gfx_rhi_command_buffer_begin_info
 crude_gfx_rhi_command_buffer_begin_info_empty
 (
@@ -5005,6 +5043,35 @@ crude_gfx_rhi_determine_pipeline_stage_flags
   return CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_pipeline_stage_flags );
 }
 
+crude_gfx_rhi_blend_factor
+crude_gfx_rhi_string_to_blend_factor
+(
+  _In_ char const                                         *factor
+)
+{
+  if ( strcmp( factor, "ZERO" ) == 0 )                     return CRUDE_GFX_RHI_BLEND_FACTOR_ZERO;
+  if ( strcmp( factor, "ONE" ) == 0 )                      return CRUDE_GFX_RHI_BLEND_FACTOR_ONE;
+  if ( strcmp( factor, "SRC_COLOR" ) == 0 )                return CRUDE_GFX_RHI_BLEND_FACTOR_SRC_COLOR;
+  if ( strcmp( factor, "ONE_MINUS_SRC_COLOR" ) == 0 )      CRUDE_ASSERT( false ); return CRUDE_GFX_RHI_BLEND_FACTOR_ONE;
+  if ( strcmp( factor, "DST_COLOR" ) == 0 )                return CRUDE_GFX_RHI_BLEND_FACTOR_DST_COLOR;
+  if ( strcmp( factor, "ONE_MINUS_DST_COLOR" ) == 0 )      CRUDE_ASSERT( false ); return CRUDE_GFX_RHI_BLEND_FACTOR_ONE;
+  if ( strcmp( factor, "SRC_ALPHA" ) == 0 )                return CRUDE_GFX_RHI_BLEND_FACTOR_SRC_ALPHA;
+  if ( strcmp( factor, "ONE_MINUS_SRC_ALPHA" ) == 0 )      CRUDE_ASSERT( false ); return CRUDE_GFX_RHI_BLEND_FACTOR_ONE;
+  if ( strcmp( factor, "DST_ALPHA" ) == 0 )                return CRUDE_GFX_RHI_BLEND_FACTOR_DST_ALPHA;
+  if ( strcmp( factor, "ONE_MINUS_DST_ALPHA" ) == 0 )      CRUDE_ASSERT( false ); return CRUDE_GFX_RHI_BLEND_FACTOR_ONE;
+  if ( strcmp( factor, "CONSTANT_COLOR" ) == 0 )           CRUDE_ASSERT( false ); return CRUDE_GFX_RHI_BLEND_FACTOR_ONE;
+  if ( strcmp( factor, "ONE_MINUS_CONSTANT_COLOR" ) == 0 ) CRUDE_ASSERT( false ); return CRUDE_GFX_RHI_BLEND_FACTOR_ONE;
+  if ( strcmp( factor, "CONSTANT_ALPHA" ) == 0 )           CRUDE_ASSERT( false ); return CRUDE_GFX_RHI_BLEND_FACTOR_ONE;
+  if ( strcmp( factor, "ONE_MINUS_CONSTANT_ALPHA" ) == 0 ) CRUDE_ASSERT( false ); return CRUDE_GFX_RHI_BLEND_FACTOR_ONE;
+  if ( strcmp( factor, "SRC_ALPHA_SATURATE" ) == 0 )       CRUDE_ASSERT( false ); return CRUDE_GFX_RHI_BLEND_FACTOR_ONE;
+  if ( strcmp( factor, "SRC1_COLOR" ) == 0 )               return CRUDE_GFX_RHI_BLEND_FACTOR_SRC1_COLOR;
+  if ( strcmp( factor, "ONE_MINUS_SRC1_COLOR" ) == 0 )     CRUDE_ASSERT( false ); return CRUDE_GFX_RHI_BLEND_FACTOR_ONE;
+  if ( strcmp( factor, "SRC1_ALPHA" ) == 0 )               return CRUDE_GFX_RHI_BLEND_FACTOR_SRC1_ALPHA;
+  if ( strcmp( factor, "ONE_MINUS_SRC1_ALPHA" ) == 0 )     CRUDE_ASSERT( false ); return CRUDE_GFX_RHI_BLEND_FACTOR_ONE;
+  
+  return CRUDE_GFX_RHI_BLEND_FACTOR_ONE;
+}
+
 crude_gfx_rhi_command_buffer_begin_info
 crude_gfx_rhi_command_buffer_begin_info_empty
 (
@@ -5843,6 +5910,16 @@ crude_gfx_rhi_destroy_acceleration_structure
 (
   _In_ crude_gfx_rhi_device                               *device,
   _In_ crude_gfx_rhi_acceleration_structure                acceleration_structure
+)
+{
+}
+
+void
+crude_gfx_rhi_set_acceleration_structure_debug_name
+(
+  _In_ crude_gfx_rhi_device                               *device,
+  _In_ crude_gfx_rhi_acceleration_structure                acceleration_structure,
+  _In_ char const                                         *name
 )
 {
 }
@@ -6839,6 +6916,44 @@ crude_gfx_rhi_compile_shader_glsl_to_spirv
   crude_string_buffer_deinitialize( &temporary_string_buffer );
 }
 
+void
+crude_gfx_rhi_compile_shader_glsl_to_dxil
+(
+  _In_ crude_gfx_rhi_compile_glsl_to_dxil_description const *desc,
+  _In_ crude_heap_allocator                               *allocator,
+  _Out_ char                                             **dxil_absolute_filepath
+)
+{
+  char const                                              *hlsl_absolute_filepath;
+  char const                                              *spirv_cross_arguments;
+  char const                                              *spirv_cross_absolute_filepath;
+  char                                                     vk_env[512];
+  crude_string_buffer                                      temporary_string_buffer;
+
+  crude_string_buffer_initialize( &temporary_string_buffer, CRUDE_RKILO( 2 ), crude_heap_allocator_pack( allocator ) );
+
+  crude_process_expand_environment_strings( "%VULKAN_SDK%", vk_env, sizeof( vk_env ) );
+  spirv_cross_absolute_filepath = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s\\Bin\\spirv-cross.exe", vk_env );
+
+  hlsl_absolute_filepath = crude_string_buffer_append_use_f(
+    &temporary_string_buffer,
+    "%s\\%s",
+    desc->temporary_absolute_directory,
+    "shader.hlsl" ); 
+
+  spirv_cross_arguments = crude_string_buffer_append_use_f(
+    &temporary_string_buffer,
+    "spirv-cross.exe %s --hlsl --output %s --shader-model 65",
+    desc->spirv_absolute_filepath,
+    hlsl_absolute_filepath );
+  
+  crude_process_execute( ".", spirv_cross_absolute_filepath, spirv_cross_arguments, "" );
+
+//    dxc.exe -T ps_6_0 -E PSMain -Fo MyShader.dxil MyShader.hlsl
+    
+  crude_string_buffer_deinitialize( &temporary_string_buffer );
+}
+
 char const*
 crude_gfx_rhi_shader_stage_to_compiler_extension
 (
@@ -6857,35 +6972,6 @@ crude_gfx_rhi_shader_stage_to_compiler_extension
     case CRUDE_GFX_RHI_SHADER_STAGE_MISS_BIT_KHR:        return "rmiss";
   }
    return "";
-}
-
-crude_gfx_rhi_blend_factor
-crude_gfx_rhi_string_to_blend_factor
-(
-  _In_ char const                                         *factor
-)
-{
-  if ( strcmp( factor, "ZERO" ) == 0 )                     return CRUDE_GFX_RHI_BLEND_FACTOR_ZERO;
-  if ( strcmp( factor, "ONE" ) == 0 )                      return CRUDE_GFX_RHI_BLEND_FACTOR_ONE;
-  if ( strcmp( factor, "SRC_COLOR" ) == 0 )                return CRUDE_GFX_RHI_BLEND_FACTOR_SRC_COLOR;
-  if ( strcmp( factor, "ONE_MINUS_SRC_COLOR" ) == 0 )      return CRUDE_GFX_RHI_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
-  if ( strcmp( factor, "DST_COLOR" ) == 0 )                return CRUDE_GFX_RHI_BLEND_FACTOR_DST_COLOR;
-  if ( strcmp( factor, "ONE_MINUS_DST_COLOR" ) == 0 )      return CRUDE_GFX_RHI_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
-  if ( strcmp( factor, "SRC_ALPHA" ) == 0 )                return CRUDE_GFX_RHI_BLEND_FACTOR_SRC_ALPHA;
-  if ( strcmp( factor, "ONE_MINUS_SRC_ALPHA" ) == 0 )      return CRUDE_GFX_RHI_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-  if ( strcmp( factor, "DST_ALPHA" ) == 0 )                return CRUDE_GFX_RHI_BLEND_FACTOR_DST_ALPHA;
-  if ( strcmp( factor, "ONE_MINUS_DST_ALPHA" ) == 0 )      return CRUDE_GFX_RHI_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
-  if ( strcmp( factor, "CONSTANT_COLOR" ) == 0 )           return CRUDE_GFX_RHI_BLEND_FACTOR_CONSTANT_COLOR;
-  if ( strcmp( factor, "ONE_MINUS_CONSTANT_COLOR" ) == 0 ) return CRUDE_GFX_RHI_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
-  if ( strcmp( factor, "CONSTANT_ALPHA" ) == 0 )           return CRUDE_GFX_RHI_BLEND_FACTOR_CONSTANT_ALPHA;
-  if ( strcmp( factor, "ONE_MINUS_CONSTANT_ALPHA" ) == 0 ) return CRUDE_GFX_RHI_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
-  if ( strcmp( factor, "SRC_ALPHA_SATURATE" ) == 0 )       return CRUDE_GFX_RHI_BLEND_FACTOR_SRC_ALPHA_SATURATE;
-  if ( strcmp( factor, "SRC1_COLOR" ) == 0 )               return CRUDE_GFX_RHI_BLEND_FACTOR_SRC1_COLOR;
-  if ( strcmp( factor, "ONE_MINUS_SRC1_COLOR" ) == 0 )     return CRUDE_GFX_RHI_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR;
-  if ( strcmp( factor, "SRC1_ALPHA" ) == 0 )               return CRUDE_GFX_RHI_BLEND_FACTOR_SRC1_ALPHA;
-  if ( strcmp( factor, "ONE_MINUS_SRC1_ALPHA" ) == 0 )     return CRUDE_GFX_RHI_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA;
-  
-  return CRUDE_GFX_RHI_BLEND_FACTOR_ONE;
 }
 
 crude_gfx_rhi_blend_op
@@ -6919,6 +7005,26 @@ crude_gfx_rhi_shader_stage_to_defines
     case CRUDE_GFX_RHI_SHADER_STAGE_CLOSEST_HIT_BIT_KHR: return "CRUDE_CLOSEST_HIT";
     case CRUDE_GFX_RHI_SHADER_STAGE_RAYGEN_BIT_KHR:      return "CRUDE_RAYGEN";
     case CRUDE_GFX_RHI_SHADER_STAGE_MISS_BIT_KHR:        return "CRUDE_MISS";
+  }
+   return "";
+}
+
+char const*
+crude_gfx_rhi_shader_stage_to_dxgi_shader_stage
+(
+  _In_ crude_gfx_rhi_shader_stage_flag_bits                    value
+)
+{
+  switch ( value )
+  {
+    case CRUDE_GFX_RHI_SHADER_STAGE_VERTEX_BIT:          return "vs_6_0";
+    case CRUDE_GFX_RHI_SHADER_STAGE_MESH_BIT_EXT:        return "ms_6_0";
+    case CRUDE_GFX_RHI_SHADER_STAGE_TASK_BIT_EXT:        return "as_6_0";
+    case CRUDE_GFX_RHI_SHADER_STAGE_FRAGMENT_BIT:        return "ps_6_0";
+    case CRUDE_GFX_RHI_SHADER_STAGE_COMPUTE_BIT:         return "cs_6_0";
+    case CRUDE_GFX_RHI_SHADER_STAGE_CLOSEST_HIT_BIT_KHR: return "chit_6_0";
+    case CRUDE_GFX_RHI_SHADER_STAGE_RAYGEN_BIT_KHR:      return "rgen_6_0";
+    case CRUDE_GFX_RHI_SHADER_STAGE_MISS_BIT_KHR:        return "rmiss_6_0";
   }
    return "";
 }

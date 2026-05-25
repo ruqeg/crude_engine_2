@@ -726,6 +726,8 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
 #else
     scene->indirect_light_texture_index = -1;
 #endif
+    crude_gfx_texture *ttttttt = crude_gfx_access_texture( scene_renderer->gpu, crude_gfx_texture_handle{ scene->indirect_light_texture_index } );
+
     scene->background_color = scene_renderer->options.scene.background_color;
     scene->background_intensity = scene_renderer->options.scene.background_intensity;
     scene->ambient_color = scene_renderer->options.scene.ambient_color;
@@ -930,9 +932,9 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
 
     *debug_draw_command = CRUDE_COMPOUNT_EMPTY( crude_gfx_debug_counts );
 #if CRUDE_GFX_VULKAN
-    debug_draw_command->draw_indirect_2dline.instanceCount = 1u;
-    debug_draw_command->draw_indirect_3dline.instanceCount = 1u;
-    debug_draw_command->draw_indirect_cube.vertexCount = 36u;
+    debug_draw_command->vk_draw_indirect_2dline.instanceCount = 1u;
+    debug_draw_command->vk_draw_indirect_3dline.instanceCount = 1u;
+    debug_draw_command->vk_draw_indirect_cube.vertexCount = 36u;
 #elif CRUDE_GFX_DX12
 #elif CRUDE_GFX_NAPI
 #else

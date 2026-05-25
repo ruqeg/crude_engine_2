@@ -51,12 +51,18 @@ CRUDE_SHADER_STRUCT( crude_gfx_mesh_draw )
 
 CRUDE_SHADER_STRUCT( crude_gfx_mesh_draw_command )
 {
+#if defined( __cplusplus )
 #if CRUDE_GFX_VULKAN
-#if defined(__cplusplus)
   uint32                                                   draw_id;
-  VkDrawMeshTasksIndirectCommandEXT                        indirect_meshlet;
-  VkDrawIndirectCommand                                    indirect_mesh;
-#else
+  VkDrawMeshTasksIndirectCommandEXT                        vk_indirect_meshlet;
+  VkDrawIndirectCommand                                    vk_indirect_mesh;
+#elif CRUDE_GFX_DX12
+  uint32                                                   draw_id;
+  D3D12_DISPATCH_MESH_ARGUMENTS                            dx12_indirect_meshlet;
+  D3D12_DRAW_ARGUMENTS                                     dx12_indirect_mesh;
+#endif
+#else /* __cplusplus */
+#if defined( Vulkan ) || defined( DX12 )
   uint32                                                   draw_id;
   uint32                                                   indirect_meshlet_group_count_x;
   uint32                                                   indirect_meshlet_group_count_y;
@@ -66,12 +72,8 @@ CRUDE_SHADER_STRUCT( crude_gfx_mesh_draw_command )
   uint32                                                   indirect_mesh_instance_count;
   uint32                                                   indirect_mesh_first_vertex;
   uint32                                                   indirect_mesh_first_instance;
-#endif
-#elif CRUDE_GFX_DX12
-#elif CRUDE_GFX_NAPI
-#else
-  CRUDE_GFX_RHI_TO_IMPLEMENTIT
-#endif
+#endif /* Vulkan || DX12 */
+#endif /* __cplusplus */
 };
 
 CRUDE_SHADER_STRUCT( crude_gfx_mesh_instance_draw )

@@ -28,12 +28,18 @@ CRUDE_SHADER_STRUCT( crude_gfx_debug_cube_instance )
 
 CRUDE_SHADER_STRUCT( crude_gfx_debug_counts )
 {
-#if CRUDE_GFX_VULKAN
 #if defined( __cplusplus )
-  VkDrawIndirectCommand                                    draw_indirect_3dline;
-  VkDrawIndirectCommand                                    draw_indirect_2dline;
-  VkDrawIndirectCommand                                    draw_indirect_cube;
+#if CRUDE_GFX_VULKAN
+  VkDrawIndirectCommand                                    vk_draw_indirect_3dline;
+  VkDrawIndirectCommand                                    vk_draw_indirect_2dline;
+  VkDrawIndirectCommand                                    vk_draw_indirect_cube;
 #else
+  D3D12_DRAW_ARGUMENTS                                     dx12_draw_indirect_3dline;
+  D3D12_DRAW_ARGUMENTS                                     dx12_draw_indirect_2dline;
+  D3D12_DRAW_ARGUMENTS                                     dx12_draw_indirect_cube;
+#endif
+#else /* defined( __cplusplus ) */
+#if defined( Vulkan ) || defined( DX12 )
   uint32                                                   debug_lines_3d_vertices_count;
   uint32                                                   debug_lines_3d_instances_count;
   uint32                                                   debug_lines_3d_first_vertex;
@@ -46,12 +52,8 @@ CRUDE_SHADER_STRUCT( crude_gfx_debug_counts )
   uint32                                                   debug_cubes_instances_count;
   uint32                                                   debug_cubes_first_vertex;
   uint32                                                   debug_cubes_first_instance;
-#endif 
-#elif CRUDE_GFX_DX12
-#elif CRUDE_GFX_NAPI
-#else
-  CRUDE_GFX_RHI_TO_IMPLEMENTIT
-#endif
+#endif /* Vulkan || DX12 */
+#endif /* defined( __cplusplus ) */
 };
 
 CRUDE_SHADER_RBUFFER_REF_ARRAY( DebugCubesInstancesRef, crude_gfx_debug_cube_instance );

@@ -6,8 +6,8 @@
 
 #include <engine/core/process.h>
 
-char                s_process_log_buffer[ CRUDE_CORE_PROCESS_OUTPUT_BUFFER_SIZE ];
-static char         k_process_output_buffer[ CRUDE_CORE_PROCESS_OUTPUT_BUFFER_SIZE ];
+char                s_process_log_buffer[ CRUDE_CORE_PROCESS_OUTPUT_BUFFER_SIZE + 1 ];
+static char         k_process_output_buffer[ CRUDE_CORE_PROCESS_OUTPUT_BUFFER_SIZE + 1 ];
 
 void
 win32_get_error_
@@ -98,7 +98,7 @@ crude_process_execute
   
   /* Consume all outputs.
    * Terminate current read and initialize the next. */
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_SYSTEM, "proc called: %s%s", process_fullpath, (char*)arguments );
+  CRUDE_LOG_INFO( CRUDE_CHANNEL_SYSTEM, "proc called: %s %s", process_fullpath, (char*)arguments );
   while ( ok == TRUE )
   {
     k_process_output_buffer[bytes_read] = 0;

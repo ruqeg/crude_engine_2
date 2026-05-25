@@ -71,7 +71,7 @@ crude_gfx_translucent_pass_render
     crude_gfx_cmd_draw_mesh_task_indirect_count(
       primary_cmd,
       pass->scene_renderer->mesh_task_indirect_commands_hga.buffer_handle,
-      CRUDE_OFFSETOF( crude_gfx_mesh_draw_command, indirect_meshlet ),
+      CRUDE_OFFSETOF( crude_gfx_mesh_draw_command, vk_indirect_meshlet ),
       pass->scene_renderer->mesh_task_indirect_count_hga.buffer_handle,
       CRUDE_OFFSETOF( crude_gfx_mesh_draw_count, transparent_mesh_visible_count ),
       pass->scene_renderer->total_visible_meshes_instances_count,
@@ -100,7 +100,7 @@ crude_gfx_translucent_pass_render
     crude_gfx_cmd_draw_indirect_count(
       primary_cmd,
       pass->scene_renderer->mesh_task_indirect_commands_hga.buffer_handle,
-      CRUDE_OFFSETOF( crude_gfx_mesh_draw_command, indirect_mesh ),
+      CRUDE_OFFSETOF( crude_gfx_mesh_draw_command, vk_indirect_mesh ),
       pass->scene_renderer->mesh_task_indirect_count_hga.buffer_handle,
       CRUDE_OFFSETOF( crude_gfx_mesh_draw_count, transparent_mesh_visible_count ),
       pass->scene_renderer->total_visible_meshes_instances_count,

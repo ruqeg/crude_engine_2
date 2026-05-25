@@ -91,7 +91,7 @@ crude_gfx_debug_pass_render
     crude_gfx_cmd_draw_inderect(
       primary_cmd,
       pass->scene_renderer->debug_commands_hga.buffer_handle,
-      CRUDE_OFFSETOF( crude_gfx_debug_counts, draw_indirect_2dline ),
+      CRUDE_OFFSETOF( crude_gfx_debug_counts, vk_draw_indirect_2dline ),
       1u, sizeof( crude_gfx_debug_counts ) );
 #elif CRUDE_GFX_NAPI
 #elif CRUDE_GFX_DX12
@@ -118,7 +118,7 @@ crude_gfx_debug_pass_render
     crude_gfx_cmd_draw_inderect(
       primary_cmd,
       pass->scene_renderer->debug_commands_hga.buffer_handle,
-      CRUDE_OFFSETOF( crude_gfx_debug_counts, draw_indirect_cube ),
+      CRUDE_OFFSETOF( crude_gfx_debug_counts, vk_draw_indirect_cube ),
       1u, sizeof( crude_gfx_debug_counts ) );
 #elif CRUDE_GFX_NAPI
 #elif CRUDE_GFX_DX12

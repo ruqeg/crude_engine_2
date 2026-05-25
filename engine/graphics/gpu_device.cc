@@ -754,17 +754,32 @@ crude_gfx_compile_shader
   _Out_ char                                             **spirv_absolute_filepath
 )
 {
-  crude_gfx_rhi_compile_glsl_to_spirv_description          description;
+#if CRUDE_GFX_DX12
+  crude_gfx_rhi_compile_spirv_to_dxil_description          spirv_to_dxil_desc;
+#endif /* CRUDE_GFX_DX12 */
+  crude_gfx_rhi_compile_glsl_to_spirv_description          glsl_to_spirv_desc;
   
-  description = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_compile_glsl_to_spirv_description );
-  description.code = code;
-  description.code_size = code_size;
-  description.stage = stage;
-  description.pass_name = name;
-  description.temporary_absolute_directory = gpu->temporary_absolute_directory;
-  description.compiled_absolute_directory = gpu->compiled_shaders_absolute_directory;
-  description.optimized = CRUDE_GFX_OPTIMIZE_SHADERS;
-  crude_gfx_rhi_compile_shader_glsl_to_spirv( &description, allocator, spirv_absolute_filepath );
+  glsl_to_spirv_desc = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_compile_glsl_to_spirv_description );
+  glsl_to_spirv_desc.code = code;
+  glsl_to_spirv_desc.code_size = code_size;
+  glsl_to_spirv_desc.stage = stage;
+  glsl_to_spirv_desc.pass_name = name;
+  glsl_to_spirv_desc.temporary_absolute_directory = gpu->temporary_absolute_directory;
+  glsl_to_spirv_desc.compiled_absolute_directory = gpu->compiled_shaders_absolute_directory;
+  glsl_to_spirv_desc.optimized = CRUDE_GFX_OPTIMIZE_SHADERS;
+  crude_gfx_rhi_compile_shader_glsl_to_spirv( &glsl_to_spirv_desc, allocator, spirv_absolute_filepath );
+
+#if CRUDE_GFX_DX12
+  crude_gfx_rhi_compile_spirv_to_dxil_description          spirv_to_dxil_desc;
+
+  spirv_to_dxil_desc = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_compile_spirv_to_dxil_description );
+  spirv_to_dxil_desc.stage = stage;
+  spirv_to_dxil_desc.spirv_absolute_filepath = *spirv_absolute_filepath;
+  spirv_to_dxil_desc.temporary_absolute_directory = gpu->temporary_absolute_directory;
+  spirv_to_dxil_desc.compiled_absolute_directory = gpu->compiled_shaders_absolute_directory;
+
+  crude_gfx_rhi_compile_shader_spirv_to_dxil( &spirv_to_dxil_desc, allocator, NULL );
+#endif /* CRUDE_GFX_DX12 */
 }
 
 void
