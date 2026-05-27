@@ -38,7 +38,6 @@ typedef struct crude_gfx_model_renderer_resources_manager
   /***********************
    * Common CPU & GPU Data
    **********************/
-  crude_gfx_sampler_handle                                *samplers;
   crude_gfx_texture_handle                                *images;
   crude_gfx_memory_allocation                             *indices_buffers;
 

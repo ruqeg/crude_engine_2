@@ -6882,7 +6882,7 @@ crude_gfx_rhi_compile_shader_glsl_to_spirv
   CRUDE_ASSERT( false );
 #endif /*_MSC_VER */
 
-  crude_process_execute( ".", glsl_compiler_absolute_filepath, glsl_compiler_arguments, "" );
+  CRUDE_ASSERT( crude_process_execute( ".", glsl_compiler_absolute_filepath, glsl_compiler_arguments, "ERROR" ) );
   
   if ( desc->optimized )
   {
@@ -6896,7 +6896,7 @@ crude_gfx_rhi_compile_shader_glsl_to_spirv
     spirv_optimizer_absolute_filepath = crude_string_buffer_append_use_f( &temporary_string_buffer, "%sspirv-opt.exe", vk_binaries_path );
     spirv_optimizer_arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "spirv-opt.exe --preserve-bindings --relax-block-layout --scalar-block-layout -O %s -o %s", spirv_debug_absolute_filepath, spirv_optimized_absolute_filepath );
 
-    crude_process_execute( ".", spirv_optimizer_absolute_filepath, spirv_optimizer_arguments, "" );
+    CRUDE_ASSERT( crude_process_execute( ".", spirv_optimizer_absolute_filepath, spirv_optimizer_arguments, "ERROR" ) );
   }
   
   if ( desc->optimized )

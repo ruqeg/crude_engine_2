@@ -1662,7 +1662,7 @@ crude_gfx_create_pipeline
   }
 
   shader_state = crude_gfx_access_shader_state( gpu, shader_state_handle );
-
+  
   pipeline = crude_gfx_access_pipeline( gpu, pipeline_handle );
   
   crude_string_copy( pipeline->name, creation->name, sizeof( pipeline->name ) );
@@ -2471,6 +2471,9 @@ crude_gfx_destroy_framebuffer_instant
 )
 {
   crude_gfx_framebuffer *framebuffer = crude_gfx_access_framebuffer( gpu, handle );
+
+  framebuffer->name[ 0 ] = 0;
+
   if ( framebuffer && !framebuffer->manual_resources_free )
   {
     for ( uint32 i = 0; i < framebuffer->num_color_attachments; ++i )

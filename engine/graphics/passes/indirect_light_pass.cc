@@ -266,7 +266,7 @@ crude_gfx_indirect_light_pass_render
     push_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_sample_irradiance_push_constant_ );
     push_constant.ddgi = pass->scene_renderer->ddgi_hga.gpu_address;
     push_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
-    push_constant.output_resolution_half = half_resolution;
+    //push_constant.output_resolution_half = half_resolution;
     crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
 
     crude_gfx_cmd_dispatch( primary_cmd, ( width + 7 ) / 8, ( height + 7 ) / 8, 1 );

@@ -290,7 +290,7 @@ crude_engine_deinitialize
   crude_gfx_cmd_begin_primary( immediate_cmd );
   crude_gfx_model_renderer_resources_manager_wait_till_uploaded( &engine->model_renderer_resources_manager, immediate_cmd );
   crude_gfx_submit_immediate( immediate_cmd );
-
+  
   crude_engine_deinitialize_editor_( engine );
   crude_engine_deinitialize_gui_( engine );
   crude_engine_commands_manager_deinitialize( &engine->commands_manager );
@@ -613,7 +613,7 @@ crude_engine_initialize_graphics_
 #endif
 
   crude_gfx_render_graph_compile( &engine->render_graph, &engine->temporary_allocator );
-
+  
   if ( engine->gpu.mesh_shaders_extension_present )
   {
     crude_gfx_technique_load_from_file( "geometry_meshlet.crude_techniques", &engine->gpu, &engine->render_graph, &engine->temporary_allocator );
@@ -694,8 +694,8 @@ crude_engine_deinitialize_graphics_
   crude_gfx_asynchronous_loader_deinitialize( &engine->async_loader );
   crude_gfx_model_renderer_resources_manager_deintialize( &engine->model_renderer_resources_manager );
   crude_gfx_texture_manager_deinitialize( &engine->texture_manager );
-  crude_gfx_render_graph_builder_deinitialize( &engine->render_graph_builder );
   crude_gfx_render_graph_deinitialize( &engine->render_graph );
+  crude_gfx_render_graph_builder_deinitialize( &engine->render_graph_builder );
   crude_gfx_device_deinitialize( &engine->gpu );
   crude_gfx_asynchronous_loader_manager_deintiailize( &engine->asynchronous_loader_manager );
 }

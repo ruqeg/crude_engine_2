@@ -36,8 +36,7 @@ crude_gfx_model_renderer_resources_manager_gltf_write_mesh_material_
   _Out_ crude_gfx_mesh_cpu                                *mesh_draw,
   _In_ cgltf_data                                         *gltf,
   _In_ cgltf_material                                     *material,
-  _In_ size_t                                              images_offset,
-  _In_ size_t                                              samplers_offset
+  _In_ size_t                                              images_offset
 );
 
 static cgltf_data*
@@ -55,21 +54,6 @@ crude_gfx_model_renderer_resources_manager_gltf_load_images_
   _In_ char const                                         *gltf_directory
 );
 
-static void
-crude_gfx_model_renderer_resources_manager_gltf_load_samplers_
-(
-  _In_ crude_gfx_model_renderer_resources_manager         *manager,
-  _In_ cgltf_data                                         *gltf,
-  _In_ char const                                         *gltf_directory
-);
-
-static void
-crude_gfx_model_renderer_resources_manager_gltf_load_textures_
-(
-  _In_ crude_gfx_model_renderer_resources_manager         *manager,
-  _In_ cgltf_data                                         *gltf
-);
-
 static uint64
 crude_gfx_model_renderer_resources_manager_gltf_calculate_meshes_count_
 (
@@ -84,8 +68,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
   _Out_ uint32                                            *gltf_mesh_index_to_mesh_primitive_index,
   _In_ cgltf_data                                         *gltf,
   _In_ char const                                         *gltf_absolute_directory,
-  _In_ uint32                                              images_offset,
-  _In_ uint32                                              samplers_offset
+  _In_ uint32                                              images_offset
 );
 
 static void
@@ -173,7 +156,6 @@ crude_gfx_model_renderer_resources_manager_intialize
 
   manager->meshes_draws_hga = crude_gfx_memory_allocation_empty( );
 
-  CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( manager->samplers, 0u, crude_heap_allocator_pack( creation->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( manager->images, 0u, crude_heap_allocator_pack( creation->allocator ) );
   CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( manager->indices_buffers, 0u, crude_heap_allocator_pack( creation->allocator ) );
 
@@ -232,12 +214,6 @@ CRUDE_GFX_RHI_TO_IMPLEMENTIT
   }
   CRUDE_HASHMAPSTR_DEINITIALIZE( manager->model_name_to_model_renderer_resource );
   crude_resource_pool_deinitialize( &manager->model_renderer_resources_pool );
-  
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( manager->samplers ); ++i )
-  {
-    crude_gfx_destroy_sampler( manager->gpu, manager->samplers[ i ] );
-  }
-  CRUDE_ARRAY_DEINITIALIZE( manager->samplers );
 
   /* Texture manager handle cleaning */
   CRUDE_ARRAY_DEINITIALIZE( manager->images );
@@ -283,12 +259,6 @@ crude_gfx_model_renderer_resources_manager_clear
     }
     manager->model_name_to_model_renderer_resource[ i ].key.key_hash = CRUDE_HASHMAPSTR_BACKET_STATE_EMPTY;
   }
-
-  for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( manager->samplers ); ++i )
-  {
-    crude_gfx_destroy_sampler( manager->gpu, manager->samplers[ i ] );
-  }
-  CRUDE_ARRAY_SET_LENGTH( manager->samplers, 0 );
   
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( manager->indices_buffers ); ++i )
   {
@@ -396,7 +366,7 @@ crude_gfx_model_renderer_resources_manager_load_gltf_
   char                                                    *gltf_absolute_directory;
   char                                                    *gltf_absolute_filepath;
   crude_gfx_model_renderer_resources                       model_renderer_resouces;
-  uint64                                                   images_offset, samplers_offset;
+  uint64                                                   images_offset;
 
   gltf_mesh_index_to_mesh_primitive_index = NULL;
   
@@ -405,7 +375,6 @@ crude_gfx_model_renderer_resources_manager_load_gltf_
   crude_string_copy( model_renderer_resouces.relative_filepath, gltf_relative_filepath, sizeof( model_renderer_resouces.relative_filepath ) );
 
   images_offset = CRUDE_ARRAY_LENGTH( manager->images );
-  samplers_offset = CRUDE_ARRAY_LENGTH( manager->samplers );
 
   /* Parse gltf */
   gltf_absolute_filepath = crude_string_buffer_append_use_f( &manager->gltf_absolute_filepath_string_buffer, "%s%s", manager->resources_absolute_directory, gltf_relative_filepath );
@@ -425,12 +394,8 @@ crude_gfx_model_renderer_resources_manager_load_gltf_
   
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading images" );
   crude_gfx_model_renderer_resources_manager_gltf_load_images_( manager, gltf, gltf_absolute_directory );
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading samplers" );
-  crude_gfx_model_renderer_resources_manager_gltf_load_samplers_( manager, gltf, gltf_absolute_directory );
-  CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading textures" );
-  crude_gfx_model_renderer_resources_manager_gltf_load_textures_( manager, gltf ); /* Should be executed after images/samplers loaded*/
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading geometry" );
-  crude_gfx_model_renderer_resources_manager_gltf_load_geometry_( manager, &model_renderer_resouces, gltf_mesh_index_to_mesh_primitive_index, gltf, gltf_absolute_directory, images_offset, samplers_offset );
+  crude_gfx_model_renderer_resources_manager_gltf_load_geometry_( manager, &model_renderer_resouces, gltf_mesh_index_to_mesh_primitive_index, gltf, gltf_absolute_directory, images_offset );
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading skins" );
   crude_gfx_model_renderer_resources_manager_load_skins_( manager, &model_renderer_resouces, gltf );
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Loading nodes" );
@@ -473,8 +438,7 @@ crude_gfx_model_renderer_resources_manager_gltf_write_mesh_material_
   _Out_ crude_gfx_mesh_cpu                                *mesh_draw,
   _In_ cgltf_data                                         *gltf,
   _In_ cgltf_material                                     *material,
-  _In_ size_t                                              images_offset,
-  _In_ size_t                                              samplers_offset
+  _In_ size_t                                              images_offset
 )
 {
   mesh_draw->flags = 0;
@@ -525,58 +489,50 @@ crude_gfx_model_renderer_resources_manager_gltf_write_mesh_material_
   {
     cgltf_texture                                         *gltf_albedo_texture;
     crude_gfx_texture_handle                               albedo_texture_handle;
-    crude_gfx_sampler_handle                               albedo_sampler_handle;
 
     gltf_albedo_texture = material->pbr_metallic_roughness.base_color_texture.texture;
     albedo_texture_handle = manager->images[ images_offset + cgltf_image_index( gltf, gltf_albedo_texture->image ) ];
-    albedo_sampler_handle = manager->samplers[ samplers_offset + cgltf_sampler_index( gltf, gltf_albedo_texture->sampler ) ];
   
     mesh_draw->albedo_texture_handle = albedo_texture_handle;
-    crude_gfx_link_texture_sampler( manager->gpu, albedo_texture_handle, albedo_sampler_handle );
+    crude_gfx_link_texture_sampler( manager->gpu, albedo_texture_handle, manager->gpu->default_sampler );
   }
   
   if ( material->pbr_metallic_roughness.metallic_roughness_texture.texture )
   {
     cgltf_texture                                         *gltf_roughness_texture;
     crude_gfx_texture_handle                               roughness_texture_handle;
-    crude_gfx_sampler_handle                               roughness_sampler_handle;
 
     gltf_roughness_texture = material->pbr_metallic_roughness.metallic_roughness_texture.texture;
     roughness_texture_handle = manager->images[ images_offset + cgltf_image_index( gltf, gltf_roughness_texture->image ) ];
-    roughness_sampler_handle = manager->samplers[ samplers_offset + cgltf_sampler_index( gltf, gltf_roughness_texture->sampler ) ];
     
     mesh_draw->metallic_roughness_texture_handle = roughness_texture_handle;
-    crude_gfx_link_texture_sampler( manager->gpu, roughness_texture_handle, roughness_sampler_handle );
+    crude_gfx_link_texture_sampler( manager->gpu, roughness_texture_handle, manager->gpu->default_sampler );
   }
 
   if ( material->occlusion_texture.texture )
   {
     cgltf_texture                                         *gltf_occlusion_texture;
     crude_gfx_texture_handle                               occlusion_texture_handle;
-    crude_gfx_sampler_handle                               occlusion_sampler_handle;
 
     gltf_occlusion_texture = material->occlusion_texture.texture;
     occlusion_texture_handle = manager->images[ images_offset + cgltf_image_index( gltf, gltf_occlusion_texture->image ) ];
-    occlusion_sampler_handle = manager->samplers[ samplers_offset + cgltf_sampler_index( gltf, gltf_occlusion_texture->sampler ) ];
     
     mesh_draw->occlusion_texture_handle = occlusion_texture_handle;
     mesh_draw->metallic_roughness_occlusion_factor.z = material->occlusion_texture.scale;
     
-    crude_gfx_link_texture_sampler( manager->gpu, occlusion_texture_handle, occlusion_sampler_handle );
+    crude_gfx_link_texture_sampler( manager->gpu, occlusion_texture_handle, manager->gpu->default_sampler );
   }
   
   if ( material->normal_texture.texture )
   {
     cgltf_texture                                         *gltf_normal_texture;
     crude_gfx_texture_handle                               normal_texture_handle;
-    crude_gfx_sampler_handle                               normal_sampler_handle;
 
     gltf_normal_texture = material->normal_texture.texture;
     normal_texture_handle = manager->images[ images_offset + cgltf_image_index( gltf, gltf_normal_texture->image ) ];
-    normal_sampler_handle = manager->samplers[ samplers_offset + cgltf_sampler_index( gltf, gltf_normal_texture->sampler ) ];
     
     mesh_draw->normal_texture_handle = normal_texture_handle;
-    crude_gfx_link_texture_sampler( manager->gpu, normal_texture_handle, normal_sampler_handle );
+    crude_gfx_link_texture_sampler( manager->gpu, normal_texture_handle, manager->gpu->default_sampler );
   }
 }
 
@@ -649,101 +605,6 @@ crude_gfx_model_renderer_resources_manager_gltf_load_images_
   }
 }
 
-void
-crude_gfx_model_renderer_resources_manager_gltf_load_samplers_
-(
-  _In_ crude_gfx_model_renderer_resources_manager         *manager,
-  _In_ cgltf_data                                         *gltf,
-  _In_ char const                                         *gltf_directory
-)
-{
-  for ( uint32 sampler_index = 0; sampler_index < gltf->samplers_count; ++sampler_index )
-  {
-    crude_gfx_sampler_handle                               sampler_handle;
-    crude_gfx_sampler_creation                             creation;
-    cgltf_sampler                                         *sampler;
-
-    sampler = &gltf->samplers[ sampler_index ];
-
-    creation = crude_gfx_sampler_creation_empty();
-    switch ( sampler->min_filter )
-    {
-    case cgltf_filter_type_nearest:
-      creation.min_filter = CRUDE_GFX_RHI_FILTER_NEAREST;
-      break;
-    case cgltf_filter_type_linear:
-      creation.min_filter = CRUDE_GFX_RHI_FILTER_LINEAR;
-      break;
-    case cgltf_filter_type_linear_mipmap_nearest:
-      creation.min_filter = CRUDE_GFX_RHI_FILTER_LINEAR;
-      creation.mip_filter = CRUDE_GFX_RHI_SAMPLER_MIPMAP_MODE_NEAREST;
-      break;
-    case cgltf_filter_type_linear_mipmap_linear:
-      creation.min_filter = CRUDE_GFX_RHI_FILTER_LINEAR;
-      creation.mip_filter = CRUDE_GFX_RHI_SAMPLER_MIPMAP_MODE_LINEAR;
-      break;
-    case cgltf_filter_type_nearest_mipmap_nearest:
-      creation.min_filter = CRUDE_GFX_RHI_FILTER_NEAREST;
-      creation.mip_filter = CRUDE_GFX_RHI_SAMPLER_MIPMAP_MODE_NEAREST;
-      break;
-    case cgltf_filter_type_nearest_mipmap_linear:
-      creation.min_filter = CRUDE_GFX_RHI_FILTER_NEAREST;
-      creation.mip_filter = CRUDE_GFX_RHI_SAMPLER_MIPMAP_MODE_LINEAR;
-      break;
-    }
-    
-    creation.mag_filter = ( sampler->mag_filter == cgltf_filter_type_linear ) ? CRUDE_GFX_RHI_FILTER_LINEAR : CRUDE_GFX_RHI_FILTER_NEAREST;
-    
-    switch ( sampler->wrap_s )
-    {
-      case cgltf_wrap_mode_clamp_to_edge:
-        creation.address_mode_u = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        break;
-      case cgltf_wrap_mode_mirrored_repeat:
-        creation.address_mode_u = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
-        break;
-      case cgltf_wrap_mode_repeat:
-        creation.address_mode_u = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_REPEAT;
-        break;
-    }
-    
-    switch ( sampler->wrap_t )
-    {
-    case cgltf_wrap_mode_clamp_to_edge:
-      creation.address_mode_v = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-      break;
-    case cgltf_wrap_mode_mirrored_repeat:
-      creation.address_mode_v = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
-      break;
-    case cgltf_wrap_mode_repeat:
-      creation.address_mode_v = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_REPEAT;
-      break;
-    }
-
-    creation.address_mode_w = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_REPEAT;
-    
-    creation.name = "";
-    
-    sampler_handle = crude_gfx_create_sampler( manager->gpu, &creation );
-    CRUDE_ARRAY_PUSH( manager->samplers, sampler_handle );
-  }
-}
-
-void
-crude_gfx_model_renderer_resources_manager_gltf_load_textures_
-(
-  _In_ crude_gfx_model_renderer_resources_manager          *manager,
-  _In_ cgltf_data                                         *gltf
-)
-{
-  for ( uint32 texture_index = 0; texture_index < gltf->textures_count; ++texture_index )
-  {
-    uint32 sampler_index = cgltf_sampler_index( gltf, gltf->textures[ texture_index ].sampler );
-    uint32 image_index = cgltf_image_index( gltf, gltf->textures[ texture_index ].image );
-    crude_gfx_link_texture_sampler( manager->gpu, manager->images[ image_index ], manager->samplers[ sampler_index ] );
-  }
-}
-
 uint64
 crude_gfx_model_renderer_resources_manager_gltf_calculate_meshes_count_
 (
@@ -770,8 +631,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
   _Out_ uint32                                            *gltf_mesh_index_to_mesh_primitive_index,
   _In_ cgltf_data                                         *gltf,
   _In_ char const                                         *gltf_absolute_directory,
-  _In_ uint32                                              images_offset,
-  _In_ uint32                                              samplers_offset
+  _In_ uint32                                              images_offset
 )
 {
   crude_gfx_mesh_draw                                     *meshes_draws;
@@ -869,7 +729,7 @@ crude_gfx_model_renderer_resources_manager_gltf_load_geometry_
         flags |= CRUDE_MESH_DRAW_FLAGS_INDEX_16;
       }
 
-      crude_gfx_model_renderer_resources_manager_gltf_write_mesh_material_( manager, mesh_cpu, gltf, gltf_mesh_primitive->material, images_offset, samplers_offset );
+      crude_gfx_model_renderer_resources_manager_gltf_write_mesh_material_( manager, mesh_cpu, gltf, gltf_mesh_primitive->material, images_offset );
 
       mesh_cpu->gpu_mesh_global_index = crude_gfX_get_gpu_mesh_global_index_( manager->total_meshes_count, mesh_index );
       mesh_cpu->default_bounding_sphere.x = XMVectorGetX( bounding_center );
