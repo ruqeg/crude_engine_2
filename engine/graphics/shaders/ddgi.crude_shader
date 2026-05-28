@@ -23,7 +23,7 @@
 #include "common/light.h"
 #endif /* CRUDE_VALIDATOR_LINTING || __cplusplus */
 
-#define DDGI_PERCEPTUAL_ENCODING                           1
+#define DDGI_PERCEPTUAL_ENCODING                           0
 #define DDGI_PERCEPTUAL_USE_VISIBILITY                     1
 #define DDGI_USE_SMOOTH_BACKFACE                           1
 
@@ -465,16 +465,23 @@ void main()
       float visiblity = 1.f;
       if ( position_to_light_distance <= light.radius )
       {
-        rayQueryInitializeEXT( ray_query, acceleration_structure, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, 0xff, world_position, 0.05, position_to_light_normalized, position_to_light_distance );
+        rayQueryInitializeEXT(
+          ray_query, acceleration_structure,
+          gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT,
+          0xff,
+          world_position,
+          0.0,
+          position_to_light_normalized,
+          position_to_light_distance );
         rayQueryProceedEXT( ray_query );
         visiblity = float( rayQueryGetIntersectionTypeEXT( ray_query, true ) == gl_RayQueryCommittedIntersectionNoneEXT );
       }
       
       ndotl = clamp( dot( normal, position_to_light_normalized ), 0.0, 1.0 );
     
-      light_intensity = crude_light_attenuation( length( position_to_light ), light.radius ) * max( ndotl, 0.f ) * light.color * light.intensity;
+      light_intensity = crude_light_attenuation( position_to_light_distance, light.radius ) * light.color * light.intensity;
     
-      diffuse += visiblity * albedo * light_intensity;
+      diffuse += albedo * light_intensity;
     }
     
     diffuse += albedo * sample_irradiance( ddgi, world_position, normal, scene.data.camera.position.xyz ) * ddgi.data.infinite_bounces_multiplier;
@@ -834,7 +841,7 @@ void main()
 //  else
   {
     vec2 encoded_normal = CRUDE_TEXTURE_FETCH( ddgi.data.normal_texture_index, coords.xy, 0 ).rg;
-    normal = crude_octahedral_decode( encoded_normal );
+    normal = normalize( crude_octahedral_decode( encoded_normal ) );
   }
 
   vec3 pixel_world_position = crude_world_position_from_depth( screen_uv, raw_depth, scene.data.camera.clip_to_world );
@@ -942,7 +949,7 @@ layout(location=0) out vec4 out_color;
 
 void main()
 {
-  vec2 probe_irradiance_uv = get_probe_uv( in_normal, in_probe_index, ddgi.data.irradiance_texture_width, ddgi.data.irradiance_texture_height, ddgi.data.irradiance_side_length );
+  vec2 probe_irradiance_uv = get_probe_uv( normalize( in_normal ), in_probe_index, ddgi.data.irradiance_texture_width, ddgi.data.irradiance_texture_height, ddgi.data.irradiance_side_length );
   vec3 probe_irradiance = CRUDE_TEXTURE_LOD( ddgi.data.grid_irradiance_output_index, probe_irradiance_uv, 0 ).rgb;
 #if DDGI_PERCEPTUAL_ENCODING
   probe_irradiance = pow( probe_irradiance, vec3( 0.5f / 5.0f ) );
