@@ -65,6 +65,22 @@ typedef struct crude_ray
   uint32                                                   broad_phase_mask;
 } crude_ray;
 
+typedef struct crude_ddgi_area
+{
+  XMFLOAT3                                                 probe_spacing;
+  float32                                                  hysteresis;
+  float32                                                  self_shadow_bias;
+  float32                                                  infinite_bounces_multiplier;
+  float32                                                  max_probe_offset;
+  float32                                                  shadow_weight_power;
+  int32                                                    probe_update_per_frame;
+  XMINT3                                                   probe_count;
+  XMINT3                                                   editor_probe_count;
+  int32                                                    probe_rays;
+  int32                                                    offsets_calculations_count;
+  bool                                                     use_half_resolution;
+} crude_ddgi_area;
+
 CRUDE_API XMMATRIX
 crude_camera_view_to_clip
 (
@@ -143,5 +159,10 @@ crude_ray_cast
 
 CRUDE_API crude_light
 crude_light_empty
+(
+);
+
+CRUDE_API crude_ddgi_area
+crude_ddgi_area_empty
 (
 );

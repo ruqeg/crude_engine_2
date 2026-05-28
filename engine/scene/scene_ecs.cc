@@ -4,6 +4,7 @@
 #include <engine/graphics/imgui.h>
 #include <engine/physics/physics_ecs.h>
 #include <engine/scene/node_manager.h>
+#include <engine/graphics/scene_renderer.h>
 
 /**********************************************************
  *
@@ -25,6 +26,7 @@ ECS_COMPONENT_DECLARE( crude_camera );
 ECS_COMPONENT_DECLARE( crude_gltf );
 ECS_COMPONENT_DECLARE( crude_node_external );
 ECS_COMPONENT_DECLARE( crude_ray );
+ECS_COMPONENT_DECLARE( crude_ddgi_area );
 
 CRUDE_COMPONENT_STRING_DEFINE( crude_camera, "crude_camera" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_transform, "crude_transform" );
@@ -32,6 +34,7 @@ CRUDE_COMPONENT_STRING_DEFINE( crude_gltf, "crude_gltf" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_light, "crude_light" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_node_external, "crude_node_external" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_ray, "crude_ray" );
+CRUDE_COMPONENT_STRING_DEFINE( crude_ddgi_area, "crude_ddgi_area" );
 
 void
 crude_scene_components_import
@@ -47,22 +50,26 @@ crude_scene_components_import
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_gltf );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_node_external );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_ray );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_ddgi_area );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_transform );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_light );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_camera );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_gltf );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_node_external );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_ray );
+  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_ddgi_area );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_transform );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_light );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_camera );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_gltf );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_ray );
+  CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_ddgi_area );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_transform );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_light );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_camera );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_gltf );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_ray );
+  CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_ddgi_area );
 
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_gltf_destroy_observer_, EcsOnRemove, NULL, { 
     { .id = ecs_id( crude_gltf ), .oper = EcsAnd }
@@ -480,6 +487,111 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_node_external )
       }
     }
     ImGui::EndDragDropTarget();
+  }
+}
+
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_ddgi_area )
+{
+  crude_memory_set( component, 0, sizeof( crude_ddgi_area ) );
+  
+  component->probe_spacing.x = cJSON_GetNumberValue(cJSON_GetObjectItemCaseSensitive(component_json, "probe_spacing_x" ) );
+  component->probe_spacing.y = cJSON_GetNumberValue(cJSON_GetObjectItemCaseSensitive(component_json, "probe_spacing_y" ) );
+  component->probe_spacing.z = cJSON_GetNumberValue(cJSON_GetObjectItemCaseSensitive(component_json, "probe_spacing_z" ) );
+  component->max_probe_offset = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "max_probe_offset" ) );
+  component->self_shadow_bias = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "self_shadow_bias" ) );
+  component->hysteresis = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "hysteresis" ) );
+  component->shadow_weight_power = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "shadow_weight_power" ) );
+  component->infinite_bounces_multiplier = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "infinite_bounces_multiplier" ) );
+  component->probe_update_per_frame = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "probe_update_per_frame" ) );
+  component->offsets_calculations_count = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "offsets_calculations_count" ) );
+  component->probe_rays = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "probe_rays" ) );
+  component->probe_count.x = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "probe_count_x" ) );
+  component->probe_count.y = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "probe_count_y" ) );
+  component->probe_count.z = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "probe_count_z" ) );
+  
+  component->editor_probe_count = component->probe_count;
+
+  return true;
+}
+
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_ddgi_area )
+{
+  cJSON *ddgi_area_json = cJSON_CreateObject( );
+  cJSON_AddItemToObject( ddgi_area_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_ddgi_area ) ) );
+
+  cJSON_AddItemToObject( ddgi_area_json, "probe_spacing_x", cJSON_CreateNumber( component->probe_spacing.x ) );
+  cJSON_AddItemToObject( ddgi_area_json, "probe_spacing_y", cJSON_CreateNumber( component->probe_spacing.y ) );
+  cJSON_AddItemToObject( ddgi_area_json, "probe_spacing_z", cJSON_CreateNumber( component->probe_spacing.z ) );
+  cJSON_AddItemToObject( ddgi_area_json, "max_probe_offset", cJSON_CreateNumber( component->max_probe_offset )  );
+  cJSON_AddItemToObject( ddgi_area_json, "self_shadow_bias", cJSON_CreateNumber( component->self_shadow_bias )  );
+  cJSON_AddItemToObject( ddgi_area_json, "hysteresis", cJSON_CreateNumber( component->hysteresis ) );
+  cJSON_AddItemToObject( ddgi_area_json, "shadow_weight_power", cJSON_CreateNumber( component->shadow_weight_power ) );
+  cJSON_AddItemToObject( ddgi_area_json, "infinite_bounces_multiplier", cJSON_CreateNumber( component->infinite_bounces_multiplier ) );
+  cJSON_AddItemToObject( ddgi_area_json, "probe_update_per_frame", cJSON_CreateNumber( component->probe_update_per_frame  ) );
+  cJSON_AddItemToObject( ddgi_area_json, "offsets_calculations_count", cJSON_CreateNumber( component->offsets_calculations_count  ) );
+  cJSON_AddItemToObject( ddgi_area_json, "probe_rays", cJSON_CreateNumber( component->probe_rays  ) );
+  cJSON_AddItemToObject( ddgi_area_json, "probe_count_x", cJSON_CreateNumber( component->probe_count.x ) );
+  cJSON_AddItemToObject( ddgi_area_json, "probe_count_y", cJSON_CreateNumber( component->probe_count.y ) );
+  cJSON_AddItemToObject( ddgi_area_json, "probe_count_z", cJSON_CreateNumber( component->probe_count.z ) );
+  return ddgi_area_json;
+}
+
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_ddgi_area )
+{
+  bool                                                     offsets_calculations_changed;
+
+  CRUDE_IMGUI_START_OPTIONS;
+  
+  offsets_calculations_changed = false;
+
+  CRUDE_IMGUI_OPTION( "Probe Rays", {
+    ImGui::DragInt( "##Probe Rays", &component->probe_rays );
+  } );
+
+  CRUDE_IMGUI_OPTION( "Probe Count", {
+    ImGui::DragInt3( "##Probe Count", &component->editor_probe_count.x );
+    ImGui::SameLine( );
+    if ( ImGui::Button( "Apply" ) )
+    {
+      component->probe_count = component->editor_probe_count;
+    }
+  } );
+
+  CRUDE_IMGUI_OPTION( "Probe Spacing", {
+    ImGui::DragFloat3( "##Probe Spacing", &component->probe_spacing.x );
+  } );
+  
+  CRUDE_IMGUI_OPTION( "Max Probe Offset", {
+    ImGui::DragFloat( "##Max Probe Offset", &component->max_probe_offset );
+  } );
+  
+  CRUDE_IMGUI_OPTION( "Self Shadow Bias", {
+    ImGui::DragFloat( "##Self Shadow Bias", &component->self_shadow_bias );
+  } );
+  
+  CRUDE_IMGUI_OPTION( "Hysteresis", {
+    ImGui::SliderFloat( "##Hysteresis", &component->hysteresis, 0.0001, 1.0 );
+  } );
+  
+  CRUDE_IMGUI_OPTION( "Shadow Weight Power", {
+    ImGui::DragFloat( "##Shadow Weight Power", &component->shadow_weight_power );
+  } );
+  
+  CRUDE_IMGUI_OPTION( "Infinite Bounces Multiplier", {
+    ImGui::DragFloat( "##Infinite Bounces Multiplier", &component->infinite_bounces_multiplier );
+  } );
+  
+  CRUDE_IMGUI_OPTION( "Probe Update Per Frame", {
+    ImGui::DragInt( "##Probe Update Per Frame", &component->probe_update_per_frame );
+  } );
+
+  CRUDE_IMGUI_OPTION( "Offsets Calculations Count", {
+    offsets_calculations_changed |= ImGui::DragInt( "##Offsets Calculations Count", &component->offsets_calculations_count );
+  } );
+
+  if ( offsets_calculations_changed )
+  {
+    crude_gfx_indirect_light_pass_on_offsets_reset( &manager->scene_renderer->indirect_light_pass );
   }
 }
 

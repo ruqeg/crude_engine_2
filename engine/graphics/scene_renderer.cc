@@ -102,6 +102,9 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->physics_shapes_manager = creation->physics_shapes_manager;
 #endif
 
+  scene_renderer->ddgi_enabled = false;
+  scene_renderer->ddgi_area = CRUDE_COMPOUNT_EMPTY( crude_gfx_ddgi_area_cpu );
+
   scene_renderer->options = CRUDE_COMPOUNT_EMPTY( crude_gfx_scene_renderer_options );
 
   scene_renderer->options.depth_pyramid_pass.depth = "depth";
@@ -140,22 +143,6 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->options.indirect_light.depth_texture = "depth";
   scene_renderer->options.indirect_light.normal_texture = "direct_normal";
   scene_renderer->options.indirect_light.indirect_radiance_texture = "indirect_radiance";
-  
-  scene_renderer->options.indirect_light.probe_spacing = XMFLOAT3{ 2.0, 2.0, 2.0 };
-  scene_renderer->options.indirect_light.self_shadow_bias = 0.3f;
-  scene_renderer->options.indirect_light.infinite_bounces_multiplier = 0.75f;
-  scene_renderer->options.indirect_light.hysteresis = 0.95f;
-  scene_renderer->options.indirect_light.probe_grid_position = XMFLOAT3{ -20.0,0.5,-13.0 };
-  scene_renderer->options.indirect_light.max_probe_offset = 0.4f;
-  scene_renderer->options.indirect_light.probe_debug_flags = 0;
-  scene_renderer->options.indirect_light.shadow_weight_power = 2.5;
-  scene_renderer->options.indirect_light.probe_update_per_frame = 1000;
-  scene_renderer->options.indirect_light.probe_count_x = 20;
-  scene_renderer->options.indirect_light.probe_count_y = 20;
-  scene_renderer->options.indirect_light.probe_count_z = 20;
-  scene_renderer->options.indirect_light.offsets_calculations_count = 24;
-  scene_renderer->options.indirect_light.probe_rays = 128;
-  scene_renderer->options.indirect_light.use_half_resolution = false;
 
 #if CRUDE_DEVELOP
   scene_renderer->options.debug.debug_mode = CRUDE_SHADER_DEBUG_MODE_NONE;
@@ -386,8 +373,19 @@ crude_gfx_scene_renderer_update_instances_from_node
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->model_renderer_resoruces_instances, 0u );
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->lights, 0u );
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->culled_lights, 0u );
+  
+  scene_renderer->ddgi_enabled = false;
+
+  scene_renderer->prev_ddgi_area = scene_renderer->ddgi_area;
 
   crude_scene_renderer_register_nodes_instances_( scene_renderer, world, main_node );
+
+  if ( scene_renderer->ddgi_area.probe_count.x != scene_renderer->prev_ddgi_area.probe_count.x
+    || scene_renderer->ddgi_area.probe_count.y != scene_renderer->prev_ddgi_area.probe_count.y 
+    || scene_renderer->ddgi_area.probe_count.z != scene_renderer->prev_ddgi_area.probe_count.z )
+  {
+    crude_gfx_indirect_light_pass_on_ddgi_area_resized( &scene_renderer->indirect_light_pass );
+  }
 
   should_recreated_tlas = false;
 
@@ -662,10 +660,10 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
     ddgi_constants = CRUDE_CAST( crude_gfx_ddgi_constants*, ddgi_constants_tca.cpu_address );
     
     *ddgi_constants = CRUDE_COMPOUNT_EMPTY( crude_gfx_ddgi_constants );
-    ddgi_constants->probe_counts.x = scene_renderer->options.indirect_light.probe_count_x;
-    ddgi_constants->probe_counts.y = scene_renderer->options.indirect_light.probe_count_y;
-    ddgi_constants->probe_counts.z = scene_renderer->options.indirect_light.probe_count_z;
-    ddgi_constants->probe_rays = scene_renderer->options.indirect_light.probe_rays;
+    ddgi_constants->probe_counts.x = scene_renderer->ddgi_area.probe_count.x;
+    ddgi_constants->probe_counts.y = scene_renderer->ddgi_area.probe_count.y;
+    ddgi_constants->probe_counts.z = scene_renderer->ddgi_area.probe_count.z;
+    ddgi_constants->probe_rays = scene_renderer->ddgi_area.probe_rays;
     ddgi_constants->radiance_output_index = pass->probe_raytrace_radiance_texture_handle.index;
     ddgi_constants->indirect_output_index = CRUDE_GFX_PASS_TEXTURE_INDEX( indirect_light.indirect_radiance_texture );
     ddgi_constants->depth_fullscreen_texture_index = CRUDE_GFX_PASS_TEXTURE_INDEX( indirect_light.depth_texture );
@@ -681,18 +679,18 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
     ddgi_constants->visibility_texture_width = pass->visibility_atlas_width;
     ddgi_constants->visibility_texture_height = pass->visibility_atlas_height;
     ddgi_constants->visibility_side_length = pass->visibility_side_length;
-    ddgi_constants->hysteresis = scene_renderer->options.indirect_light.hysteresis;
-    ddgi_constants->self_shadow_bias = scene_renderer->options.indirect_light.self_shadow_bias;
-    ddgi_constants->probe_grid_position = scene_renderer->options.indirect_light.probe_grid_position;
-    ddgi_constants->max_probe_offset = scene_renderer->options.indirect_light.max_probe_offset;
-    ddgi_constants->infinite_bounces_multiplier = scene_renderer->options.indirect_light.infinite_bounces_multiplier;
-    ddgi_constants->probe_spacing = scene_renderer->options.indirect_light.probe_spacing;
-    ddgi_constants->probe_update_per_frame = scene_renderer->options.indirect_light.probe_update_per_frame;
+    ddgi_constants->hysteresis = scene_renderer->ddgi_area.hysteresis;
+    ddgi_constants->self_shadow_bias = scene_renderer->ddgi_area.self_shadow_bias;
+    ddgi_constants->probe_grid_position = scene_renderer->ddgi_area.probe_grid_position;
+    ddgi_constants->max_probe_offset = scene_renderer->ddgi_area.max_probe_offset;
+    ddgi_constants->infinite_bounces_multiplier = scene_renderer->ddgi_area.infinite_bounces_multiplier;
+    ddgi_constants->probe_spacing = scene_renderer->ddgi_area.probe_spacing;
+    ddgi_constants->probe_update_per_frame = scene_renderer->ddgi_area.probe_update_per_frame;
     ddgi_constants->reciprocal_probe_spacing = CRUDE_COMPOUNT( XMFLOAT3, {
-      1.f / scene_renderer->options.indirect_light.probe_spacing.x,
-      1.f / scene_renderer->options.indirect_light.probe_spacing.y,
-      1.f / scene_renderer->options.indirect_light.probe_spacing.z } );
-    ddgi_constants->shadow_weight_power = scene_renderer->options.indirect_light.shadow_weight_power;
+      1.f / scene_renderer->ddgi_area.probe_spacing.x,
+      1.f / scene_renderer->ddgi_area.probe_spacing.y,
+      1.f / scene_renderer->ddgi_area.probe_spacing.z } );
+    ddgi_constants->shadow_weight_power = scene_renderer->ddgi_area.shadow_weight_power;
     ddgi_constants->probe_update_offset = pass->probe_update_offset;
   
     crude_gfx_cmd_memory_copy( primary_cmd, ddgi_constants_tca, scene_renderer->ddgi_hga, 0, 0 );
@@ -726,8 +724,6 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
 #else
     scene->indirect_light_texture_index = -1;
 #endif
-    crude_gfx_texture *ttttttt = crude_gfx_access_texture( scene_renderer->gpu, crude_gfx_texture_handle{ scene->indirect_light_texture_index } );
-
     scene->background_color = scene_renderer->options.scene.background_color;
     scene->background_intensity = scene_renderer->options.scene.background_intensity;
     scene->ambient_color = scene_renderer->options.scene.ambient_color;
@@ -985,6 +981,25 @@ crude_scene_renderer_register_nodes_instances_
     light_gpu.light = *CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_light );
     XMStoreFloat3( &light_gpu.translation, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_transform ) ).r[ 3 ] );
     CRUDE_ARRAY_PUSH( scene_renderer->lights, light_gpu ); 
+  }
+  
+  if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_ddgi_area ) )
+  {
+    crude_ddgi_area *ddgi_area = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_ddgi_area );
+    
+    XMStoreFloat3( &scene_renderer->ddgi_area.probe_grid_position, crude_transform_node_to_world( world, node, NULL ).r[ 3 ] );
+    scene_renderer->ddgi_area.probe_spacing = ddgi_area->probe_spacing;
+    scene_renderer->ddgi_area.hysteresis = ddgi_area->hysteresis;
+    scene_renderer->ddgi_area.self_shadow_bias = ddgi_area->self_shadow_bias;
+    scene_renderer->ddgi_area.infinite_bounces_multiplier = ddgi_area->infinite_bounces_multiplier;
+    scene_renderer->ddgi_area.max_probe_offset = ddgi_area->max_probe_offset;
+    scene_renderer->ddgi_area.shadow_weight_power = ddgi_area->shadow_weight_power;
+    scene_renderer->ddgi_area.probe_update_per_frame = ddgi_area->probe_update_per_frame;
+    scene_renderer->ddgi_area.probe_count = ddgi_area->probe_count;
+    scene_renderer->ddgi_area.probe_rays = ddgi_area->probe_rays;
+    scene_renderer->ddgi_area.offsets_calculations_count = ddgi_area->offsets_calculations_count;
+    scene_renderer->ddgi_area.use_half_resolution = ddgi_area->use_half_resolution;
+    scene_renderer->ddgi_enabled = true;
   }
   
 #if CRUDE_DEVELOP

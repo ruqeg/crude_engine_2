@@ -83,7 +83,7 @@ crude_gfx_depth_pyramid_pass_render
   width = depth_pyramid_texture->width;
   height = depth_pyramid_texture->height;
   
-  crude_gfx_cmd_add_image_barrier( primary_cmd, depth_pyramid_texture, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0u, depth_pyramid_texture->subresource.mip_level_count, false );
+  crude_gfx_cmd_add_image_barrier( primary_cmd, depth_pyramid_texture->handle, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0u, depth_pyramid_texture->subresource.mip_level_count, false );
   
   crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );
 

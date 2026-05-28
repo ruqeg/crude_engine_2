@@ -799,6 +799,7 @@ crude_engine_initialize_scene_
   node_manager_creation.select_camera_func = crude_engine_select_camera_;
   node_manager_creation.select_camera_ctx = engine;
   node_manager_creation.audio_device = &engine->audio_device;
+  node_manager_creation.scene_renderer = &engine->scene_renderer;
   crude_node_manager_initialize( &engine->node_manager, &node_manager_creation );
 }
 

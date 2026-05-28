@@ -18,6 +18,23 @@ typedef struct crude_gfx_culled_light_cpu
   float32                                                  tile_size;
 } crude_gfx_culled_light_cpu;
 
+typedef struct crude_gfx_ddgi_area_cpu
+{
+  XMFLOAT3                                                 probe_spacing;
+  XMFLOAT3                                                 probe_grid_position;
+  float32                                                  hysteresis;
+  float32                                                  self_shadow_bias;
+  float32                                                  infinite_bounces_multiplier;
+  float32                                                  max_probe_offset;
+  uint32                                                   probe_debug_flags;
+  float32                                                  shadow_weight_power;
+  int32                                                    probe_update_per_frame;
+  XMINT3                                                   probe_count;
+  int32                                                    probe_rays;
+  int32                                                    offsets_calculations_count;
+  bool                                                     use_half_resolution;
+} crude_gfx_ddgi_area_cpu;
+
 CRUDE_API void
 crude_gfx_camera_to_camera_gpu
 (

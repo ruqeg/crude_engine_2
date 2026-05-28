@@ -7,6 +7,7 @@
 #include <engine/scene/scene_ecs.h>
 #include <engine/physics/physics_ecs.h>
 #include <engine/scene/scripts/free_camera_ecs.h>
+#include <engine/graphics/scene_renderer.h>
 
 #include <engine/scene/node_manager.h>
 
@@ -50,6 +51,7 @@ crude_node_manager_initialize
   manager->select_camera_func = creation->select_camera_func;
   manager->select_camera_ctx = creation->select_camera_ctx;
   manager->audio_device = creation->audio_device;
+  manager->scene_renderer = creation->scene_renderer;
 
   CRUDE_HASHMAPSTR_INITIALIZE( manager->relative_filepath_to_node_json, crude_heap_allocator_pack( manager->allocator ) );
   crude_string_buffer_initialize( &manager->absolute_filepath_string_buffer, CRUDE_RMEGA( 1 ), crude_heap_allocator_pack( manager->allocator ) );

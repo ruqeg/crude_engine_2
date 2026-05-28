@@ -196,3 +196,25 @@ crude_light_empty
   light.radius = 1;
   return light;
 }
+
+crude_ddgi_area
+crude_ddgi_area_empty
+(
+)
+{
+  crude_ddgi_area                                          ddgi_area;
+  ddgi_area.probe_spacing = XMFLOAT3{ 2.0, 2.0, 2.0 };
+  ddgi_area.self_shadow_bias = 0.3f;
+  ddgi_area.infinite_bounces_multiplier = 0.75f;
+  ddgi_area.hysteresis = 0.95f;
+  ddgi_area.max_probe_offset = 0.4f;
+  ddgi_area.shadow_weight_power = 2.5;
+  ddgi_area.probe_update_per_frame = 1000;
+  ddgi_area.probe_count.x = 20;
+  ddgi_area.probe_count.y = 20;
+  ddgi_area.probe_count.z = 20;
+  ddgi_area.offsets_calculations_count = 24;
+  ddgi_area.probe_rays = 128;
+  ddgi_area.use_half_resolution = false;
+  return ddgi_area;
+}

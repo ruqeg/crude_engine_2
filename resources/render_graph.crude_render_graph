@@ -238,34 +238,6 @@
       ]
     },
     {
-      "name": "indirect_light_debug_pass",
-      "multisample": 1,
-      "inputs": [
-        {
-          "type": "attachment",
-          "name": "direct_radiance"
-        },
-        {
-          "type": "attachment",
-          "name": "depth"
-        },
-        {
-          "type": "reference",
-          "name": "indirect_light_pass_marker"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "reference",
-          "name": "direct_radiance"
-        },
-        {
-          "type": "reference",
-          "name": "depth"
-        }
-      ]
-    },
-    {
       "name": "compose_pass",
       "type": "compute",
       "inputs": [
@@ -294,6 +266,10 @@
           "scale": [ 1, 1 ],
           "op": "clear",
           "clear_color": [ 0, 0, 0, 1 ]
+        },
+        {
+          "type": "marker",
+          "name": "compose_pass_marker"
         }
       ]
     },
@@ -323,6 +299,38 @@
       ]
     },
     {
+      "name": "indirect_light_debug_pass",
+      "multisample": 1,
+      "inputs": [
+        {
+          "type": "attachment",
+          "name": "radiance"
+        },
+        {
+          "type": "attachment",
+          "name": "depth"
+        },
+        {
+          "type": "reference",
+          "name": "compose_pass_marker"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "reference",
+          "name": "radiance"
+        },
+        {
+          "type": "reference",
+          "name": "depth"
+        },
+        {
+          "type": "marker",
+          "name": "indirect_light_debug_pass_marker"
+        }
+      ]
+    },
+    {
       "name": "translucent_pass",
       "multisample": 1,
       "inputs": [
@@ -337,6 +345,10 @@
         {
           "type": "reference",
           "name": "depth_pyramid_late_pass_marker"
+        },
+        {
+          "type": "reference",
+          "name": "indirect_light_debug_pass_marker"
         }
       ],
       "outputs": [

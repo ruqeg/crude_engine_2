@@ -706,8 +706,7 @@ crude_gfx_render_graph_render
 
         if ( input_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE )
         {
-          crude_gfx_texture *texture = crude_gfx_access_texture( gpu_commands->gpu, resource->resource_info.texture.handle );
-          crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, crude_gfx_rhi_format_has_depth_or_stencil( resource->resource_info.texture.format ) );
+          crude_gfx_cmd_add_image_barrier( gpu_commands, resource->resource_info.texture.handle, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, crude_gfx_rhi_format_has_depth_or_stencil( resource->resource_info.texture.format ) );
         }
         else if ( input_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
         {
@@ -717,11 +716,11 @@ crude_gfx_render_graph_render
           
           if ( crude_gfx_rhi_format_has_depth_or_stencil( texture->format ) )
           {
-            crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RHI_RESOURCE_STATE_DEPTH_WRITE, 0, 1, true );
+            crude_gfx_cmd_add_image_barrier( gpu_commands, texture->handle, CRUDE_GFX_RHI_RESOURCE_STATE_DEPTH_WRITE, 0, 1, true );
           }
           else
           {
-            crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RHI_RESOURCE_STATE_RENDER_TARGET, 0, 1, false );
+            crude_gfx_cmd_add_image_barrier( gpu_commands, texture->handle, CRUDE_GFX_RHI_RESOURCE_STATE_RENDER_TARGET, 0, 1, false );
           }
         }
       }
@@ -742,13 +741,13 @@ crude_gfx_render_graph_render
           {
             float32 *clear_values = &resource->resource_info.texture.clear_values[ 0 ];
             crude_gfx_cmd_set_clear_depth_and_stencil( gpu_commands, clear_values[ 0 ], clear_values[ 1 ] );
-            crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RHI_RESOURCE_STATE_DEPTH_WRITE, 0, 1, true );
+            crude_gfx_cmd_add_image_barrier( gpu_commands, texture->handle, CRUDE_GFX_RHI_RESOURCE_STATE_DEPTH_WRITE, 0, 1, true );
           }
           else
           {
             float32 *clear_values = &resource->resource_info.texture.clear_values[ 0 ];
             crude_gfx_cmd_set_clear_color_f32( gpu_commands, clear_values[ 0 ], clear_values[ 1 ], clear_values[ 2 ], clear_values[ 3 ], output_index );
-            crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RHI_RESOURCE_STATE_RENDER_TARGET, 0, 1, false );
+            crude_gfx_cmd_add_image_barrier( gpu_commands, texture->handle, CRUDE_GFX_RHI_RESOURCE_STATE_RENDER_TARGET, 0, 1, false );
           }
         }
       }
@@ -789,8 +788,7 @@ crude_gfx_render_graph_render
 
         if ( input_resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_TEXTURE )
         {
-          crude_gfx_texture *texture = crude_gfx_access_texture( gpu_commands->gpu, resource->resource_info.texture.handle );
-          crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, crude_gfx_rhi_format_has_depth( resource->resource_info.texture.format ) );
+          crude_gfx_cmd_add_image_barrier( gpu_commands, resource->resource_info.texture.handle, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, crude_gfx_rhi_format_has_depth( resource->resource_info.texture.format ) );
         }
       }
       
@@ -800,8 +798,7 @@ crude_gfx_render_graph_render
         
         if ( resource->type == CRUDE_GFX_RENDER_GRAPH_RESOURCE_TYPE_ATTACHMENT )
         {
-          crude_gfx_texture *texture = crude_gfx_access_texture( gpu_commands->gpu, resource->resource_info.texture.handle );
-          crude_gfx_cmd_add_image_barrier( gpu_commands, texture, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
+          crude_gfx_cmd_add_image_barrier( gpu_commands, resource->resource_info.texture.handle, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
         }
       }
       

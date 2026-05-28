@@ -75,6 +75,14 @@ crude_gfx_cmd_copy_texture
 );
 
 CRUDE_API void
+crude_gfx_cmd_clear_texture
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_texture_handle                            handle,
+  _In_ XMFLOAT4                                            color
+);
+
+CRUDE_API void
 crude_gfx_cmd_set_viewport
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
@@ -196,7 +204,7 @@ CRUDE_API void
 crude_gfx_cmd_add_image_barrier
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_texture                                  *texture,
+  _In_ crude_gfx_texture_handle                            texture_handle,
   _In_ crude_gfx_rhi_resource_state                        new_state,
   _In_ uint32                                              base_mip_level,
   _In_ uint32                                              mip_count,
@@ -207,7 +215,7 @@ CRUDE_API void
 crude_gfx_cmd_add_image_barrier_ext
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_texture                                  *texture,
+  _In_ crude_gfx_texture_handle                            texture_handle,
   _In_ crude_gfx_rhi_resource_state                        new_state,
   _In_ uint32                                              base_mip_level,
   _In_ uint32                                              mip_count,
@@ -250,7 +258,7 @@ CRUDE_API void
 crude_gfx_cmd_add_image_barrier_ext4
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_texture                                  *texture,
+  _In_ crude_gfx_texture_handle                            texture_handle,
   _In_ crude_gfx_rhi_resource_state                        new_state,
   _In_ uint32                                              base_mip_level,
   _In_ uint32                                              mip_count,

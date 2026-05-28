@@ -87,28 +87,12 @@ typedef struct crude_gfx_scene_renderer_options
     XMFLOAT3                                               ambient_color;
     float32                                                ambient_intensity;
   } scene;
-
+  
   struct 
   {
     char const                                            *normal_texture;
     char const                                            *depth_texture;
     char const                                            *indirect_radiance_texture;
-   
-    XMFLOAT3                                               probe_spacing;
-    XMFLOAT3                                               probe_grid_position;
-    float32                                                hysteresis;
-    float32                                                self_shadow_bias;
-    float32                                                infinite_bounces_multiplier;
-    float32                                                max_probe_offset;
-    uint32                                                 probe_debug_flags;
-    float32                                                shadow_weight_power;
-    int32                                                  probe_update_per_frame;
-    uint32                                                 probe_count_x;
-    uint32                                                 probe_count_y;
-    uint32                                                 probe_count_z;
-    int32                                                  probe_rays;
-    int32                                                  offsets_calculations_count;
-    bool                                                   use_half_resolution;
   } indirect_light;
   
 #if CRUDE_DEVELOP
@@ -189,6 +173,10 @@ typedef struct crude_gfx_scene_renderer
   
   uint32                                                   total_meshes_instances_count;
   uint32                                                   total_meshes_instances_buffer_capacity;
+  
+  bool                                                     ddgi_enabled;
+  crude_gfx_ddgi_area_cpu                                  ddgi_area;
+  crude_gfx_ddgi_area_cpu                                  prev_ddgi_area;
 
   /***********************
    * Common Debug CPU & GPU Data

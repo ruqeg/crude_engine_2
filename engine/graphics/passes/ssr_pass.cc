@@ -117,8 +117,8 @@ crude_gfx_ssr_pass_render
 
   /* SSR Blurring Pass  */
   {
-    crude_gfx_cmd_add_image_barrier( primary_cmd, direct_radiance_texture, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_SOURCE, 0u, 1, false );
-    crude_gfx_cmd_add_image_barrier( primary_cmd, radiance_hierarchy_texture, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, 0u, radiance_hierarchy_texture->subresource.mip_level_count, false );
+    crude_gfx_cmd_add_image_barrier( primary_cmd, direct_radiance_texture->handle, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_SOURCE, 0u, 1, false );
+    crude_gfx_cmd_add_image_barrier( primary_cmd, radiance_hierarchy_texture->handle, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, 0u, radiance_hierarchy_texture->subresource.mip_level_count, false );
     
     crude_gfx_cmd_copy_texture( primary_cmd, direct_radiance_texture->handle, radiance_hierarchy_texture->handle );
     
@@ -135,7 +135,7 @@ crude_gfx_ssr_pass_render
       pipeline = crude_gfx_access_technique_pass_by_name( gpu, "compute", convolve_passes_names[ pass_name_index ] )->pipeline;
       crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
 
-      crude_gfx_cmd_add_image_barrier( primary_cmd, radiance_hierarchy_texture, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0u, radiance_hierarchy_texture->subresource.mip_level_count, false );
+      crude_gfx_cmd_add_image_barrier( primary_cmd, radiance_hierarchy_texture->handle, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0u, radiance_hierarchy_texture->subresource.mip_level_count, false );
       
       crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );
       

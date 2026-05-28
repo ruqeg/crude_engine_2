@@ -5189,6 +5189,16 @@ crude_gfx_rhi_command_buffer_copy_image
 );
 
 CRUDE_API void
+crude_gfx_rhi_command_buffer_clear_image
+(
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
+  _In_ crude_gfx_rhi_image                                 image,
+  _In_ crude_gfx_rhi_image_layout                          image_layout,
+  _In_ crude_gfx_rhi_clear_color_value                     clear_color,
+  _In_ crude_gfx_rhi_image_subresource_range const        *range
+);
+
+CRUDE_API void
 crude_gfx_rhi_command_buffer_blit_image
 (
   _In_ crude_gfx_rhi_command_buffer                        command_buffer,

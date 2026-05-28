@@ -9,6 +9,7 @@
 #include <engine/physics/physics.h>
 
 typedef struct crude_node_manager crude_node_manager;
+typedef struct crude_gfx_scene_renderer crude_gfx_scene_renderer;
 
 typedef void (*crude_node_manager_select_camera)
 ( 
@@ -32,6 +33,7 @@ typedef struct crude_node_manager_creation
   crude_node_manager_select_camera                         select_camera_func;
   void                                                    *select_camera_ctx;
   crude_gfx_model_renderer_resources_manager              *model_renderer_resources_manager;
+  crude_gfx_scene_renderer                                *scene_renderer;
   char const                                              *resources_absolute_directory;
 } crude_node_manager_creation;
 
@@ -41,6 +43,7 @@ typedef struct crude_node_manager
   crude_physics                                           *physics_manager;
   crude_audio_device                                      *audio_device;
   crude_gfx_model_renderer_resources_manager              *model_renderer_resources_manager;
+  crude_gfx_scene_renderer                                *scene_renderer;
   crude_components_serialization_manager                  *components_serialization_manager;
   crude_stack_allocator                                   *temporary_allocator;
   crude_heap_allocator                                    *allocator;

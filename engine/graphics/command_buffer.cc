@@ -265,6 +265,40 @@ crude_gfx_cmd_copy_texture
 }
 
 void
+crude_gfx_cmd_clear_texture
+(
+  _In_ crude_gfx_cmd_buffer                               *cmd,
+  _In_ crude_gfx_texture_handle                            handle,
+  _In_ XMFLOAT4                                            color
+)
+{
+  crude_gfx_texture                                       *texture;
+  crude_gfx_rhi_clear_color_value                          rhi_clear_value;
+  crude_gfx_rhi_image_subresource_range                    rhi_region;
+
+  rhi_region = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_image_subresource_range );
+  rhi_region.aspect_mask = CRUDE_GFX_RHI_IMAGE_ASPECT_COLOR_BIT;
+  rhi_region.base_mip_level = 0;
+  rhi_region.base_array_layer = 0;
+  rhi_region.layer_count = 1;
+  rhi_region.level_count = 1;
+
+  rhi_clear_value.float32[ 0 ] = color.x;
+  rhi_clear_value.float32[ 1 ] = color.y;
+  rhi_clear_value.float32[ 2 ] = color.z;
+  rhi_clear_value.float32[ 3 ] = color.w;
+
+  texture = crude_gfx_access_texture( cmd->gpu, handle );
+
+  crude_gfx_rhi_command_buffer_clear_image(
+    cmd->rhi_cmd_buffer,
+    texture->rhi_image,
+    crude_gfx_rhi_resource_state_to_image_layout( texture->state ),
+    rhi_clear_value,
+    &rhi_region );
+}
+
+void
 crude_gfx_cmd_set_viewport
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
@@ -523,13 +557,14 @@ void
 crude_gfx_cmd_add_image_barrier
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_texture                                  *texture,
+  _In_ crude_gfx_texture_handle                            texture_handle,
   _In_ crude_gfx_rhi_resource_state                        new_state,
   _In_ uint32                                              base_mip_level,
   _In_ uint32                                              mip_count,
   _In_ bool                                                is_depth
 )
 {
+  crude_gfx_texture *texture = crude_gfx_access_texture( cmd->gpu, texture_handle );
   crude_gfx_cmd_add_image_barrier_ext2( cmd, texture->rhi_image, texture->state, new_state, base_mip_level, mip_count, is_depth );
   texture->state = new_state;
 }
@@ -538,7 +573,7 @@ void
 crude_gfx_cmd_add_image_barrier_ext
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_texture                                  *texture,
+  _In_ crude_gfx_texture_handle                            texture_handle,
   _In_ crude_gfx_rhi_resource_state                        new_state,
   _In_ uint32                                              base_mip_level,
   _In_ uint32                                              mip_count,
@@ -549,6 +584,7 @@ crude_gfx_cmd_add_image_barrier_ext
   _In_ crude_gfx_rhi_queue_type                            destination_queue_type
 )
 {
+  crude_gfx_texture *texture = crude_gfx_access_texture( cmd->gpu, texture_handle );
   crude_gfx_cmd_add_image_barrier_ext3( cmd, texture->rhi_image, texture->state, new_state, base_mip_level, mip_count, is_depth, source_queue, destination_queue, source_queue_type, destination_queue_type );
   texture->state = new_state;
 }
@@ -591,7 +627,7 @@ void
 crude_gfx_cmd_add_image_barrier_ext4
 (
   _In_ crude_gfx_cmd_buffer                               *cmd,
-  _In_ crude_gfx_texture                                  *texture,
+  _In_ crude_gfx_texture_handle                            texture_handle,
   _In_ crude_gfx_rhi_resource_state                        new_state,
   _In_ uint32                                              base_mip_level,
   _In_ uint32                                              mip_count,
@@ -600,6 +636,7 @@ crude_gfx_cmd_add_image_barrier_ext4
   _In_ bool                                                is_depth
 )
 {
+  crude_gfx_texture *texture = crude_gfx_access_texture( cmd->gpu, texture_handle );
   crude_gfx_cmd_add_image_barrier_ext5( cmd, texture->rhi_image, texture->state, new_state, base_mip_level, mip_count, 0u, 1u, is_depth, crude_gfx_rhi_queue_empty( ), crude_gfx_rhi_queue_empty( ), CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS );
   texture->state = new_state;
 }
@@ -687,9 +724,9 @@ crude_gfx_cmd_memory_copy_to_texture
   region.image_extent.y = texture->height;
   region.image_extent.z = 1;
   
-  crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, 0, 1, false );
+  crude_gfx_cmd_add_image_barrier( cmd, texture->handle, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, 0, 1, false );
   crude_gfx_rhi_command_buffer_copy_buffer_to_image( cmd->rhi_cmd_buffer, buffer->rhi_buffer, texture->rhi_image, &region );
-  crude_gfx_cmd_add_image_barrier_ext( cmd, texture, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_SOURCE, 0, 1, false, cmd->gpu->rhi_transfer_queue, cmd->gpu->rhi_main_queue, CRUDE_GFX_RHI_QUEUE_TYPE_COPY_TRANSFER, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS );
+  crude_gfx_cmd_add_image_barrier_ext( cmd, texture->handle, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_SOURCE, 0, 1, false, cmd->gpu->rhi_transfer_queue, cmd->gpu->rhi_main_queue, CRUDE_GFX_RHI_QUEUE_TYPE_COPY_TRANSFER, CRUDE_GFX_RHI_QUEUE_TYPE_GRAPHICS );
 }
 
 void

@@ -199,9 +199,9 @@ crude_gfx_device_initialize
   
   {
     crude_gfx_sampler_creation default_sampler_creation = crude_gfx_sampler_creation_empty();
-    default_sampler_creation.address_mode_u = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    default_sampler_creation.address_mode_v = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    default_sampler_creation.address_mode_w = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    default_sampler_creation.address_mode_u = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_REPEAT;
+    default_sampler_creation.address_mode_v = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_REPEAT;
+    default_sampler_creation.address_mode_w = CRUDE_GFX_RHI_SAMPLER_ADDRESS_MODE_REPEAT;
     default_sampler_creation.min_filter     = CRUDE_GFX_RHI_FILTER_LINEAR;
     default_sampler_creation.mag_filter     = CRUDE_GFX_RHI_FILTER_LINEAR;
     default_sampler_creation.mip_filter     = CRUDE_GFX_RHI_SAMPLER_MIPMAP_MODE_LINEAR;
@@ -531,7 +531,7 @@ crude_gfx_present
     cmd = crude_gfx_access_cmd_buffer( gpu, gpu->immediate_transfer_cmd_buffer );
     crude_gfx_cmd_begin_primary( cmd );
 
-    crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
+    crude_gfx_cmd_add_image_barrier( cmd, texture->handle, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
     crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->rhi_swapchain_images[ gpu->swapchain_image_index ], CRUDE_GFX_RHI_RESOURCE_STATE_PRESENT, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, 0, 1, false );
     crude_gfx_rhi_command_buffer_copy_image( cmd->rhi_cmd_buffer, texture->rhi_image, CRUDE_GFX_RHI_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, gpu->rhi_swapchain_images[ gpu->swapchain_image_index ], CRUDE_GFX_RHI_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &region );
     crude_gfx_cmd_add_image_barrier_ext2( cmd, gpu->rhi_swapchain_images[ gpu->swapchain_image_index ], CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, CRUDE_GFX_RHI_RESOURCE_STATE_PRESENT, 0, 1, false );
@@ -934,7 +934,7 @@ crude_gfx_generate_mipmaps
     return;
   }
 
-  crude_gfx_cmd_add_image_barrier( cmd_buffer, texture, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
+  crude_gfx_cmd_add_image_barrier( cmd_buffer, texture->handle, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_SOURCE, 0, 1, false );
 
   w = texture->width;
   h = texture->height;
@@ -1125,24 +1125,25 @@ crude_gfx_create_sampler
   sampler->address_mode_u = creation->address_mode_u;
   sampler->address_mode_v = creation->address_mode_v;
   sampler->address_mode_w = creation->address_mode_w;
-  sampler->min_filter     = creation->min_filter;
-  sampler->mag_filter     = creation->mag_filter;
-  sampler->mip_filter     = creation->mip_filter;
-  sampler->name           = creation->name;
+  sampler->min_filter = creation->min_filter;
+  sampler->mag_filter = creation->mag_filter;
+  sampler->mip_filter = creation->mip_filter;
+  sampler->name = creation->name;
   
   rhi_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_sampler_create_info );
-  rhi_creation.min_filter               = creation->min_filter;
-  rhi_creation.mipmap_mode              = creation->mip_filter;
-  rhi_creation.address_mode_u           = creation->address_mode_u;
-  rhi_creation.address_mode_v           = creation->address_mode_v;
-  rhi_creation.address_mode_w           = creation->address_mode_w;
-  rhi_creation.anisotropy_enable        = 0;
-  rhi_creation.compare_enable           = 0;
-  rhi_creation.border_color             = CRUDE_GFX_RHI_BORDER_COLOR_INT_OPAQUE_WHITE;
+  rhi_creation.min_filter = creation->min_filter;
+  rhi_creation.mag_filter = creation->mag_filter;
+  rhi_creation.mipmap_mode = creation->mip_filter;
+  rhi_creation.address_mode_u = creation->address_mode_u;
+  rhi_creation.address_mode_v = creation->address_mode_v;
+  rhi_creation.address_mode_w = creation->address_mode_w;
+  rhi_creation.anisotropy_enable = 0;
+  rhi_creation.compare_enable = 0;
+  rhi_creation.border_color = CRUDE_GFX_RHI_BORDER_COLOR_INT_OPAQUE_WHITE;
   rhi_creation.unnormalized_coordinates = 0;
-  rhi_creation.min_lod                  = 0.f;
-  rhi_creation.max_lod                  = CRUDE_GFX_RHI_LOD_CLAMP_NONE;
-  rhi_creation.reduction_mode           = creation->reduction_mode;
+  rhi_creation.min_lod = 0.f;
+  rhi_creation.max_lod = CRUDE_GFX_RHI_LOD_CLAMP_NONE;
+  rhi_creation.reduction_mode = creation->reduction_mode;
 
   crude_gfx_rhi_create_sampler( &gpu->rhi_device, &rhi_creation, &sampler->rhi_sampler );  
   crude_gfx_rhi_set_sampler_debug_name( &gpu->rhi_device, sampler->rhi_sampler, creation->name );
@@ -1233,7 +1234,7 @@ crude_gfx_create_texture
     cmd = crude_gfx_access_cmd_buffer( gpu, gpu->immediate_transfer_cmd_buffer );
     crude_gfx_cmd_begin_primary( cmd );
 
-    crude_gfx_cmd_add_image_barrier( cmd, texture, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, 0, 1, false );
+    crude_gfx_cmd_add_image_barrier( cmd, texture->handle, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, 0, 1, false );
 
     region = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_buffer_image_copy );
     region.buffer_offset = 0;

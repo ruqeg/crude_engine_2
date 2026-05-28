@@ -37,6 +37,11 @@ crude_gfx_indirect_light_debug_pass_render
 
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_indirect_light_debug_pass*, ctx );
   
+  if ( !pass->scene_renderer->ddgi_enabled )
+  {
+    return;
+  }
+
   gpu = pass->scene_renderer->gpu;
   
   pipeline = crude_gfx_access_technique_pass_by_name( gpu, "ddgi", "probe_debug" )->pipeline;

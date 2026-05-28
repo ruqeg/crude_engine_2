@@ -65,9 +65,9 @@ crude_gfx_ray_tracing_solid_pass_render
   push_constant.out_image_index = ray_tracing_solid_texture_handle.index;
   crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
    
-  crude_gfx_cmd_add_image_barrier( primary_cmd, ray_tracing_solid_texture, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
+  crude_gfx_cmd_add_image_barrier( primary_cmd, ray_tracing_solid_texture->handle, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
   crude_gfx_cmd_trace_rays( primary_cmd, pipeline, ray_tracing_solid_texture->width, ray_tracing_solid_texture->height, 1u );
-  crude_gfx_cmd_add_image_barrier( primary_cmd, ray_tracing_solid_texture, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, false );
+  crude_gfx_cmd_add_image_barrier( primary_cmd, ray_tracing_solid_texture->handle, CRUDE_GFX_RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, false );
   
   crude_gfx_cmd_pop_marker( primary_cmd );
 }

@@ -33,6 +33,7 @@ typedef struct crude_gfx_indirect_light_pass
   uint32                                                   visibility_side_length;
   uint32                                                   visibility_side_length_with_borders;
 
+  uint32                                                   offsets_calculations_count;
   uint32                                                   probe_update_offset;
 } crude_gfx_indirect_light_pass;
 
@@ -58,6 +59,18 @@ crude_gfx_indirect_light_pass_render
 
 CRUDE_API crude_gfx_render_graph_pass_container
 crude_gfx_indirect_light_pass_pack
+(
+  _In_ crude_gfx_indirect_light_pass                      *pass
+);
+
+CRUDE_API void
+crude_gfx_indirect_light_pass_on_ddgi_area_resized
+(
+  _In_ crude_gfx_indirect_light_pass                      *pass
+);
+
+CRUDE_API void
+crude_gfx_indirect_light_pass_on_offsets_reset
 (
   _In_ crude_gfx_indirect_light_pass                      *pass
 );

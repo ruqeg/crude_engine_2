@@ -1455,7 +1455,7 @@ crude_gfx_rhi_create_image
     vma_creation = CRUDE_COMPOUNT_EMPTY( VmaAllocationCreateInfo );
     vma_creation.usage = VMA_MEMORY_USAGE_GPU_ONLY;
     
-    CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vmaCreateImage( device->vma_allocator, &vk_creation, &vma_creation, &image->vk_image, &image->vma_allocation, NULL ), "Failed to create image!" );
+   CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vmaCreateImage( device->vma_allocator, &vk_creation, &vma_creation, &image->vk_image, &image->vma_allocation, NULL ), "Failed to create image!" );
   }
 }
 
@@ -3237,6 +3237,33 @@ crude_gfx_rhi_command_buffer_copy_image
     src_image.vk_image, CRUDE_CAST( VkImageLayout, src_image_layout ),
     dst_image.vk_image, CRUDE_CAST( VkImageLayout, dst_image_layout ),
     1u, &vk_image_copy );
+}
+
+void
+crude_gfx_rhi_command_buffer_clear_image
+(
+  _In_ crude_gfx_rhi_command_buffer                        command_buffer,
+  _In_ crude_gfx_rhi_image                                 image,
+  _In_ crude_gfx_rhi_image_layout                          image_layout,
+  _In_ crude_gfx_rhi_clear_color_value                     clear_color,
+  _In_ crude_gfx_rhi_image_subresource_range const        *range
+)
+{
+  VkClearColorValue                                        vk_clear_value;
+  VkImageSubresourceRange                                  vk_subresource_range;
+
+  vk_clear_value.int32[ 0 ] = clear_color.int32[ 0 ];
+  vk_clear_value.int32[ 1 ] = clear_color.int32[ 1 ];
+  vk_clear_value.int32[ 2 ] = clear_color.int32[ 2 ];
+  vk_clear_value.int32[ 3 ] = clear_color.int32[ 3 ];
+  
+  vk_subresource_range.aspectMask = range->aspect_mask;
+  vk_subresource_range.baseArrayLayer = range->base_array_layer;
+  vk_subresource_range.layerCount = range->layer_count;
+  vk_subresource_range.baseMipLevel = range->base_mip_level;
+  vk_subresource_range.levelCount = range->level_count;
+
+  vkCmdClearColorImage( command_buffer.vk_command_buffer, image.vk_image, CRUDE_CAST( VkImageLayout, image_layout ), &vk_clear_value, 1u, &vk_subresource_range );
 }
 
 void

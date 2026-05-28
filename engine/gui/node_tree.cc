@@ -16,7 +16,8 @@ static char const* crude_gui_node_tree_node_types_names_[ CRUDE_GUI_NODE_TYPE_CO
   "Physics Static Body",
   "Physics Kinematic Body",
   "Audio Relative",
-  "Audio Listener"
+  "Audio Listener",
+  "DDGI Area"
 };
 
 static bool
@@ -214,6 +215,12 @@ crude_gui_node_tree_queue_draw
           case CRUDE_GUI_NODE_TYPE_AUDIO_LISTENER:
           {
             CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_audio_listener, { } );
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_transform, { crude_transform_empty( ) } );
+            break;
+          }
+          case CRUDE_GUI_NODE_TYPE_DDGI_AREA:
+          {
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_ddgi_area, { crude_ddgi_area_empty( ) } );
             CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_transform, { crude_transform_empty( ) } );
             break;
           }
