@@ -37,7 +37,7 @@ main
     crude_engine_update( &engine );
     crude_game_update( crude_game_instance( ) );
   }
-   
+  
   /* Deinitialization */
   {
     crude_game_deinitialize( crude_game_instance( ) );

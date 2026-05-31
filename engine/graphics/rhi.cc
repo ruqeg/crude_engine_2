@@ -3348,7 +3348,7 @@ crude_gfx_rhi_command_buffer_build_acceleration_structures
       crude_gfx_rhi_acceleration_structure_geometry const *geometry;
       VkAccelerationStructureGeometryKHR                  *vk_geometry;
 
-      geometry = &infos->geometries[ gi ];
+      geometry = &infos[ i ].geometries[ gi ];
       vk_geometry = &vk_acceleration_structure_geometries[ i ][ gi ];
 
       *vk_geometry = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureGeometryKHR );
@@ -3356,7 +3356,7 @@ crude_gfx_rhi_command_buffer_build_acceleration_structures
       vk_geometry->flags = geometry->flags;
       vk_geometry->geometryType = CRUDE_CAST( VkGeometryTypeKHR, geometry->geometry_type );
 
-      switch ( infos->geometries[ i ].geometry_type )
+      switch ( geometry->geometry_type )
       {
       case CRUDE_GFX_RHI_GEOMETRY_TYPE_AABBS_KHR:
       {
@@ -3389,15 +3389,15 @@ crude_gfx_rhi_command_buffer_build_acceleration_structures
 
     vk_acceleration_build_geometry_infos[ i ] = CRUDE_COMPOUNT_EMPTY( VkAccelerationStructureBuildGeometryInfoKHR );
     vk_acceleration_build_geometry_infos[ i ].sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
-    vk_acceleration_build_geometry_infos[ i ].type = CRUDE_CAST( VkAccelerationStructureTypeKHR, infos->type );
-    vk_acceleration_build_geometry_infos[ i ].flags = infos->flags;
-    vk_acceleration_build_geometry_infos[ i ].mode = CRUDE_CAST( VkBuildAccelerationStructureModeKHR, infos->mode );
-    vk_acceleration_build_geometry_infos[ i ].srcAccelerationStructure = infos->src_acceleration_structure.vk_acceleration_structure;
-    vk_acceleration_build_geometry_infos[ i ].dstAccelerationStructure = infos->dst_acceleration_structure.vk_acceleration_structure;
-    vk_acceleration_build_geometry_infos[ i ].geometryCount = infos->geometry_count;
+    vk_acceleration_build_geometry_infos[ i ].type = CRUDE_CAST(VkAccelerationStructureTypeKHR, infos[ i ].type);
+    vk_acceleration_build_geometry_infos[ i ].flags = infos[ i ].flags;
+    vk_acceleration_build_geometry_infos[ i ].mode = CRUDE_CAST( VkBuildAccelerationStructureModeKHR, infos[ i ].mode );
+    vk_acceleration_build_geometry_infos[ i ].srcAccelerationStructure = infos[ i ].src_acceleration_structure.vk_acceleration_structure;
+    vk_acceleration_build_geometry_infos[ i ].dstAccelerationStructure = infos[ i ].dst_acceleration_structure.vk_acceleration_structure;
+    vk_acceleration_build_geometry_infos[ i ].geometryCount = infos[ i ].geometry_count;
     vk_acceleration_build_geometry_infos[ i ].pGeometries = vk_acceleration_structure_geometries[ i ];
     vk_acceleration_build_geometry_infos[ i ].ppGeometries = NULL;
-    vk_acceleration_build_geometry_infos[ i ].scratchData.deviceAddress = infos->scratch_data.device_address;
+    vk_acceleration_build_geometry_infos[ i ].scratchData.deviceAddress = infos[ i ].scratch_data.device_address;
   }
   
   for ( uint32 i = 0; i < info_count; ++i )
@@ -3409,7 +3409,7 @@ crude_gfx_rhi_command_buffer_build_acceleration_structures
     vk_acceleration_structure_build_range_infos[ i ]->transformOffset = build_range_infos[ i ].transform_offset;
   }
 
-  device->vkCmdBuildAccelerationStructuresKHR( command_buffer.vk_command_buffer, 1u, vk_acceleration_build_geometry_infos, vk_acceleration_structure_build_range_infos );
+  device->vkCmdBuildAccelerationStructuresKHR( command_buffer.vk_command_buffer, info_count, vk_acceleration_build_geometry_infos, vk_acceleration_structure_build_range_infos );
 
   for ( uint32 i = 0; i < info_count; ++i )
   {

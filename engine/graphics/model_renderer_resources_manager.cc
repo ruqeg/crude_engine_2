@@ -1798,7 +1798,6 @@ crude_gfx_model_renderer_resources_manager_create_bottom_level_acceleration_stru
   _In_ crude_gfx_model_renderer_resources                 *model_renderer_resources
 )
 {
-  
   crude_gfx_rhi_acceleration_structure_build_range_info             *acceleration_structure_build_range_infos;
   crude_gfx_rhi_acceleration_structure_geometry                     *acceleration_structure_geometries;
   crude_gfx_rhi_acceleration_structure_build_geometry_info          *acceleration_build_geometry_infos;
@@ -1851,15 +1850,15 @@ crude_gfx_model_renderer_resources_manager_create_bottom_level_acceleration_stru
     acceleration_build_geometry_infos[ i ].mode = CRUDE_GFX_RHI_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
     acceleration_build_geometry_infos[ i ].geometry_count = 1u;
     acceleration_build_geometry_infos[ i ].geometries = &acceleration_structure_geometries[ i ];
-    
+
     crude_gfx_rhi_get_acceleration_structure_build_sizes(
       &manager->gpu->rhi_device,
       manager->gpu->allocator,
       CRUDE_GFX_RHI_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
       &acceleration_build_geometry_infos[ i ], &max_primitives_count, &acceleration_structure_build_sizes_info );
-  
+    
     model_renderer_resources->blases_hga[ i ] = crude_gfx_memory_allocate_with_pname( manager->gpu, acceleration_structure_build_sizes_info.acceleration_structure_size, CRUDE_GFX_MEMORY_TYPE_GPU, "blas_hga", CRUDE_GFX_RHI_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR );
-  
+    
     acceleration_structure_create_info = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_acceleration_structure_create_info );
     acceleration_structure_create_info.buffer = crude_gfx_access_buffer( manager->gpu, model_renderer_resources->blases_hga[ i ].buffer_handle )->rhi_buffer;
     acceleration_structure_create_info.offset = 0;
@@ -1867,22 +1866,24 @@ crude_gfx_model_renderer_resources_manager_create_bottom_level_acceleration_stru
     acceleration_structure_create_info.type = CRUDE_GFX_RHI_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
     crude_gfx_rhi_create_acceleration_structure( &manager->gpu->rhi_device, &acceleration_structure_create_info, &model_renderer_resources->rhi_blases[ i ] );
     crude_gfx_rhi_set_acceleration_structure_debug_name( &manager->gpu->rhi_device, model_renderer_resources->rhi_blases[ i ], "model_renderer_resources->rhi_blases[ i ]" );
-
+    
     // TODO maybe we can use only one scratch buffer? idk for now
     blas_scratch_buffers_hga[ i ] = crude_gfx_memory_allocate_with_pname( manager->gpu, acceleration_structure_build_sizes_info.build_scratch_size, CRUDE_GFX_MEMORY_TYPE_GPU, "blas_scratch_hga", CRUDE_GFX_RHI_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR );
-  
+    
     acceleration_build_geometry_infos[ i ].dst_acceleration_structure = model_renderer_resources->rhi_blases[ i ];
     acceleration_build_geometry_infos[ i ].scratch_data.device_address = blas_scratch_buffers_hga[ i ].gpu_address;
   }
-  
+
   cmd_instant = crude_gfx_access_cmd_buffer( manager->gpu, manager->gpu->immediate_transfer_cmd_buffer );
   crude_gfx_cmd_begin_primary( cmd_instant );
+  
   crude_gfx_rhi_command_buffer_build_acceleration_structures(
     &manager->gpu->rhi_device, manager->gpu->allocator,
     cmd_instant->rhi_cmd_buffer,
     CRUDE_ARRAY_LENGTH( acceleration_build_geometry_infos ),
     acceleration_build_geometry_infos,
     acceleration_structure_build_range_infos );
+
   crude_gfx_submit_immediate( cmd_instant );
   
   for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( blas_scratch_buffers_hga ); ++i )
