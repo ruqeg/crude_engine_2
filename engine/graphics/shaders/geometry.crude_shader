@@ -42,8 +42,8 @@ CRUDE_PUSH_CONSTANT( crude_gfx_opaque_meshlet_pass_push_constant_ )
   DebugCountsRef                                           debug_counts;
   JointMatricesRef                                         joint_matrices;
 
-  LightsRef                                                lights;
-  LightsWorldToTextureRef                                  lights_world_to_texture;
+  CulledLightsRef                                          culled_lights;
+  CulledLightsWorldToTextureRef                            culled_lights_world_to_texture;
 };
 #endif /* OPAQUE_MESHLET */
 
@@ -71,13 +71,13 @@ CRUDE_PUSH_CONSTANT( crude_gfx_translucent_no_cull_classic_pass_push_constant_ )
   MeshDrawCountRef                                         visible_mesh_count;
 
   MeshDrawCommandsRef                                      mesh_draw_commands;
-  LightsZBinsRef                                           zbins;
+  CulledLightsZBinsRef                                     culled_zbins;
 
-  LightsTilesRef                                           lights_tiles;
-  LightsIndicesRef                                         lights_indices;
+  CulledLightsTilesRef                                     culled_lights_tiles;
+  CulledLightsIndicesRef                                   culled_lights_indices;
 
-  LightsRef                                                lights;
-  LightsWorldToTextureRef                                  light_shadow_views;
+  CulledLightsRef                                          culled_lights;
+  CulledLightsWorldToTextureRef                            culled_light_shadow_views;
 
   float32                                                  inv_radiance_texture_width;
   float32                                                  inv_radiance_texture_height;
@@ -109,8 +109,8 @@ CRUDE_PUSH_CONSTANT( crude_gfx_translucent_no_cull_pass_push_constant_ )
   DebugCountsRef                                           debug_counts;
   JointMatricesRef                                         joint_matrices;
 
-  LightsRef                                                lights;
-  LightsWorldToTextureRef                                  lights_world_to_texture;
+  CulledLightsRef                                          culled_lights;
+  CulledLightsWorldToTextureRef                            culled_lights_world_to_texture;
 };
 #endif /* TRANSLUCENT_NO_CULL */
 
@@ -393,7 +393,7 @@ void main()
   if ( depth != 1.f )
   {
     direct_radiance = crude_calculate_lighting( 
-      albedo, roughness_metalness.x, roughness_metalness.y, normal, in_world_position, scene.data.camera.position, scene, lights, lights_world_to_texture );
+      albedo, roughness_metalness.x, roughness_metalness.y, normal, in_world_position, scene.data.camera.position, scene, culled_lights, culled_lights_world_to_texture );
   }
   else
   {
@@ -459,7 +459,7 @@ void main()
   if ( depth != 1.f )
   {
     radiance = crude_calculate_lighting( 
-      albedo, roughness_metalness.x, roughness_metalness.y, normal, in_world_position, scene.data.camera.position, scene, lights, lights_world_to_texture );
+      albedo, roughness_metalness.x, roughness_metalness.y, normal, in_world_position, scene.data.camera.position, scene, culled_lights, culled_lights_world_to_texture );
   }
   else
   {

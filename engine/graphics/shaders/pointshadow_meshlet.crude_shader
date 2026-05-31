@@ -27,10 +27,10 @@ CRUDE_PUSH_CONSTANT( crude_gfx_pointshadow_culling_pass_push_constant_ )
   MeshInstancesDrawsRef                                    mesh_instance_draws;
   MeshletsRef                                              meshlets;
 
-  LightsRef                                                lights;
-  PointshadowMeshletesInstancesRef                         pointshadow_meshletes_instances;
+  CulledLightsRef                                          culled_lights;
+  CulledPointshadowMeshletesInstancesRef                   culled_pointshadow_meshletes_instances;
 
-  PointshadowMeshletesInstancesCountRef                    pointshadow_meshletes_instances_count;
+  CulledPointshadowMeshletesInstancesCountRef              culled_pointshadow_meshletes_instances_count;
   XMFLOAT2                                                 _padding;
 };
 #endif /* POINTSHADOW_CULLING */
@@ -39,8 +39,8 @@ CRUDE_PUSH_CONSTANT( crude_gfx_pointshadow_culling_pass_push_constant_ )
 CRUDE_PUSH_CONSTANT( crude_gfx_pointshadow_commands_generation_pass_push_constant_ )
 {
   SceneRef                                             scene;
-  PointshadowMeshletesInstancesCountRef                pointshadow_meshletes_instances_count;
-  PointshadowMeshletDrawCommands                       pointshadow_meshlet_draw_commands;
+  CulledPointshadowMeshletesInstancesCountRef          culled_pointshadow_meshletes_instances_count;
+  CulledPointshadowMeshletDrawCommands                 culled_pointshadow_meshlet_draw_commands;
   XMFLOAT2                                             push_constant_padding_;
 };
 #endif /* POINTSHADOW_COMMANDS_GENERATION */
@@ -63,14 +63,14 @@ CRUDE_PUSH_CONSTANT( crude_gfx_pointshadow_pass_push_constant_ )
   DebugCountsRef                                           debug_counts;
   JointMatricesRef                                         joint_matrices;
 
-  LightsRef                                                lights;
-  PointshadowMeshletesInstancesRef                         pointshadow_meshletes_instances;
+  CulledLightsRef                                          culled_lights;
+  CulledPointshadowMeshletesInstancesRef                   culled_pointshadow_meshletes_instances;
 
-  PointshadowMeshletesInstancesCountRef                    pointshadow_meshletes_instances_count;
-  PointlightSpheresRef                                     pointlight_spheres;
+  CulledPointshadowMeshletesInstancesCountRef              culled_pointshadow_meshletes_instances_count;
+  CulledPointlightSpheresRef                               culled_pointlight_spheres;
 
-  PointshadowMeshletDrawCommands                           pointshadow_meshlet_draw_commands;
-  LightsWorldToTextureRef                                  lights_world_to_texture;
+  CulledPointshadowMeshletDrawCommands                     culled_pointshadow_meshlet_draw_commands;
+  CulledLightsWorldToTextureRef                            culled_lights_world_to_texture;
 };
 #endif /* POINTSHADOW */
 
@@ -97,15 +97,15 @@ void main()
 {
   uint meshlete_instance_index = gl_GlobalInvocationID.x;
 
-  uint packed_light_index_face_index = pointshadow_meshlet_draw_commands.data[ gl_DrawIDARB ].w;
+  uint packed_light_index_face_index = culled_pointshadow_meshlet_draw_commands.data[ gl_DrawIDARB ].w;
   uint light_index = packed_light_index_face_index >> 16;
 
-  if ( meshlete_instance_index >= pointshadow_meshletes_instances_count.data[ light_index ] )
+  if ( meshlete_instance_index >= culled_pointshadow_meshletes_instances_count.data[ light_index ] )
   {
     return;
   }
 
-  uvec2 packed_meshlet_instance = pointshadow_meshletes_instances.data[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + meshlete_instance_index ];
+  uvec2 packed_meshlet_instance = culled_pointshadow_meshletes_instances.data[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + meshlete_instance_index ];
 
   uint mesh_instance_index = packed_meshlet_instance.x;
   uint global_meshlet_index = packed_meshlet_instance.y;
@@ -122,7 +122,7 @@ void main()
     int( meshlets.data[ global_meshlet_index ].cone_axis[ 2 ] ) / 127.f ) * mat3( mesh_to_world );
   float cone_cutoff = int( meshlets.data[ global_meshlet_index ].cone_cutoff ) / 127.f;
 
-  const vec4 camera_sphere = pointlight_spheres.data[ light_index ];
+  const vec4 camera_sphere = culled_pointlight_spheres.data[ light_index ];
 
   bool accept = true;//!crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, camera_sphere.xyz );
 
@@ -240,10 +240,10 @@ void main()
     mat4 mesh_to_skin = crude_calculate_mesh_to_skin( vertex_index, vertices_joints, joint_matrices, mesh_instance_draws.data[ mesh_instance_draw_index ] );
     vec4 skin_position = mesh_position * mesh_to_skin;
     vec4 world_position = skin_position * mesh_to_world;
-    gl_MeshVerticesEXT[ i ].gl_Position = world_position * lights_world_to_texture.data[ layer_index ];
+    gl_MeshVerticesEXT[ i ].gl_Position = world_position * culled_lights_world_to_texture.data[ layer_index ];
     
     float clip_distances[ 3 ];
-    vec3 light_position = pointlight_spheres.data[ light_index ].xyz;
+    vec3 light_position = culled_pointlight_spheres.data[ light_index ].xyz;
     for( uint side_index = 0; side_index < 3; side_index++ )
     {
       clip_distances[ side_index ] = get_clip_distance( light_position, world_position.xyz, 3 * face_index + side_index );
@@ -268,15 +268,15 @@ layout(local_size_x=32, local_size_y=1, local_size_z=1) in;
 
 void main()
 {
-  uint light_index = gl_GlobalInvocationID.x % scene.data.active_lights_count;
-  if ( light_index >= scene.data.active_lights_count )
+  uint light_index = gl_GlobalInvocationID.x % scene.data.culled_lights_count;
+  if ( light_index >= scene.data.culled_lights_count )
   {
     return;
   }
 
-  const crude_gfx_light light = lights.data[ light_index ];
+  const crude_gfx_light light = culled_lights.data[ light_index ];
 
-  uint mesh_instance_index = gl_GlobalInvocationID.x / scene.data.active_lights_count;
+  uint mesh_instance_index = gl_GlobalInvocationID.x / scene.data.culled_lights_count;
   if ( mesh_instance_index >= scene.data.meshes_instances_count )
   {
     return;
@@ -316,18 +316,18 @@ void main()
     
       if ( crude_sphere_intersect( meshlet_world_center.xyz, meshlet_radius, light.world_position, light.radius ) )
       {
-        uint offset = atomicAdd( pointshadow_meshletes_instances_count.data[ light_index ], 1 );
-        pointshadow_meshletes_instances.data[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + offset ] = uvec2( mesh_instance_index, meshlet_index );
+        uint offset = atomicAdd( culled_pointshadow_meshletes_instances_count.data[ light_index ], 1 );
+        culled_pointshadow_meshletes_instances.data[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + offset ] = uvec2( mesh_instance_index, meshlet_index );
       }
     }
   }
   else
   {
-    uint offset = atomicAdd( pointshadow_meshletes_instances_count.data[ light_index ], mesh_draw.meshletes_count );
+    uint offset = atomicAdd( culled_pointshadow_meshletes_instances_count.data[ light_index ], mesh_draw.meshletes_count );
     for ( uint i = 0; i < mesh_draw.meshletes_count; ++i )
     {
       uint meshlet_index = mesh_draw.meshletes_offset + i;
-      pointshadow_meshletes_instances.data[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + offset + i ] = uvec2( mesh_instance_index, meshlet_index );
+      culled_pointshadow_meshletes_instances.data[ light_index * CRUDE_MAX_MESHLETS_PER_LIGHT + offset + i ] = uvec2( mesh_instance_index, meshlet_index );
     }
   }
 }
@@ -341,21 +341,21 @@ layout(local_size_x=32, local_size_y=1, local_size_z=1) in;
 void main()
 {
   uint light_index = gl_GlobalInvocationID.x;
-  if ( light_index >= scene.data.active_lights_count )
+  if ( light_index >= scene.data.culled_lights_count )
   {
     return;
   }
 
-  const uint visible_meshlets = pointshadow_meshletes_instances_count.data[ light_index ];
+  const uint visible_meshlets = culled_pointshadow_meshletes_instances_count.data[ light_index ];
 
   if ( visible_meshlets > 0 )
   {
-    const uint command_offset = atomicAdd( pointshadow_meshletes_instances_count.data[ CRUDE_LIGHTS_MAX_COUNT ], 4 );
+    const uint command_offset = atomicAdd( culled_pointshadow_meshletes_instances_count.data[ CRUDE_LIGHTS_MAX_COUNT ], 4 );
     uint packed_light_index = ( light_index & 0xffff ) << 16;
-    pointshadow_meshlet_draw_commands.data[ command_offset ] = uvec4( ( ( visible_meshlets + 31 ) / 32 ), 1, 1, packed_light_index | 0 );
-    pointshadow_meshlet_draw_commands.data[ command_offset + 1 ] = uvec4( ( ( visible_meshlets + 31 ) / 32 ), 1, 1, packed_light_index | 1 );
-    pointshadow_meshlet_draw_commands.data[ command_offset + 2 ] = uvec4( ( ( visible_meshlets + 31 ) / 32 ), 1, 1, packed_light_index | 2 );
-    pointshadow_meshlet_draw_commands.data[ command_offset + 3 ] = uvec4( ( ( visible_meshlets + 31 ) / 32 ), 1, 1, packed_light_index | 3 );
+    culled_pointshadow_meshlet_draw_commands.data[ command_offset ] = uvec4( ( ( visible_meshlets + 31 ) / 32 ), 1, 1, packed_light_index | 0 );
+    culled_pointshadow_meshlet_draw_commands.data[ command_offset + 1 ] = uvec4( ( ( visible_meshlets + 31 ) / 32 ), 1, 1, packed_light_index | 1 );
+    culled_pointshadow_meshlet_draw_commands.data[ command_offset + 2 ] = uvec4( ( ( visible_meshlets + 31 ) / 32 ), 1, 1, packed_light_index | 2 );
+    culled_pointshadow_meshlet_draw_commands.data[ command_offset + 3 ] = uvec4( ( ( visible_meshlets + 31 ) / 32 ), 1, 1, packed_light_index | 3 );
   }
 }
 

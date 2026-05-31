@@ -19,17 +19,18 @@ CRUDE_SHADER_STRUCT( crude_gfx_light )
   float32                                                  intensity;
 };
 
-CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( LightsZBinsRef, uint32 );
-CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( LightsRef, crude_gfx_light );
-CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( LightsTilesRef, uint32 );
-CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( LightsIndicesRef, uint32 );
-CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( LightsTrianglesIndicesRef, uint8 );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( CulledLightsZBinsRef, uint32 );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( CulledLightsRef, crude_gfx_light );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( TotalLightsRef, crude_gfx_light );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( CulledLightsTilesRef, uint32 );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( CulledLightsIndicesRef, uint32 );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( CulledLightsTrianglesIndicesRef, uint8 );
 
-CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( PointshadowMeshletesInstancesRef, XMUINT2 );
-CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( PointshadowMeshletesInstancesCountRef, uint32 );
-CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( PointshadowMeshletDrawCommands, XMUINT4 );
-CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( PointlightSpheresRef, XMFLOAT4 );
-CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( LightsWorldToTextureRef, XMFLOAT4X4 );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( CulledPointshadowMeshletesInstancesRef, XMUINT2 );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( CulledPointshadowMeshletesInstancesCountRef, uint32 );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( CulledPointshadowMeshletDrawCommands, XMUINT4 );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( CulledPointlightSpheresRef, XMFLOAT4 );
+CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( CulledLightsWorldToTextureRef, XMFLOAT4X4 );
 
 #ifndef __cplusplus
 
@@ -126,8 +127,6 @@ crude_get_tetrahedron_face_index
   return index;
 }
 
-#if defined( CRUDE_STAGE_FRAGMENT )
-
 float
 crude_calculate_point_light_shadow_contribution
 (
@@ -135,7 +134,7 @@ crude_calculate_point_light_shadow_contribution
   in uint                                                  light_index,
   in vec3                                                  vertex_position,
   in SceneRef                                              scene,
-  in LightsWorldToTextureRef                               lights_world_to_texture
+  in CulledLightsWorldToTextureRef                         culled_lights_world_to_texture
 )
 {
 #ifdef CRUDE_RAYTRACED_SHADOWS
@@ -164,7 +163,7 @@ crude_calculate_point_light_shadow_contribution
 
   vertex_to_light = light.world_position - vertex_position.xyz;
   face_index = crude_get_tetrahedron_face_index( normalize( -vertex_to_light ) );
-  proj_pos = vec4( vertex_position.xyz, 1.0 ) * lights_world_to_texture.data[ light_index * 4 + face_index ];
+  proj_pos = vec4( vertex_position.xyz, 1.0 ) * culled_lights_world_to_texture.data[ light_index * 4 + face_index ];
   proj_pos.xyz /= proj_pos.w;
     
   proj_uv = ( proj_pos.xy * 0.5 ) + 0.5;
@@ -179,7 +178,7 @@ crude_calculate_point_light_shadow_contribution
   for ( uint i = 0; i < CRUDE_SHADOW_FILTER_NUM_SAMPLES; ++i )
   {
     vec2 texcoords = proj_uv.xy + ( filter_kernel[ i ] * filter_radius );
-    float closest_depth = texture( global_textures[ nonuniformEXT( scene.data.tiled_shadowmap_texture_index ) ], texcoords ).r;
+    float closest_depth = texture( global_textures[ nonuniformEXT( scene.data.culled_tiled_shadowmap_texture_index ) ], texcoords ).r;
     shadow_factor += current_depth - bias < closest_depth ? 1 : 0;
   }
 
@@ -233,8 +232,8 @@ crude_calculate_lighting
   in vec3                                                  vertex_position,
   in vec3                                                  camera_position,
   in SceneRef                                              scene,
-  in LightsRef                                             lights,
-  in LightsWorldToTextureRef                               lights_world_to_texture
+  in CulledLightsRef                                       culled_lights,
+  in CulledLightsWorldToTextureRef                         culled_lights_world_to_texture
 )
 {
   // !TODO LIGHTS INDICES PER CLUSTER INSTEAD + WAVE INSTRUCTION PER CLUSTER in case I will need it in future
@@ -247,27 +246,25 @@ crude_calculate_lighting
 
   direct_radiance.xyz += ( 1.f - metalness ) * albedo.xyz * scene.data.ambient_color * scene.data.ambient_intensity;
 
-  if ( scene.data.active_lights_count < 1 )
+  if ( scene.data.culled_lights_count < 1 )
   {
     return direct_radiance;
   }
 
-  for ( uint i = 0; i < scene.data.active_lights_count; ++i )
+  for ( uint i = 0; i < scene.data.culled_lights_count; ++i )
   {
     vec3                                                   light_to_vertex;
 
-    light_to_vertex = lights.data[ i ].world_position - vertex_position;
-    if ( dot( light_to_vertex, light_to_vertex ) < lights.data[ i ].radius * lights.data[ i ].radius )
+    light_to_vertex = culled_lights.data[ i ].world_position - vertex_position;
+    if ( dot( light_to_vertex, light_to_vertex ) < culled_lights.data[ i ].radius * culled_lights.data[ i ].radius )
     {
-      float shadow = crude_calculate_point_light_shadow_contribution( lights.data[ i ], i, vertex_position, scene, lights_world_to_texture );
-      direct_radiance += shadow * crude_calculate_point_light_contribution( lights.data[ i ], albedo.rgb, roughness, metalness, normal, vertex_position, camera_position, f0 );
+      float shadow = crude_calculate_point_light_shadow_contribution( culled_lights.data[ i ], i, vertex_position, scene, culled_lights_world_to_texture );
+      direct_radiance += shadow * crude_calculate_point_light_contribution( culled_lights.data[ i ], albedo.rgb, roughness, metalness, normal, vertex_position, camera_position, f0 );
     }
   }
 
   return direct_radiance;
 }
-
-#endif /* CRUDE_STAGE_FRAGMENT */
 
 #endif
 

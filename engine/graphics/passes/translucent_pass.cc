@@ -60,11 +60,11 @@ crude_gfx_translucent_pass_render
     push_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
     push_constant.mesh_draw_commands = pass->scene_renderer->mesh_task_indirect_commands_hga.gpu_address;
     push_constant.visible_mesh_count = pass->scene_renderer->mesh_task_indirect_count_hga.gpu_address;
-    push_constant.lights = pass->scene_renderer->lights_hga.gpu_address;
+    push_constant.culled_lights = pass->scene_renderer->culled_lights_hga.gpu_address;
     push_constant.debug_line_vertices = pass->scene_renderer->debug_line_vertices_hga.gpu_address;
     push_constant.debug_counts = pass->scene_renderer->debug_commands_hga.gpu_address;
     push_constant.joint_matrices = pass->scene_renderer->joint_matrices_hga.gpu_address;
-    push_constant.lights_world_to_texture = pass->scene_renderer->lights_world_to_texture_hga.gpu_address;
+    push_constant.culled_lights_world_to_texture = pass->scene_renderer->culled_lights_world_to_texture_hga.gpu_address;
     crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
     
 #if CRUDE_GFX_VULKAN
@@ -91,7 +91,7 @@ crude_gfx_translucent_pass_render
     push_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
     push_constant.mesh_draw_commands = pass->scene_renderer->mesh_task_indirect_commands_hga.gpu_address;
     push_constant.visible_mesh_count = pass->scene_renderer->mesh_task_indirect_count_hga.gpu_address;
-    push_constant.lights = pass->scene_renderer->lights_hga.gpu_address;
+    push_constant.culled_lights = pass->scene_renderer->culled_lights_hga.gpu_address;
     push_constant.inv_radiance_texture_width = 1.f / gpu->renderer_size.x;
     push_constant.inv_radiance_texture_height = 1.f / gpu->renderer_size.y;
     crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );

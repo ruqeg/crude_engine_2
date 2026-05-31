@@ -68,7 +68,7 @@ crude_scene_renderer_register_nodes_instances_
 );
 
 static void
-crude_scene_renderer_cull_lights_
+crude_scene_renderer_update_lights_
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 );
@@ -102,6 +102,9 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->physics_shapes_manager = creation->physics_shapes_manager;
 #endif
 
+  scene_renderer->rotation_scaler = 0.001f;
+
+  scene_renderer->ddgi_debug = true;
   scene_renderer->ddgi_enabled = false;
   scene_renderer->ddgi_area = CRUDE_COMPOUNT_EMPTY( crude_gfx_ddgi_area_cpu );
 
@@ -167,9 +170,10 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->acceleration_stucture_ds = CRUDE_GFX_DESCRIPTOR_SET_HANDLE_INVALID;
   crude_gfx_scene_renderer_create_acceleration_stucture_dsl_( scene_renderer );
 #endif /* CRUDE_GFX_RAY_TRACING_ENABLED */
-
-  scene_renderer->lights_hga = crude_gfx_memory_allocation_empty( );
-  scene_renderer->lights_world_to_texture_hga = crude_gfx_memory_allocation_empty( );
+  
+  scene_renderer->total_lights_hga = crude_gfx_memory_allocation_empty( );
+  scene_renderer->culled_lights_hga = crude_gfx_memory_allocation_empty( );
+  scene_renderer->culled_lights_world_to_texture_hga = crude_gfx_memory_allocation_empty( );
   
   scene_renderer->joint_matrices_hga = crude_gfx_memory_allocate_with_pname( scene_renderer->gpu, sizeof( XMFLOAT4X4 ) * scene_renderer->total_joints_matrices_buffer_capacity, CRUDE_GFX_MEMORY_TYPE_GPU, "joint_matrices_hga", 0 );
 
@@ -305,9 +309,10 @@ crude_gfx_scene_renderer_deinitialize
 #endif
 
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->ddgi_hga );
-
-  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_hga );
-  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_world_to_texture_hga );
+  
+  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->total_lights_hga );
+  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->culled_lights_hga );
+  crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->culled_lights_world_to_texture_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->scene_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->meshes_instances_draws_hga );
   crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->mesh_task_indirect_commands_hga );
@@ -332,7 +337,7 @@ crude_gfx_scene_renderer_deinitialize
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->model_renderer_resoruces_instances );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->lights );
   CRUDE_ARRAY_DEINITIALIZE( scene_renderer->culled_lights );
-  
+
 #if CRUDE_DEVELOP
   crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->light_model_renderer_resources_instance );
   crude_gfx_model_renderer_resources_instance_deinitialize( &scene_renderer->camera_model_renderer_resources_instance );
@@ -352,7 +357,7 @@ crude_gfx_scene_renderer_update_instances_from_node
   _In_ crude_entity                                        main_node
 )
 {
-  bool                                                     should_recreated_tlas, buffers_recrteated, model_initialized;
+  bool                                                     should_recreated_tlas, ddgi_enabled_prev, buffers_recrteated, model_initialized;
  
   CRUDE_PROFILER_ZONE_NAME( "crude_gfx_scene_renderer_update_instances_from_node" );
 
@@ -374,6 +379,8 @@ crude_gfx_scene_renderer_update_instances_from_node
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->lights, 0u );
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->culled_lights, 0u );
   
+  ddgi_enabled_prev = scene_renderer->ddgi_enabled;
+
   scene_renderer->ddgi_enabled = false;
 
   scene_renderer->prev_ddgi_area = scene_renderer->ddgi_area;
@@ -385,6 +392,24 @@ crude_gfx_scene_renderer_update_instances_from_node
     || scene_renderer->ddgi_area.probe_count.z != scene_renderer->prev_ddgi_area.probe_count.z )
   {
     crude_gfx_indirect_light_pass_on_ddgi_area_resized( &scene_renderer->indirect_light_pass );
+    crude_gfx_indirect_light_pass_on_offsets_reset( &scene_renderer->indirect_light_pass );
+  }
+  
+  if ( scene_renderer->ddgi_area.probe_spacing.x != scene_renderer->prev_ddgi_area.probe_spacing.x
+    || scene_renderer->ddgi_area.probe_spacing.y != scene_renderer->prev_ddgi_area.probe_spacing.y 
+    || scene_renderer->ddgi_area.probe_spacing.z != scene_renderer->prev_ddgi_area.probe_spacing.z )
+  {
+    crude_gfx_indirect_light_pass_on_offsets_reset( &scene_renderer->indirect_light_pass );
+  }
+  if ( scene_renderer->ddgi_area.probe_grid_position.x != scene_renderer->prev_ddgi_area.probe_grid_position.x
+    || scene_renderer->ddgi_area.probe_grid_position.y != scene_renderer->prev_ddgi_area.probe_grid_position.y 
+    || scene_renderer->ddgi_area.probe_grid_position.z != scene_renderer->prev_ddgi_area.probe_grid_position.z )
+  {
+    crude_gfx_indirect_light_pass_on_offsets_reset( &scene_renderer->indirect_light_pass );
+  }
+  if ( !ddgi_enabled_prev && scene_renderer->ddgi_enabled )
+  {
+    crude_gfx_indirect_light_pass_on_offsets_reset( &scene_renderer->indirect_light_pass );
   }
 
   should_recreated_tlas = false;
@@ -508,18 +533,24 @@ crude_gfx_scene_renderer_rebuild_light_gpu_buffers
 {
   CRUDE_LOG_INFO( CRUDE_CHANNEL_GRAPHICS, "Rebuild light GPU buffers" );
 
-  if ( crude_gfx_memory_allocation_valid( &scene_renderer->lights_hga ) )
+  if ( crude_gfx_memory_allocation_valid( &scene_renderer->total_lights_hga ) )
   {
-    crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_hga );
-  }
-  
-  if ( crude_gfx_memory_allocation_valid( &scene_renderer->lights_world_to_texture_hga ) )
-  {
-    crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->lights_world_to_texture_hga );
+    crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->total_lights_hga );
   }
 
-  scene_renderer->lights_hga = crude_gfx_memory_allocate_with_pname( scene_renderer->gpu, sizeof( crude_gfx_light ) * CRUDE_LIGHTS_MAX_COUNT, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_hga", 0 );
-  scene_renderer->lights_world_to_texture_hga = crude_gfx_memory_allocate_with_pname( scene_renderer->gpu, sizeof( XMFLOAT4X4 ) * CRUDE_LIGHTS_MAX_COUNT * 4u, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_world_to_texture_hga", 0 );
+  if ( crude_gfx_memory_allocation_valid( &scene_renderer->culled_lights_hga ) )
+  {
+    crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->culled_lights_hga );
+  }
+  
+  if ( crude_gfx_memory_allocation_valid( &scene_renderer->culled_lights_world_to_texture_hga ) )
+  {
+    crude_gfx_memory_deallocate( scene_renderer->gpu, scene_renderer->culled_lights_world_to_texture_hga );
+  }
+
+  scene_renderer->total_lights_hga = crude_gfx_memory_allocate_with_pname( scene_renderer->gpu, sizeof( crude_gfx_light ) * CRUDE_LIGHTS_MAX_COUNT, CRUDE_GFX_MEMORY_TYPE_GPU, "total_lights_hga", 0 );
+  scene_renderer->culled_lights_hga = crude_gfx_memory_allocate_with_pname( scene_renderer->gpu, sizeof( crude_gfx_light ) * CRUDE_LIGHTS_MAX_COUNT, CRUDE_GFX_MEMORY_TYPE_GPU, "culled_lights_hga", 0 );
+  scene_renderer->culled_lights_world_to_texture_hga = crude_gfx_memory_allocate_with_pname( scene_renderer->gpu, sizeof( XMFLOAT4X4 ) * CRUDE_LIGHTS_MAX_COUNT * 4u, CRUDE_GFX_MEMORY_TYPE_GPU, "lights_world_to_texture_hga", 0 );
 }
 
 void
@@ -540,7 +571,7 @@ crude_gfx_scene_renderer_update_dynamic_buffers
   CRUDE_PROFILER_ZONE_NAME( "crude_gfx_scene_renderer_update_dynamic_buffers" );
   crude_gfx_cmd_push_marker( scene_renderer->primary_cmd, "crude_gfx_scene_renderer_update_dynamic_buffers" );
 #if CRUDE_GFX_VULKAN
-  crude_scene_renderer_cull_lights_( scene_renderer );
+  crude_scene_renderer_update_lights_( scene_renderer );
   crude_gfx_scene_renderer_update_dynamic_buffers_( scene_renderer, scene_renderer->primary_cmd );
 #elif CRUDE_GFX_DX12
 #elif CRUDE_GFX_NAPI
@@ -671,7 +702,7 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
     ddgi_constants->grid_irradiance_output_index = pass->probe_grid_irradiance_texture_handle.index;
     ddgi_constants->grid_visibility_texture_index = pass->probe_grid_visibility_texture_handle.index;
     ddgi_constants->probe_offset_texture_index = pass->probe_offsets_texture_handle.index;
-    XMStoreFloat4x4( &ddgi_constants->random_rotation, XMMatrixRotationRollPitchYaw( 0.001f * crude_random_unit_f32( ), 0.001f * crude_random_unit_f32( ), 0.001f * crude_random_unit_f32( ) ) );
+    XMStoreFloat4x4( &ddgi_constants->random_rotation, XMMatrixRotationRollPitchYaw( scene_renderer->rotation_scaler * crude_random_unit_f32( ), scene_renderer->rotation_scaler * crude_random_unit_f32( ), scene_renderer->rotation_scaler * crude_random_unit_f32( ) ) );
     //XMStoreFloat4x4( &ddgi_mapped_data->random_rotation, XMMatrixRotationAxis( XMVector3Normalize( XMVectorSet( crude_random_unit_f32( ), crude_random_unit_f32( ), crude_random_unit_f32( ), 1.0 ) ), crude_random_unit_f32( ) * XM_2PI ) );//get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler, get_random_value( -1,1 ) * rotation_scaler ) );
     ddgi_constants->irradiance_texture_width = pass->irradiance_atlas_width;
     ddgi_constants->irradiance_texture_height = pass->irradiance_atlas_height;
@@ -715,8 +746,9 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
     scene->resolution_ratio = CRUDE_CAST( float32, scene_renderer->gpu->renderer_size.x ) / scene_renderer->gpu->renderer_size.y;
     crude_gfx_camera_to_camera_gpu( &scene_renderer->options.scene.camera, scene_renderer->options.scene.camera_view_to_world, &scene->camera );
     scene->meshes_instances_count = scene_renderer->total_visible_meshes_instances_count;
-    scene->active_lights_count = CRUDE_ARRAY_LENGTH( scene_renderer->culled_lights );
-    scene->tiled_shadowmap_texture_index = scene_renderer->pointlight_shadow_pass.tetrahedron_shadow_texture.index;
+    scene->culled_lights_count = CRUDE_ARRAY_LENGTH( scene_renderer->culled_lights );
+    scene->total_lights_count = CRUDE_ARRAY_LENGTH( scene_renderer->lights );
+    scene->culled_tiled_shadowmap_texture_index = scene_renderer->pointlight_shadow_pass.culled_tetrahedron_shadow_texture.index;
     scene->inv_shadow_map_size.x = 1.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_SIZE;
     scene->inv_shadow_map_size.y = 1.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_SIZE;
 #if CRUDE_GFX_RAY_TRACING_DDGI_ENABLED
@@ -1127,7 +1159,7 @@ crude_scene_renderer_register_nodes_instances_
 }
 
 void
-crude_scene_renderer_cull_lights_
+crude_scene_renderer_update_lights_
 (
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 )
@@ -1154,7 +1186,7 @@ crude_scene_renderer_cull_lights_
   
   tile_position_x = 0.f;
   tile_position_y = 0.f;
-
+  
   for ( uint32 light_index = 0; light_index < CRUDE_ARRAY_LENGTH( scene_renderer->lights ); ++light_index )
   {
     crude_gfx_light_cpu                               *light;

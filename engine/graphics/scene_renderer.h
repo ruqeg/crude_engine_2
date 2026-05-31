@@ -174,9 +174,12 @@ typedef struct crude_gfx_scene_renderer
   uint32                                                   total_meshes_instances_count;
   uint32                                                   total_meshes_instances_buffer_capacity;
   
+  bool                                                     ddgi_debug;
   bool                                                     ddgi_enabled;
   crude_gfx_ddgi_area_cpu                                  ddgi_area;
   crude_gfx_ddgi_area_cpu                                  prev_ddgi_area;
+
+  float32                                                  rotation_scaler;
 
   /***********************
    * Common Debug CPU & GPU Data
@@ -190,9 +193,17 @@ typedef struct crude_gfx_scene_renderer
    **********************/
   crude_gfx_light_cpu                                     *lights;
   crude_gfx_culled_light_cpu                              *culled_lights;
-  crude_gfx_memory_allocation                              lights_hga;
-  crude_gfx_memory_allocation                              lights_world_to_texture_hga;
 
+  /**
+   * I don't think i need move to light indices,
+   * for now I will keep two separate buffers for culled/all lights
+   * until it will became bottleneck
+   */
+#if CRUDE_GFX_RAY_TRACING_DDGI_ENABLED
+  crude_gfx_memory_allocation                              total_lights_hga;
+#endif /* CRUDE_GFX_RAY_TRACING_DDGI_ENABLED */
+  crude_gfx_memory_allocation                              culled_lights_hga; 
+  crude_gfx_memory_allocation                              culled_lights_world_to_texture_hga;
   /***********************
    * Ray Tracing CPU & GPU Data
    **********************/

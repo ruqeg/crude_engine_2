@@ -1,16 +1,17 @@
 
 #if defined( CRUDE_VALIDATOR_LINTING ) || defined( __cplusplus )
 #if !defined( __cplusplus )
+#define Vulkan
 #extension GL_GOOGLE_include_directive : enable
 #endif /* !__cplusplus */
 //#define CALCULATE_PROBE_OFFSETS
-//#define PROBE_RAYTRACER
+#define PROBE_RAYTRACER
 //#define PROBE_DEBUG
-#define SAMPLE_IRRADIANCE
+//#define SAMPLE_IRRADIANCE
 //#define PROBE_UPDATE_VISIBILITY
 //#define PROBE_UPDATE_IRRADIANCE
-#define CRUDE_COMPUTE
-//#define CRUDE_CLOSEST_HIT
+//#define CRUDE_COMPUTE
+#define CRUDE_CLOSEST_HIT
 //#define CRUDE_RAYGEN
 //#define CRUDE_MISS
 //#define CRUDE_STAGE_TASK
@@ -78,7 +79,7 @@ CRUDE_PUSH_CONSTANT( crude_gfx_probe_raytracer_push_constant_ )
   MeshDrawsRef                                             mesh_draws;
   MeshInstancesDrawsRef                                    mesh_instance_draws;
 
-  LightsRef                                                lights;
+  TotalLightsRef                                           total_lights;
   VerticesRef                                              vertices;
 };
 #endif /* PROBE_RAYTRACER */
@@ -122,10 +123,11 @@ CRUDE_PUSH_CONSTANT( crude_gfx_probe_debug_push_constant_ )
 int
 probe_indices_to_index
 (
+  in DDGIRef                                               ddgi,
   in ivec3                                                 probe_coords
 )
 {
-  return int( probe_coords.x + probe_coords.y * probe_coords.x + probe_coords.z * probe_coords.x * probe_coords.y );
+  return int( probe_coords.x + probe_coords.y * ddgi.data.probe_counts.x + probe_coords.z * ddgi.data.probe_counts.x * ddgi.data.probe_counts.y );
 }
 
 vec3
@@ -255,7 +257,7 @@ sample_irradiance
     /* Compute the offset grid coord and clamp to the probe grid boundary. Offset = 0 or 1 along each axis */
     ivec3 offset = ivec3( i, i >> 1, i >> 2 ) & ivec3( 1 );
     ivec3 probe_grid_coord = clamp( base_grid_indices + offset, ivec3( 0 ), ddgi.data.probe_counts - ivec3( 1 ) );
-    int probe_index = probe_indices_to_index( probe_grid_coord );
+    int probe_index = probe_indices_to_index( ddgi, probe_grid_coord );
 
     vec3 probe_pos = grid_indices_to_world( ddgi, probe_grid_coord, probe_index );
     vec3 trilinear = mix( 1.0 - alpha, alpha, offset );
@@ -411,7 +413,7 @@ void main()
     mat4                                                   mesh_to_world, world_to_mesh;
     vec3                                                   normal, p0_model, p1_model, p2_model, n0_model, n1_model, n2_model, model_position, world_position, diffuse, albedo;
     vec2                                                   texcoord, texcoord0, texcoord1, texcoord2;
-    float                                                  a, b, c, ndotl, attenuation;
+    float                                                  a, b, c;
     uint                                                   i0, i1, i2;
     uint                                                   mesh_index;
 
@@ -450,36 +452,48 @@ void main()
     }
 
     diffuse = vec3( 0 );
-    for ( uint i = 0; i < scene.data.active_lights_count; ++i )
+    for ( uint i = 0; i < scene.data.total_lights_count; ++i )
     {
       rayQueryEXT                                          ray_query;
       crude_gfx_light                                      light;
       float                                                position_to_light_distance;
       vec3                                                 light_intensity, position_to_light, position_to_light_normalized;
       
-      light = lights.data[ i ];
+      light = total_lights.data[ i ];
       position_to_light = light.world_position - world_position;
       position_to_light_distance = length( position_to_light );
       position_to_light_normalized = position_to_light / position_to_light_distance;
     
-      float visiblity = 1.f;
+      light_intensity = vec3( 0.f );
+
       if ( position_to_light_distance <= light.radius )
       {
+        float                                              shadow, ndotl;
+        
         rayQueryInitializeEXT(
           ray_query, acceleration_structure,
           gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT,
           0xff,
           world_position,
-          0.0,
+          0.05,
           position_to_light_normalized,
           position_to_light_distance );
+
         rayQueryProceedEXT( ray_query );
-        visiblity = float( rayQueryGetIntersectionTypeEXT( ray_query, true ) == gl_RayQueryCommittedIntersectionNoneEXT );
+        
+        if ( rayQueryGetIntersectionTypeEXT( ray_query, true ) != gl_RayQueryCommittedIntersectionNoneEXT )
+        {
+          shadow += rayQueryGetIntersectionTEXT( ray_query, true ) < position_to_light_distance ? 0.0f : 1.0f;
+        }
+        else
+        {
+          shadow += 1.0f;
+        }
+
+        ndotl = clamp( dot( normal, position_to_light_normalized ), 0.0, 1.0 );
+        
+        light_intensity = shadow * crude_light_attenuation( position_to_light_distance, light.radius ) * ndotl * light.color * light.intensity;
       }
-      
-      ndotl = clamp( dot( normal, position_to_light_normalized ), 0.0, 1.0 );
-    
-      light_intensity = crude_light_attenuation( position_to_light_distance, light.radius ) * light.color * light.intensity;
     
       diffuse += albedo * light_intensity;
     }
@@ -956,6 +970,8 @@ void main()
   probe_irradiance = probe_irradiance * probe_irradiance;
 #endif
   out_color = vec4( probe_irradiance, 1.f );
+  //out_color = vec4( float(in_probe_index), 0, 0, 1.f );
+  //out_color = vec4( float(probe_index_to_grid_indices( ddgi, in_probe_index ).x), float(probe_index_to_grid_indices( ddgi, in_probe_index ).y), float(probe_index_to_grid_indices( ddgi, in_probe_index ).z), 1.f );
 }
 
 #endif /* CRUDE_STAGE_FRAGMENT */

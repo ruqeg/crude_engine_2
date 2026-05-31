@@ -56,15 +56,15 @@ crude_gfx_light_lut_pass_render
     return;
   }
   
-  /* Upload light to gpu */
+  /* Upload culled light to gpu */
   {
-    crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->lights_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_SHADER_RESOURCE, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST );
-  
-    crude_gfx_light                                       *lights_gpu;
-    crude_gfx_memory_allocation                            lights_tca;
+    crude_gfx_light                                       *culled_lights_gpu;
+    crude_gfx_memory_allocation                            culled_lights_tca;
 
-    lights_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_light ) * CRUDE_ARRAY_LENGTH( pass->scene_renderer->culled_lights ) );
-    lights_gpu = CRUDE_CAST( crude_gfx_light*, lights_tca.cpu_address );
+    crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->culled_lights_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_SHADER_RESOURCE, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST );
+
+    culled_lights_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_light ) * CRUDE_ARRAY_LENGTH( pass->scene_renderer->culled_lights ) );
+    culled_lights_gpu = CRUDE_CAST( crude_gfx_light*, culled_lights_tca.cpu_address );
 
     for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( pass->scene_renderer->culled_lights ); ++i )
     {
@@ -74,15 +74,43 @@ crude_gfx_light_lut_pass_render
       culled_light_cpu = &pass->scene_renderer->culled_lights[ i ];
       light_cpu = &pass->scene_renderer->lights[ culled_light_cpu->light_index ];
       
-      lights_gpu[ i ] = CRUDE_COMPOUNT_EMPTY( crude_gfx_light );
-      lights_gpu[ i ].color = light_cpu->light.color;
-      lights_gpu[ i ].intensity = light_cpu->light.intensity;
-      lights_gpu[ i ].world_position = light_cpu->translation;
-      lights_gpu[ i ].radius = light_cpu->light.radius;
+      culled_lights_gpu[ i ] = CRUDE_COMPOUNT_EMPTY( crude_gfx_light );
+      culled_lights_gpu[ i ].color = light_cpu->light.color;
+      culled_lights_gpu[ i ].intensity = light_cpu->light.intensity;
+      culled_lights_gpu[ i ].world_position = light_cpu->translation;
+      culled_lights_gpu[ i ].radius = light_cpu->light.radius;
     }
 
-    crude_gfx_cmd_memory_copy( primary_cmd, lights_tca, pass->scene_renderer->lights_hga, 0, 0 );
+    crude_gfx_cmd_memory_copy( primary_cmd, culled_lights_tca, pass->scene_renderer->culled_lights_hga, 0, 0 );
   }
+  
+#if CRUDE_GFX_RAY_TRACING_DDGI_ENABLED
+  /* Upload light to gpu */
+  {
+    crude_gfx_light                                       *total_lights_gpu;
+    crude_gfx_memory_allocation                            total_lights_tca;
+
+    crude_gfx_cmd_add_buffer_barrier( primary_cmd, pass->scene_renderer->total_lights_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_SHADER_RESOURCE, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST );
+  
+    total_lights_tca = crude_gfx_linear_allocator_allocate( &gpu->frame_linear_allocator, sizeof( crude_gfx_light ) * CRUDE_ARRAY_LENGTH( pass->scene_renderer->lights ) );
+    total_lights_gpu = CRUDE_CAST( crude_gfx_light*, total_lights_tca.cpu_address );
+
+    for ( uint32 i = 0; i < CRUDE_ARRAY_LENGTH( pass->scene_renderer->lights ); ++i )
+    {
+      crude_gfx_light_cpu const                           *light_cpu;
+  
+      light_cpu = &pass->scene_renderer->lights[ i ];
+      
+      total_lights_gpu[ i ] = CRUDE_COMPOUNT_EMPTY( crude_gfx_light );
+      total_lights_gpu[ i ].color = light_cpu->light.color;
+      total_lights_gpu[ i ].intensity = light_cpu->light.intensity;
+      total_lights_gpu[ i ].world_position = light_cpu->translation;
+      total_lights_gpu[ i ].radius = light_cpu->light.radius;
+    }
+
+    crude_gfx_cmd_memory_copy( primary_cmd, total_lights_tca, pass->scene_renderer->total_lights_hga, 0, 0 );
+  }
+#endif /* CRUDE_GFX_RAY_TRACING_DDGI_ENABLED */
 }
 
 void

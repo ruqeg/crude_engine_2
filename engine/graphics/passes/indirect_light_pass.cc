@@ -22,6 +22,7 @@ crude_gfx_indirect_light_pass_initialize
   pass->scene_renderer = scene_renderer;
   ddgi_area_cpu = &scene_renderer->ddgi_area;
 
+  pass->offsets_calculations_count = -1;
   pass->probe_update_offset = 0u;
 
   pass->irradiance_side_length = 6;
@@ -133,7 +134,7 @@ crude_gfx_indirect_light_pass_render
 
     push_constant = CRUDE_COMPOUNT_EMPTY( crude_gfx_probe_raytracer_push_constant_ );
     push_constant.scene = pass->scene_renderer->scene_hga.gpu_address;
-    push_constant.lights = pass->scene_renderer->lights_hga.gpu_address;
+    push_constant.total_lights = pass->scene_renderer->total_lights_hga.gpu_address;
     push_constant.mesh_draws = pass->scene_renderer->model_renderer_resources_manager->meshes_draws_hga.gpu_address;
     push_constant.mesh_instance_draws = pass->scene_renderer->meshes_instances_draws_hga.gpu_address;
     push_constant.ddgi = pass->scene_renderer->ddgi_hga.gpu_address;

@@ -33,7 +33,7 @@ typedef struct crude_gfx_indirect_light_pass
   uint32                                                   visibility_side_length;
   uint32                                                   visibility_side_length_with_borders;
 
-  uint32                                                   offsets_calculations_count;
+  int32                                                    offsets_calculations_count;
   uint32                                                   probe_update_offset;
 } crude_gfx_indirect_light_pass;
 

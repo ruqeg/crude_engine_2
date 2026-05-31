@@ -129,20 +129,29 @@ CRUDE_SHADER_STRUCT( crude_gfx_scene )
 {
   crude_gfx_camera                                         camera;
   crude_gfx_camera                                         camera_previous;
+
   XMFLOAT2                                                 resolution;
   uint32                                                   flags;
   uint32                                                   meshes_instances_count;
-  uint32                                                   active_lights_count;
-  uint32                                                   tiled_shadowmap_texture_index;
+
+  uint32                                                   total_lights_count;
+  uint32                                                   culled_lights_count;
+  uint32                                                   culled_tiled_shadowmap_texture_index;
+  float32                                                  resolution_ratio;
+
   XMFLOAT2                                                 inv_shadow_map_size;
-  XMFLOAT3                                                 background_color;
-  float32                                                  background_intensity;
-  XMFLOAT3                                                 ambient_color;
-  float32                                                  ambient_intensity;
-  uint32                                                   indirect_light_texture_index;
   uint32                                                   absolute_frame;
   float32                                                  absolute_time;
-  float32                                                  resolution_ratio;
+
+  XMFLOAT3                                                 background_color;
+  float32                                                  background_intensity;
+
+  XMFLOAT3                                                 ambient_color;
+  float32                                                  ambient_intensity;
+
+  uint32                                                   indirect_light_texture_index;
+  XMFLOAT3                                                 padding;
+
 #if CRUDE_DEVELOP
   uint32                                                   debug_mode;
   uint32                                                   debug_flags1;

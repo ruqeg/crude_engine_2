@@ -37,7 +37,7 @@ crude_gfx_indirect_light_debug_pass_render
 
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_indirect_light_debug_pass*, ctx );
   
-  if ( !pass->scene_renderer->ddgi_enabled )
+  if ( !pass->scene_renderer->ddgi_enabled || !pass->scene_renderer->ddgi_debug )
   {
     return;
   }
