@@ -219,18 +219,22 @@ crude_engine_gui_queue_draw_
 {
   CRUDE_PROFILER_ZONE_NAME( "crude_engine_gui_queue_draw_" );
   ImGui::SetCurrentContext( engine->imgui_context );
-#if CRUDE_DEVELOP
+
+#if CRUDE_EDITOR
   ImGuizmo::SetImGuiContext( engine->imgui_context );
-#endif 
+#endif /* CRUDE_EDITOR */
 
   ImGui_ImplSDL3_NewFrame( );
   ImGui::NewFrame( );
-
-#if CRUDE_DEVELOP
+  
+#if CRUDE_EDITOR
   ImGuizmo::SetOrthographic( false );
   ImGuizmo::BeginFrame();
-  
+
   crude_editor_queue_draw( &engine->editor );
+#endif /* CRUDE_EDITOR */
+
+#if CRUDE_DEVELOP
   crude_gui_devmenu_draw( &engine->devmenu );
 #endif /* CRUDE_DEVELOP */
 
@@ -328,10 +332,10 @@ crude_engine_update
 
   current_time = crude_time_now( );
   delta_time = crude_time_delta_seconds( engine->last_update_time, current_time );
-
-#if CRUDE_DEVELOP
+  
+#if CRUDE_EDITOR
   crude_editor_update( &engine->editor, delta_time );
-#endif /* CRUDE_DEVELOP */
+#endif /* CRUDE_EDITOR */
 
   crude_physics_update( &engine->physics, current_time );
 
@@ -604,12 +608,12 @@ crude_engine_initialize_graphics_
   crude_snprintf( render_graph_file_path, sizeof( render_graph_file_path ), "%s%s", engine->environment.directories.render_graph_absolute_directory, "render_graph.crude_render_graph" );
   crude_gfx_render_graph_parse_from_file( &engine->render_graph, render_graph_file_path, &engine->temporary_allocator );
   
-#if CRUDE_PRODUCTION
-    crude_gfx_render_graph_builder_access_node_by_name( &engine->render_graph_builder, "imgui_game_pass" )->enabled = true;
-    crude_gfx_render_graph_builder_access_node_by_name( &engine->render_graph_builder, "imgui_editor_pass" )->enabled = false;
-#else
+#if CRUDE_EDITOR
     crude_gfx_render_graph_builder_access_node_by_name( &engine->render_graph_builder, "imgui_game_pass" )->enabled = false;
     crude_gfx_render_graph_builder_access_node_by_name( &engine->render_graph_builder, "imgui_editor_pass" )->enabled = true;
+#else
+    crude_gfx_render_graph_builder_access_node_by_name( &engine->render_graph_builder, "imgui_game_pass" )->enabled = true;
+    crude_gfx_render_graph_builder_access_node_by_name( &engine->render_graph_builder, "imgui_editor_pass" )->enabled = false;
 #endif
 
   crude_gfx_render_graph_compile( &engine->render_graph, &engine->temporary_allocator );
@@ -777,8 +781,10 @@ crude_engine_input_callback_
   
 #if CRUDE_DEVELOP
   crude_gui_devmenu_handle_input( &engine->devmenu );
+#endif /* CRUDE_DEVELOP */
+#if CRUDE_EDITOR
   crude_editor_handle_input( &engine->editor );
-#endif
+#endif /* CRUDE_EDITOR */
 }
 
 void
@@ -840,9 +846,9 @@ crude_engine_initialize_editor_
   _In_ crude_engine                                       *engine
 )
 {
-#if CRUDE_DEVELOP
+#if CRUDE_EDITOR
   crude_editor_initialize( &engine->editor, engine );
-#endif
+#endif /* CRUDE_EDITOR */
 }
 
 void
@@ -851,9 +857,9 @@ crude_engine_deinitialize_editor_
   _In_ crude_engine                                       *engine
 )
 {
-#if CRUDE_DEVELOP
+#if CRUDE_EDITOR
   crude_editor_deinitialize( &engine->editor );
-#endif
+#endif /* CRUDE_EDITOR */
 }
 
 bool

@@ -623,7 +623,7 @@ crude_gfx_scene_renderer_register_passes
   
   if ( scene_renderer->imgui_pass_enalbed )
   {
-#if CRUDE_DEVELOP
+#if CRUDE_EDITOR
     crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "imgui_editor_pass" ), crude_gfx_imgui_pass_pack( &scene_renderer->imgui_pass ) );
 #else
     crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "imgui_game_pass" ), crude_gfx_imgui_pass_pack( &scene_renderer->imgui_pass ) );
@@ -1192,7 +1192,7 @@ crude_scene_renderer_update_lights_
   
   CRUDE_ARRAY_SET_LENGTH( scene_renderer->culled_lights, 0 );
   
-  tile_size = 1024.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_SIZE;
+  tile_size = 2048.f / CRUDE_GFX_TETRAHEDRON_SHADOWMAP_SIZE;
   
   tile_position_x = 0.f;
   tile_position_y = 0.f;

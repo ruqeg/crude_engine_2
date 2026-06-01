@@ -779,7 +779,6 @@ crude_gfx_cmd_push_marker
   }
 #endif
 
-#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   crude_gfx_rhi_debug_utils_label label = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_debug_utils_label );
   label.label_name = name;
   label.color[ 0 ] = 1.0f;
@@ -787,7 +786,6 @@ crude_gfx_cmd_push_marker
   label.color[ 2 ] = 1.0f;
   label.color[ 3 ] = 1.0f;
   crude_gfx_rhi_command_buffer_begin_debug_utils_label( &cmd->gpu->rhi_device, cmd->rhi_cmd_buffer, &label );
-#endif
   
 #if CRUDE_GFX_NSIGHT_AFTERMATH
     //// A helper for setting a checkpoint marker
@@ -847,9 +845,7 @@ crude_gfx_cmd_pop_marker
   }
 #endif
 
-#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   crude_gfx_rhi_command_buffer_end_debug_utils_label( &cmd->gpu->rhi_device, cmd->rhi_cmd_buffer );
-#endif
 }
 
 void

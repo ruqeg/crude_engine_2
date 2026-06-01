@@ -133,6 +133,7 @@ crude_calculate_point_light_shadow_contribution
   in crude_gfx_light                                       light,
   in uint                                                  light_index,
   in vec3                                                  vertex_position,
+  in vec3                                                  vertex_normal,
   in SceneRef                                              scene,
   in CulledLightsWorldToTextureRef                         culled_lights_world_to_texture
 )
@@ -169,7 +170,7 @@ crude_calculate_point_light_shadow_contribution
   proj_uv = ( proj_pos.xy * 0.5 ) + 0.5;
   proj_uv.y = 1.f - proj_uv.y;
 
-  bias = 0.001f;
+  bias = 0.0001f;
   current_depth = proj_pos.z;
     
   filter_radius = scene.data.inv_shadow_map_size.xy * CRUDE_SHADOW_FILTER_RADIUS; 
@@ -258,7 +259,7 @@ crude_calculate_lighting
     light_to_vertex = culled_lights.data[ i ].world_position - vertex_position;
     if ( dot( light_to_vertex, light_to_vertex ) < culled_lights.data[ i ].radius * culled_lights.data[ i ].radius )
     {
-      float shadow = crude_calculate_point_light_shadow_contribution( culled_lights.data[ i ], i, vertex_position, scene, culled_lights_world_to_texture );
+      float shadow = crude_calculate_point_light_shadow_contribution( culled_lights.data[ i ], i, vertex_position, normal, scene, culled_lights_world_to_texture );
       direct_radiance += shadow * crude_calculate_point_light_contribution( culled_lights.data[ i ], albedo.rgb, roughness, metalness, normal, vertex_position, camera_position, f0 );
     }
   }

@@ -548,6 +548,7 @@ typedef struct crude_gfx_texture
   crude_gfx_rhi_resource_state                             state;
   bool                                                     ready;
   crude_gfx_texture_handle                                 parent_texture_handle;
+  crude_gfx_texture_handle                                 alias_texture_handle;
 } crude_gfx_texture;
 
 typedef struct crude_gfx_descriptor_binding

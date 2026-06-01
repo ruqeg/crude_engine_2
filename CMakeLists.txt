@@ -58,48 +58,67 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-set(CMAKE_CONFIGURATION_TYPES "Debug;Develop;Release;Production;" CACHE STRING "" FORCE)
+set(CMAKE_CONFIGURATION_TYPES "EditorDebug;EditorCompiledShaders;GameDebug;GameDevelopment;GameProduction;" CACHE STRING "" FORCE)
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Develop" CACHE STRING "Default build type" FORCE)
+  set(CMAKE_BUILD_TYPE "EditorDebug" CACHE STRING "Default build type" FORCE)
 endif()
 
 #if(CRUDE_SANITIZER_ANY_ENABLED)
-set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,Develop>:EditAndContinue>")
+set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:EditorDebug,EditorCompiledShaders,GameDebug>:EditAndContinue>")
 #endif
 
 # Debug Configuration
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /D_DEBUG")
-add_compile_definitions("$<$<CONFIG:Debug>:CRUDE_DEVELOP=1>")
-add_compile_definitions("$<$<CONFIG:Debug>:CRUDE_DEBUG=1>")
-add_compile_definitions("$<$<CONFIG:Debug>:CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED=1>")
+set(CMAKE_CXX_FLAGS_EDITORDEBUG "${CMAKE_CXX_FLAGS_DEBUG} /D_DEBUG")
+add_compile_definitions("$<$<CONFIG:EditorDebug>:CRUDE_DEVELOP=1>")
+add_compile_definitions("$<$<CONFIG:EditorDebug>:CRUDE_DEBUG=1>")
+add_compile_definitions("$<$<CONFIG:EditorDebug>:CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED=1>")
+add_compile_definitions("$<$<CONFIG:EditorDebug>:CRUDE_EDITOR=1>")
+add_compile_definitions("$<$<CONFIG:EditorDebug>:CRUDE_COMPILE_SHADERS=1>")
+add_compile_definitions("$<$<CONFIG:EditorDebug>:CRUDE_OPTIMIZE_SHADERS=0>")
+set(CMAKE_EXE_LINKER_FLAGS_EDITORDEBUG "${CMAKE_EXE_LINKEEditorDebugR_FLAGS_EDITORDEBUG} /DEBUG" CACHE STRING "" FORCE)
+set(CMAKE_SHARED_LINKER_FLAGS_EDITORDEBUG "${CMAKE_SHARED_LINKER_FLAGS_EDITORDEBUG} /DEBUG" CACHE STRING "" FORCE)
 
 # Develop Configuration
-set(CMAKE_CXX_FLAGS_DEVELOP "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
-add_compile_definitions("$<$<CONFIG:Develop>:CRUDE_DEVELOP=1>")
-add_compile_definitions("$<$<CONFIG:Develop>:IMGUI_DISABLE_DEBUG_TOOLS=1>")
-add_compile_definitions("$<$<CONFIG:Develop>:IMGUI_DISABLE_DEMO_WINDOWS=1>")
+set(CMAKE_CXX_FLAGS_EDITORCOMPILEDSHADERS "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
+add_compile_definitions("$<$<CONFIG:EditorCompiledShaders>:CRUDE_DEVELOP=1>")
+add_compile_definitions("$<$<CONFIG:EditorCompiledShaders>:CRUDE_EDITOR=1>")
+add_compile_definitions("$<$<CONFIG:EditorCompiledShaders>:CRUDE_COMPILE_SHADERS=1>")
+add_compile_definitions("$<$<CONFIG:EditorCompiledShaders>:CRUDE_OPTIMIZE_SHADERS=1>")
+add_compile_definitions("$<$<CONFIG:EditorCompiledShaders>:IMGUI_DISABLE_DEBUG_TOOLS=1>")
+add_compile_definitions("$<$<CONFIG:EditorCompiledShaders>:IMGUI_DISABLE_DEMO_WINDOWS=1>")
+
+# Debug Configuration
+set(CMAKE_CXX_FLAGS_GAMEDEBUG "${CMAKE_CXX_FLAGS_DEBUG} /D_DEBUG")
+add_compile_definitions("$<$<CONFIG:GameDebug>:CRUDE_DEVELOP=1>")
+add_compile_definitions("$<$<CONFIG:GameDebug>:CRUDE_DEBUG=1>")
+add_compile_definitions("$<$<CONFIG:GameDebug>:CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED=1>")
+add_compile_definitions("$<$<CONFIG:GameDebug>:CRUDE_EDITOR=0>")
+add_compile_definitions("$<$<CONFIG:GameDebug>:CRUDE_COMPILE_SHADERS=1>")
+add_compile_definitions("$<$<CONFIG:GameDebug>:CRUDE_OPTIMIZE_SHADERS=0>")
+set(CMAKE_EXE_LINKER_FLAGS_GAMEDEBUG "${CMAKE_EXE_LINKEEditorDebugR_FLAGS_GAMEDEBUG} /DEBUG" CACHE STRING "" FORCE)
+set(CMAKE_SHARED_LINKER_FLAGS_GAMEDEBUG "${CMAKE_SHARED_LINKER_FLAGS_GAMEDEBUG} /DEBUG" CACHE STRING "" FORCE)
 
 # Release Configuration  
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
-add_compile_definitions("$<$<CONFIG:Release>:CRUDE_DEVELOP=1>")
-add_compile_definitions("$<$<CONFIG:Release>:CRUDE_PRODUCTION=1>")
-add_compile_definitions("$<$<CONFIG:Release>:IMGUI_DISABLE_DEBUG_TOOLS=1>")
-add_compile_definitions("$<$<CONFIG:Release>:IMGUI_DISABLE_DEMO_WINDOWS=1>")
+set(CMAKE_CXX_FLAGS_GAMEDEVELOPMENT "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
+add_compile_definitions("$<$<CONFIG:GameDevelopment>:CRUDE_DEVELOP=1>")
+add_compile_definitions("$<$<CONFIG:GameDevelopment>:CRUDE_PRODUCTION=1>")
+add_compile_definitions("$<$<CONFIG:GameDevelopment>:CRUDE_EDITOR=0>")
+add_compile_definitions("$<$<CONFIG:GameDevelopment>:CRUDE_COMPILE_SHADERS=0>")
+add_compile_definitions("$<$<CONFIG:GameDevelopment>:CRUDE_OPTIMIZE_SHADERS=1>")
+add_compile_definitions("$<$<CONFIG:GameDevelopment>:IMGUI_DISABLE_DEBUG_TOOLS=1>")
+add_compile_definitions("$<$<CONFIG:GameDevelopment>:IMGUI_DISABLE_DEMO_WINDOWS=1>")
 
 # Production Configuration  
-set(CMAKE_CXX_FLAGS_PRODUCTION "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
-add_compile_definitions("$<$<CONFIG:Production>:CRUDE_DEVELOP=0>")
-add_compile_definitions("$<$<CONFIG:Production>:CRUDE_PRODUCTION=1>")
-add_compile_definitions("$<$<CONFIG:Production>:IMGUI_DISABLE_DEBUG_TOOLS=1>")
-add_compile_definitions("$<$<CONFIG:Production>:IMGUI_DISABLE_DEMO_WINDOWS=1>")
+set(CMAKE_CXX_FLAGS_GAMEPRODUCTION "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
+add_compile_definitions("$<$<CONFIG:GameProduction>:CRUDE_DEVELOP=0>")
+add_compile_definitions("$<$<CONFIG:GameProduction>:CRUDE_PRODUCTION=1>")
+add_compile_definitions("$<$<CONFIG:GameProduction>:CRUDE_EDITOR=0>")
+add_compile_definitions("$<$<CONFIG:GameProduction>:CRUDE_COMPILE_SHADERS=0>")
+add_compile_definitions("$<$<CONFIG:GameProduction>:CRUDE_OPTIMIZE_SHADERS=1>")
+add_compile_definitions("$<$<CONFIG:GameProduction>:IMGUI_DISABLE_DEBUG_TOOLS=1>")
+add_compile_definitions("$<$<CONFIG:GameProduction>:IMGUI_DISABLE_DEMO_WINDOWS=1>")
 
-# Common Configuration
-add_compile_definitions(
-  CRUDE_GRAPHICS_MESH_SHADER_DISBLED=0
-  CRUDE_GRAPHICS_FRAGMENT_SHADING_RATE_DISBLED=0
-  CRUDE_GRAPHICS_DEFERRED_HOST_OPERATIONS_DISBLED=0
-  CRUDE_GRAPHICS_SHADER_RELAXED_EXTENDED_INSTRUCTION_DISBLED=0
-  )
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:EditorDebug>:Debug>$<$<CONFIG:GameDebug>:Debug>DLL")
 
 add_subdirectory(thirdparty)
 add_subdirectory(engine)

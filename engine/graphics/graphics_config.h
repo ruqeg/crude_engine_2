@@ -54,10 +54,10 @@
 #define CRUDE_GFX_DEVICE_HEAP_ALLOCATOR_DEFAULT_ALIGN      ( 16 )
 #define CRUDE_GFX_DEVICE_HEAP_ALLOCATOR_DEFAULT_ALLOCATION_STRATEGY ( 1 )
 
-#if CRUDE_PRODUCTION
-#define CRUDE_GFX_PRESENT_TEXTURE_NAME "game_final"
-#else
+#if CRUDE_EDITOR
 #define CRUDE_GFX_PRESENT_TEXTURE_NAME "editor_final"
+#else
+#define CRUDE_GFX_PRESENT_TEXTURE_NAME "game_final"
 #endif
 
 #define CRUDE_GFX_SAMPLE_COUNT                             ( CRUDE_GFX_RHI_SAMPLE_COUNT_16_BIT )
@@ -75,11 +75,10 @@
 #define CRUDE_GFX_GPU_AV_ENABLE                            0
 #endif
 
-#if CRUDE_DEBUG
-#define CRUDE_GFX_OPTIMIZE_SHADERS                         0
-#else
-#define CRUDE_GFX_OPTIMIZE_SHADERS                         1
-#endif
+#define CRUDE_GFX_MESH_SHADER_DISBLED                      0
+#define CRUDE_GFX_FRAGMENT_SHADING_RATE_DISBLED            0
+#define CRUDE_GFX_DEFERRED_HOST_OPERATIONS_DISBLED         0
+#define CRUDE_GFX_SHADER_RELAXED_EXTENDED_INSTRUCTION_DISBLED 0
 
 #define CRUDE_GFX_GPU_PROFILER CRUDE_DEVELOP
 

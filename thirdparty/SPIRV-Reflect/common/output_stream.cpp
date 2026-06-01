@@ -804,6 +804,8 @@ std::string ToStringDecorationFlags(SpvReflectDecorationFlags decoration_flags) 
   PRINT_AND_CLEAR_DECORATION_FLAG(sstream, decoration_flags, PATCH);
   PRINT_AND_CLEAR_DECORATION_FLAG(sstream, decoration_flags, PER_VERTEX);
   PRINT_AND_CLEAR_DECORATION_FLAG(sstream, decoration_flags, PER_TASK);
+  PRINT_AND_CLEAR_DECORATION_FLAG(sstream, decoration_flags, WEIGHT_TEXTURE);
+  PRINT_AND_CLEAR_DECORATION_FLAG(sstream, decoration_flags, BLOCK_MATCH_TEXTURE);
 #undef PRINT_AND_CLEAR_DECORATION_FLAG
   if (decoration_flags != 0) {
     // Unhandled SpvReflectDecorationFlags bit
@@ -1524,11 +1526,11 @@ void StreamWriteEntryPoint(std::ostream& os, const SpvReflectEntryPoint& obj, co
   if (obj.shader_stage == SPV_REFLECT_SHADER_STAGE_COMPUTE_BIT) {
     os << "\n";
     os << "local size      : "
-       << "(" << (obj.local_size.x == SPV_REFLECT_EXECUTION_MODE_SPEC_CONSTANT ? "Spec Constant" : std::to_string(obj.local_size.x))
+       << "(" << (obj.local_size.x == (uint32_t)SPV_REFLECT_EXECUTION_MODE_SPEC_CONSTANT ? "Spec Constant" : std::to_string(obj.local_size.x))
        << ", "
-       << (obj.local_size.y == SPV_REFLECT_EXECUTION_MODE_SPEC_CONSTANT ? "Spec Constant" : std::to_string(obj.local_size.y))
+       << (obj.local_size.y == (uint32_t)SPV_REFLECT_EXECUTION_MODE_SPEC_CONSTANT ? "Spec Constant" : std::to_string(obj.local_size.y))
        << ", "
-       << (obj.local_size.z == SPV_REFLECT_EXECUTION_MODE_SPEC_CONSTANT ? "Spec Constant" : std::to_string(obj.local_size.z))
+       << (obj.local_size.z == (uint32_t)SPV_REFLECT_EXECUTION_MODE_SPEC_CONSTANT ? "Spec Constant" : std::to_string(obj.local_size.z))
        << ")";
   }
 }

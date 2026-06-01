@@ -132,8 +132,10 @@ typedef struct crude_engine
    ******************************/
 #if CRUDE_DEVELOP
   crude_gui_devmenu                                        devmenu;
+#endif /* CRUDE_DEVELOP */
+#if CRUDE_EDITOR
   crude_editor                                             editor;
-#endif
+#endif /* CRUDE_EDITOR */
 } crude_engine;
 
 CRUDE_API void

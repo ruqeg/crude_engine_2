@@ -1447,7 +1447,7 @@ crude_gfx_rhi_create_image
   
   if ( creation->alias_image )
   {
-    image->vma_allocation = 0;
+    image->vma_allocation = creation->alias_image->vma_allocation;
     CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vmaCreateAliasingImage( device->vma_allocator, creation->alias_image->vma_allocation, &vk_creation, &image->vk_image ), "Failed to create aliasing image!" );
   }
   else
@@ -1455,7 +1455,7 @@ crude_gfx_rhi_create_image
     vma_creation = CRUDE_COMPOUNT_EMPTY( VmaAllocationCreateInfo );
     vma_creation.usage = VMA_MEMORY_USAGE_GPU_ONLY;
     
-   CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vmaCreateImage( device->vma_allocator, &vk_creation, &vma_creation, &image->vk_image, &image->vma_allocation, NULL ), "Failed to create image!" );
+    CRUDE_GFX_RHI_HANDLE_VULKAN_RESULT( vmaCreateImage( device->vma_allocator, &vk_creation, &vma_creation, &image->vk_image, &image->vma_allocation, NULL ), "Failed to create image!" );
   }
 }
 
@@ -2506,6 +2506,7 @@ crude_gfx_rhi_set_debug_utils_object_name
   _In_ char const                                         *object_name
 )
 {
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   if ( device->vkSetDebugUtilsObjectNameEXT )
   {
     VkDebugUtilsObjectNameInfoEXT vk_name_info = CRUDE_COMPOUNT_EMPTY( VkDebugUtilsObjectNameInfoEXT );
@@ -2515,6 +2516,7 @@ crude_gfx_rhi_set_debug_utils_object_name
     vk_name_info.pObjectName  = object_name;
     device->vkSetDebugUtilsObjectNameEXT( device->vk_device, &vk_name_info );
   }
+#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED */
 }
 
 void
@@ -3080,6 +3082,7 @@ crude_gfx_rhi_command_buffer_begin_debug_utils_label
   _In_ crude_gfx_rhi_debug_utils_label const              *debug_utils_label
 )
 {
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   VkDebugUtilsLabelEXT                                     vk_label;
   
   vk_label = CRUDE_COMPOUNT_EMPTY( VkDebugUtilsLabelEXT );
@@ -3090,6 +3093,7 @@ crude_gfx_rhi_command_buffer_begin_debug_utils_label
   vk_label.color[ 2 ] = debug_utils_label->color[ 2 ];
   vk_label.color[ 3 ] = debug_utils_label->color[ 3 ];
   device->vkCmdBeginDebugUtilsLabelEXT( command_buffer.vk_command_buffer, &vk_label );
+#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED*/
 }
 
 void
@@ -3099,7 +3103,9 @@ crude_gfx_rhi_command_buffer_end_debug_utils_label
   _In_ crude_gfx_rhi_command_buffer                        command_buffer
 )
 {
+#if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
   device->vkCmdEndDebugUtilsLabelEXT( command_buffer.vk_command_buffer );
+#endif /* CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED*/
 }
 
 void
@@ -3556,28 +3562,28 @@ crude_gfx_rhi_vk_pick_physical_device_
   
   for ( size_t i = 0; i < vk_available_extensions_count; ++i )
   {
-#if !CRUDE_GRAPHICS_MESH_SHADER_DISBLED
+#if !CRUDE_GFX_MESH_SHADER_DISBLED
     if ( crude_string_cmp( vk_available_extensions[ i ].extensionName, VK_EXT_MESH_SHADER_EXTENSION_NAME ) == 0 )
     {
       vk_selected_physical_devices_optional_extenstions->mesh_shaders_extension_present = true;
       continue;
     }
 #endif
-#if !CRUDE_GRAPHICS_FRAGMENT_SHADING_RATE_DISBLED
+#if !CRUDE_GFX_FRAGMENT_SHADING_RATE_DISBLED
     if ( crude_string_cmp( vk_available_extensions[ i ].extensionName, VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME ) == 0 )
     {
       vk_selected_physical_devices_optional_extenstions->fragment_shading_rate_extension_present = true;
       continue;
     }
 #endif
-#if !CRUDE_GRAPHICS_DEFERRED_HOST_OPERATIONS_DISBLED
+#if !CRUDE_GFX_DEFERRED_HOST_OPERATIONS_DISBLED
     if ( crude_string_cmp( vk_available_extensions[ i ].extensionName, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME ) == 0 )
     {
       vk_selected_physical_devices_optional_extenstions->deferred_host_operations_extension_present = true;
       continue;
     }
 #endif
-#if !CRUDE_GRAPHICS_SHADER_RELAXED_EXTENDED_INSTRUCTION_DISBLED
+#if !CRUDE_GFX_SHADER_RELAXED_EXTENDED_INSTRUCTION_DISBLED
     if ( crude_string_cmp( vk_available_extensions[ i ].extensionName, VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME ) == 0 )
     {
       vk_selected_physical_devices_optional_extenstions->shader_relaxed_extended_instruction_extension_present = true;
@@ -6921,7 +6927,7 @@ crude_gfx_rhi_compile_shader_glsl_to_spirv
       crude_gfx_rhi_shader_stage_to_compiler_extension( desc->stage ) );
 
     spirv_optimizer_absolute_filepath = crude_string_buffer_append_use_f( &temporary_string_buffer, "%sspirv-opt.exe", vk_binaries_path );
-    spirv_optimizer_arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "spirv-opt.exe --preserve-bindings --relax-block-layout --scalar-block-layout -O %s -o %s", spirv_debug_absolute_filepath, spirv_optimized_absolute_filepath );
+    spirv_optimizer_arguments = crude_string_buffer_append_use_f( &temporary_string_buffer, "spirv-opt.exe --preserve-bindings --relax-block-layout --scalar-block-layout --preserve-spec-constants -O %s -o %s", spirv_debug_absolute_filepath, spirv_optimized_absolute_filepath );
 
     CRUDE_ASSERT( crude_process_execute( ".", spirv_optimizer_absolute_filepath, spirv_optimizer_arguments, "ERROR" ) );
   }

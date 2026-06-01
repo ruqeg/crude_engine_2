@@ -249,6 +249,7 @@ crude_gfx_compile_shader
   _In_ char const                                         *code,
   _In_ uint32                                              code_size,
   _In_ crude_gfx_rhi_shader_stage_flag_bits                stage,
+  _In_ bool                                                optimized,
   _In_ char const                                         *name,
   _In_ crude_heap_allocator                               *allocator,
   _Out_ char                                             **spirv_absolute_filepath
