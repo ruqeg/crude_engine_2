@@ -35,6 +35,11 @@ typedef struct crude_gfx_ddgi_area_cpu
   bool                                                     use_half_resolution;
 } crude_gfx_ddgi_area_cpu;
 
+typedef struct crude_gfx_world_environment_cpu
+{
+  XMFLOAT3                                                 background_radiance;
+} crude_gfx_world_environment_cpu;
+
 CRUDE_API void
 crude_gfx_camera_to_camera_gpu
 (

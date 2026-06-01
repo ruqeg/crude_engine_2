@@ -397,7 +397,7 @@ void main()
   }
   else
   {
-    direct_radiance = scene.data.background_color * scene.data.background_intensity;
+    direct_radiance = scene.data.background_radiance;
   }
 
   direct_radiance += mesh_draw.emissive.xyz * mesh_draw.emissive.w;
@@ -463,7 +463,7 @@ void main()
   }
   else
   {
-    radiance = scene.data.background_color * scene.data.background_intensity;
+    radiance = scene.data.background_radiance;
   }
 
   out_radiance = vec4( radiance, sqrt( albedo.a ) );

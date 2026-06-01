@@ -27,6 +27,7 @@ ECS_COMPONENT_DECLARE( crude_gltf );
 ECS_COMPONENT_DECLARE( crude_node_external );
 ECS_COMPONENT_DECLARE( crude_ray );
 ECS_COMPONENT_DECLARE( crude_ddgi_area );
+ECS_COMPONENT_DECLARE( crude_world_environment );
 
 CRUDE_COMPONENT_STRING_DEFINE( crude_camera, "crude_camera" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_transform, "crude_transform" );
@@ -35,6 +36,7 @@ CRUDE_COMPONENT_STRING_DEFINE( crude_light, "crude_light" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_node_external, "crude_node_external" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_ray, "crude_ray" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_ddgi_area, "crude_ddgi_area" );
+CRUDE_COMPONENT_STRING_DEFINE( crude_world_environment, "crude_world_environment" );
 
 void
 crude_scene_components_import
@@ -51,6 +53,7 @@ crude_scene_components_import
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_node_external );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_ray );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_ddgi_area );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_world_environment );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_transform );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_light );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_camera );
@@ -58,18 +61,21 @@ crude_scene_components_import
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_node_external );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_ray );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_ddgi_area );
+  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_world_environment );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_transform );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_light );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_camera );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_gltf );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_ray );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_ddgi_area );
+  CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_world_environment );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_transform );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_light );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_camera );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_gltf );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_ray );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_ddgi_area );
+  CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_world_environment );
 
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_gltf_destroy_observer_, EcsOnRemove, NULL, { 
     { .id = ecs_id( crude_gltf ), .oper = EcsAnd }
@@ -385,7 +391,7 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_light )
   CRUDE_IMGUI_START_OPTIONS;
 
   CRUDE_IMGUI_OPTION( "Color", {
-    ImGui::ColorPicker3( "##Color", &component->color.x );
+    ImGui::ColorEdit3( "##Color", &component->color.x );
   } );
   CRUDE_IMGUI_OPTION( "Intensity", {
     ImGui::DragFloat( "##Intensity", &component->intensity );
@@ -593,6 +599,43 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_ddgi_area )
   {
     crude_gfx_indirect_light_pass_on_offsets_reset( &manager->scene_renderer->indirect_light_pass );
   }
+}
+
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_world_environment )
+{
+  crude_memory_set( component, 0, sizeof( crude_world_environment ) );
+  
+  component->background_color.x = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive(component_json, "background_color_x" ) );
+  component->background_color.y = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive(component_json, "background_color_y" ) );
+  component->background_color.z = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive(component_json, "background_color_z" ) );
+  component->background_intencity = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive(component_json, "background_intencity" ) );
+
+  return true;
+}
+
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_world_environment )
+{
+  cJSON *world_environment_json = cJSON_CreateObject( );
+  cJSON_AddItemToObject( world_environment_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_world_environment ) ) );
+
+  cJSON_AddItemToObject( world_environment_json, "background_color_x", cJSON_CreateNumber( component->background_color.x ) );
+  cJSON_AddItemToObject( world_environment_json, "background_color_y", cJSON_CreateNumber( component->background_color.y ) );
+  cJSON_AddItemToObject( world_environment_json, "background_color_z", cJSON_CreateNumber( component->background_color.z ) );
+  cJSON_AddItemToObject( world_environment_json, "background_intencity", cJSON_CreateNumber( component->background_intencity ) );
+  return world_environment_json;
+}
+
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_world_environment )
+{
+  CRUDE_IMGUI_START_OPTIONS;
+
+  CRUDE_IMGUI_OPTION( "Background Color", {
+    ImGui::ColorEdit3( "##Background Color", &component->background_color.x );
+  } );
+
+  CRUDE_IMGUI_OPTION( "Background Intencity", {
+    ImGui::DragFloat( "##Background Intencity", &component->background_intencity );
+  } );
 }
 
 void

@@ -65,6 +65,12 @@ typedef struct crude_ray
   uint32                                                   broad_phase_mask;
 } crude_ray;
 
+typedef struct crude_world_environment
+{
+  XMFLOAT3                                                 background_color;
+  float32                                                  background_intencity;
+} crude_world_environment;
+
 typedef struct crude_ddgi_area
 {
   XMFLOAT3                                                 probe_spacing;

@@ -138,8 +138,8 @@ crude_gfx_scene_renderer_initialize
   scene_renderer->options.postprocessing_pass.hdr_pre_tonemapping = "radiance";
   scene_renderer->options.postprocessing_pass.gamma = 2.2;
    
-  scene_renderer->options.scene.background_color = CRUDE_COMPOUNT( XMFLOAT3, { 0.529, 0.807, 0.921 } );
-  scene_renderer->options.scene.background_intensity = 1.f;
+  
+  scene_renderer->world_environment_cpu.background_radiance = CRUDE_COMPOUNT_EMPTY( XMFLOAT3 );
   scene_renderer->options.scene.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
   scene_renderer->options.scene.ambient_intensity = 2.f;
 
@@ -384,6 +384,8 @@ crude_gfx_scene_renderer_update_instances_from_node
   scene_renderer->ddgi_enabled = false;
 
   scene_renderer->prev_ddgi_area = scene_renderer->ddgi_area;
+
+  scene_renderer->world_environment_cpu.background_radiance = CRUDE_COMPOUNT_EMPTY( XMFLOAT3 );
 
   crude_scene_renderer_register_nodes_instances_( scene_renderer, world, main_node );
 
@@ -756,8 +758,7 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
 #else
     scene->indirect_light_texture_index = -1;
 #endif
-    scene->background_color = scene_renderer->options.scene.background_color;
-    scene->background_intensity = scene_renderer->options.scene.background_intensity;
+    scene->background_radiance = scene_renderer->world_environment_cpu.background_radiance;
     scene->ambient_color = scene_renderer->options.scene.ambient_color;
     scene->ambient_intensity = scene_renderer->options.scene.ambient_intensity;
     scene->absolute_time = scene_renderer->options.absolute_time;
@@ -1013,6 +1014,15 @@ crude_scene_renderer_register_nodes_instances_
     light_gpu.light = *CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_light );
     XMStoreFloat3( &light_gpu.translation, crude_transform_node_to_world( world, node, CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_transform ) ).r[ 3 ] );
     CRUDE_ARRAY_PUSH( scene_renderer->lights, light_gpu ); 
+  }
+  
+  if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_world_environment ) )
+  {
+    crude_world_environment *world_environment = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, node, crude_world_environment );
+    
+    scene_renderer->world_environment_cpu.background_radiance.x = world_environment->background_color.x * world_environment->background_intencity;
+    scene_renderer->world_environment_cpu.background_radiance.y = world_environment->background_color.y * world_environment->background_intencity;
+    scene_renderer->world_environment_cpu.background_radiance.z = world_environment->background_color.z * world_environment->background_intencity;
   }
   
   if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_ddgi_area ) )

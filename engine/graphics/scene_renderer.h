@@ -82,8 +82,6 @@ typedef struct crude_gfx_scene_renderer_options
   {
     crude_camera                                           camera;
     XMFLOAT4X4                                             camera_view_to_world;
-    XMFLOAT3                                               background_color;
-    float32                                                background_intensity;
     XMFLOAT3                                               ambient_color;
     float32                                                ambient_intensity;
   } scene;
@@ -178,6 +176,7 @@ typedef struct crude_gfx_scene_renderer
   bool                                                     ddgi_enabled;
   crude_gfx_ddgi_area_cpu                                  ddgi_area;
   crude_gfx_ddgi_area_cpu                                  prev_ddgi_area;
+  crude_gfx_world_environment_cpu                          world_environment_cpu;
 
   float32                                                  rotation_scaler;
 

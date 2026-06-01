@@ -143,14 +143,11 @@ CRUDE_SHADER_STRUCT( crude_gfx_scene )
   uint32                                                   absolute_frame;
   float32                                                  absolute_time;
 
-  XMFLOAT3                                                 background_color;
-  float32                                                  background_intensity;
+  XMFLOAT3                                                 background_radiance;
+  uint32                                                   indirect_light_texture_index;
 
   XMFLOAT3                                                 ambient_color;
   float32                                                  ambient_intensity;
-
-  uint32                                                   indirect_light_texture_index;
-  XMFLOAT3                                                 padding;
 
 #if CRUDE_DEVELOP
   uint32                                                   debug_mode;

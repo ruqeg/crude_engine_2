@@ -516,7 +516,7 @@ layout(location=0) rayPayloadInEXT ray_payload payload;
 
 void main()
 {
-  payload.radiance = scene.data.background_color * scene.data.background_intensity;
+  payload.radiance = scene.data.background_radiance;
   payload.distance = 1000;
 }
 

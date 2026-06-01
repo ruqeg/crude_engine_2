@@ -382,7 +382,7 @@ crude_engine_initialize_allocators_
   _In_ crude_engine                                       *engine
 )
 { 
-  crude_heap_allocator_initialize( &engine->common_allocator, CRUDE_RMEGA( 32 ), "common_allocator" );
+  crude_heap_allocator_initialize( &engine->common_allocator, CRUDE_RMEGA( 64 ), "common_allocator" );
   crude_heap_allocator_initialize( &engine->resources_allocator, CRUDE_RMEGA( 16 ), "resources_allocator" );
   crude_stack_allocator_initialize( &engine->temporary_allocator, CRUDE_RMEGA( 16 ), "temprorary_allocator" );
   crude_heap_allocator_initialize( &engine->cgltf_temporary_allocator, CRUDE_RMEGA( 16 ), "cgltf_temporary_allocator" );
@@ -667,7 +667,6 @@ crude_engine_initialize_graphics_
 
   engine->scene_renderer.options.scene.ambient_color = CRUDE_COMPOUNT( XMFLOAT3, { 1, 1, 1 } );
   engine->scene_renderer.options.scene.ambient_intensity = 0.f;
-  engine->scene_renderer.options.scene.background_intensity = 0.f;
 
   engine->graphics_absolute_time = 0.f;
   engine->framerate = 120;

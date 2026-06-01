@@ -1,0 +1,101 @@
+{
+	"name":	"sponza_main",
+	"components":	[{
+			"type":	"crude_transform",
+			"translation":	[0, 0, 0],
+			"rotation":	[0, 0, 0, 1],
+			"scale":	[1, 1, 1]
+		}, {
+			"type":	"crude_weapon",
+			"max_ammo":	1000,
+			"damage":	50,
+			"max_cooldown":	4
+		}],
+	"children":	[{
+			"name":	"sponza",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[0, 0, 0],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[6, 6, 6]
+				}, {
+					"type":	"crude_gltf",
+					"path":	"Sponza\\glTF\\Sponza.gltf",
+					"animations_instances":	[{
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}]
+				}],
+			"children":	[]
+		}, {
+			"name":	"ddgi",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[-87.678131103515625, -3.69380784034729, -70.541252136230469],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_ddgi_area",
+					"probe_spacing_x":	7,
+					"probe_spacing_y":	7,
+					"probe_spacing_z":	7,
+					"max_probe_offset":	0.40000000596046448,
+					"self_shadow_bias":	0.300000011920929,
+					"hysteresis":	0.949999988079071,
+					"shadow_weight_power":	2.5,
+					"infinite_bounces_multiplier":	0.75,
+					"probe_update_per_frame":	1000,
+					"offsets_calculations_count":	24,
+					"probe_rays":	128,
+					"probe_count_x":	25,
+					"probe_count_y":	15,
+					"probe_count_z":	20
+				}],
+			"children":	[]
+		}, {
+			"name":	"sponza_main_child",
+			"components":	[{
+					"type":	"crude_world_environment",
+					"background_color_x":	0,
+					"background_color_y":	0,
+					"background_color_z":	0,
+					"background_intencity":	25
+				}],
+			"children":	[]
+		}, {
+			"name":	"light",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[0, 5.7571115493774414, 0],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_light",
+					"radius":	1,
+					"color":	[0.991150438785553, 0, 0],
+					"intensity":	25
+				}],
+			"children":	[]
+		}]
+}
