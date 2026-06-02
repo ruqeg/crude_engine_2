@@ -112,6 +112,11 @@ crude_gfx_indirect_light_pass_render
   {
     return;
   }
+ 
+  if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( pass->scene_renderer->acceleration_stucture_ds ) )
+  {
+    return;
+  }
 
   gpu = pass->scene_renderer->gpu;
   ddgi_area_cpu = &pass->scene_renderer->ddgi_area;

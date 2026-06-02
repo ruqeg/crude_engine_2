@@ -42,7 +42,12 @@ crude_gfx_ray_tracing_solid_pass_render
   crude_gfx_pipeline_handle                                pipeline;
   
   pass = CRUDE_REINTERPRET_CAST( crude_gfx_ray_tracing_solid_pass*, ctx );
-  
+ 
+  if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( pass->scene_renderer->acceleration_stucture_ds ) )
+  {
+    return;
+  }
+
   ray_tracing_solid_texture_handle = crude_gfx_render_graph_builder_access_resource_by_name( pass->scene_renderer->render_graph->builder, "ray_tracing_solid" )->resource_info.texture.handle;
   ray_tracing_solid_texture = crude_gfx_access_texture( pass->scene_renderer->gpu, ray_tracing_solid_texture_handle );
 

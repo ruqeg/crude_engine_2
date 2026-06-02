@@ -1534,6 +1534,11 @@ CRUDE_GFX_RHI_TO_IMPLEMENTIT
   uint32                                                   max_instance_count;
   uint32                                                   instance_custom_index;
   
+  if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( scene_renderer->tlas_hga.buffer_handle ) )
+  {
+    return;
+  }
+
   temporary_allocator_marker = crude_stack_allocator_get_marker( scene_renderer->temporary_allocator );
   
 #if CRUDE_GFX_VULKAN
@@ -1660,6 +1665,7 @@ CRUDE_GFX_RHI_TO_IMPLEMENTIT
 
   crude_gfx_cmd_add_buffer_barrier( primary_cmd, scene_renderer->tlas_instances_hga.buffer_handle, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, CRUDE_GFX_RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE );
 
+cleanup:
   crude_stack_allocator_free_marker( scene_renderer->temporary_allocator, temporary_allocator_marker );
 }
 
