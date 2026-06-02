@@ -104,7 +104,11 @@ crude_gfx_scene_renderer_initialize
 
   scene_renderer->rotation_scaler = 0.001f;
 
+#if CRUDE_EDITOR
   scene_renderer->ddgi_debug = true;
+#else
+  scene_renderer->ddgi_debug = false;
+#endif
   scene_renderer->ddgi_enabled = false;
   scene_renderer->ddgi_area = CRUDE_COMPOUNT_EMPTY( crude_gfx_ddgi_area_cpu );
 
@@ -1044,7 +1048,7 @@ crude_scene_renderer_register_nodes_instances_
     scene_renderer->ddgi_enabled = true;
   }
   
-#if CRUDE_DEVELOP
+#if CRUDE_EDITOR
   if ( scene_renderer->options.debug.hide_collision)
   {
     if ( CRUDE_ENTITY_HAS_COMPONENT( world, node, crude_light ) )

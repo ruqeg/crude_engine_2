@@ -58,7 +58,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-set(CMAKE_CONFIGURATION_TYPES "EditorDebug;EditorCompiledShaders;GameDebug;GameDevelopment;GameProduction;" CACHE STRING "" FORCE)
+set(CMAKE_CONFIGURATION_TYPES "EditorDebug;EditorCompiledShaders;EditorRelease;GameDebug;GameDevelopment;GameProduction;" CACHE STRING "" FORCE)
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "EditorDebug" CACHE STRING "Default build type" FORCE)
 endif()
@@ -86,6 +86,15 @@ add_compile_definitions("$<$<CONFIG:EditorCompiledShaders>:CRUDE_COMPILE_SHADERS
 add_compile_definitions("$<$<CONFIG:EditorCompiledShaders>:CRUDE_OPTIMIZE_SHADERS=1>")
 add_compile_definitions("$<$<CONFIG:EditorCompiledShaders>:IMGUI_DISABLE_DEBUG_TOOLS=1>")
 add_compile_definitions("$<$<CONFIG:EditorCompiledShaders>:IMGUI_DISABLE_DEMO_WINDOWS=1>")
+
+# Develop Configuration
+set(CMAKE_CXX_FLAGS_EDITORRELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
+add_compile_definitions("$<$<CONFIG:EditorRelease>:CRUDE_DEVELOP=1>")
+add_compile_definitions("$<$<CONFIG:EditorRelease>:CRUDE_EDITOR=1>")
+add_compile_definitions("$<$<CONFIG:EditorRelease>:CRUDE_COMPILE_SHADERS=0>")
+add_compile_definitions("$<$<CONFIG:EditorRelease>:CRUDE_OPTIMIZE_SHADERS=1>")
+add_compile_definitions("$<$<CONFIG:EditorRelease>:IMGUI_DISABLE_DEBUG_TOOLS=1>")
+add_compile_definitions("$<$<CONFIG:EditorRelease>:IMGUI_DISABLE_DEMO_WINDOWS=1>")
 
 # Debug Configuration
 set(CMAKE_CXX_FLAGS_GAMEDEBUG "${CMAKE_CXX_FLAGS_DEBUG} /D_DEBUG")

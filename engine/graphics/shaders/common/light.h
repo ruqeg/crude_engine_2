@@ -170,7 +170,7 @@ crude_calculate_point_light_shadow_contribution
   proj_uv = ( proj_pos.xy * 0.5 ) + 0.5;
   proj_uv.y = 1.f - proj_uv.y;
 
-  bias = 0.0001f;
+  bias = 0.001f;
   current_depth = proj_pos.z;
     
   filter_radius = scene.data.inv_shadow_map_size.xy * CRUDE_SHADOW_FILTER_RADIUS; 

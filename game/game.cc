@@ -34,11 +34,11 @@ crude_game_initialize
 {
   game->engine = engine;
   
-#if CRUDE_PRODUCTION
+#if CRUDE_EDITOR
+  CRUDE_ECS_GAME_STAGE_ENABLE( engine->world, false );
+#else
   CRUDE_ECS_GAME_STAGE_ENABLE( engine->world, true );
   crude_physics_enable_simulation( &engine->physics, engine->world, true );
-#else
-  CRUDE_ECS_GAME_STAGE_ENABLE( engine->world, false );
 #endif
 
   game->player_controller_system_context = CRUDE_COMPOUNT_EMPTY( crude_player_controller_system_context );
@@ -72,7 +72,7 @@ crude_game_initialize
   game->engine->imgui_draw_custom_fn = crude_game_imgui_custom_draw;
   game->engine->imgui_draw_custom_ctx = game;
 
-#if CRUDE_PRODUCTION
+#if !CRUDE_EDITOR
   SDL_Window *sdl_window = game->engine->platform.sdl_window;
   SDL_SetWindowFullscreen( sdl_window, true );
 #endif
@@ -109,7 +109,7 @@ crude_game_update_input_
   _In_ crude_game                                         *game
 )
 {
-#if CRUDE_PRODUCTION
+#if !CRUDE_EDITOR
   SDL_Window *sdl_window = game->engine->platform.sdl_window;
   if ( game->engine->platform.input.keys[ SDL_SCANCODE_F ].pressed )
   {
