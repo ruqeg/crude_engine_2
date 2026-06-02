@@ -87,6 +87,7 @@ crude_gfx_render_graph_parse_from_file
 
   passes = cJSON_GetObjectItemCaseSensitive( render_graph_json, "passes" );
   pass = NULL;
+
   cJSON_ArrayForEach( pass, passes )
   {
     crude_gfx_render_graph_node_creation                   node_creation;
@@ -116,6 +117,21 @@ crude_gfx_render_graph_parse_from_file
     CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( node_creation.inputs, cJSON_GetArraySize( pass_inputs ), crude_stack_allocator_pack( temporary_allocator ) );
     CRUDE_ARRAY_INITIALIZE_WITH_CAPACITY( node_creation.outputs, cJSON_GetArraySize( pass_outputs ), crude_stack_allocator_pack( temporary_allocator ) );
   
+    pass_pipeline_type = cJSON_GetObjectItemCaseSensitive( pass, "type" );
+
+    node_creation.type = CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_GRAPHICS;
+    if ( pass_pipeline_type )
+    {
+      if ( crude_string_cmp( cJSON_GetStringValue( pass_pipeline_type ), "compute" ) == 0 )
+      {
+        node_creation.type = CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_COMPUTE;
+      }
+      else if ( crude_string_cmp( cJSON_GetStringValue( pass_pipeline_type ), "ray_tracing" ) == 0 )
+      {
+        node_creation.type = CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_RAY_TRACING;
+      }
+    }
+
     if ( pass_inputs )
     {
       pass_input = NULL;
@@ -166,50 +182,59 @@ crude_gfx_render_graph_parse_from_file
           cJSON const                                     *output_scale;
           
           output_format = cJSON_GetObjectItemCaseSensitive( pass_output, "format" );
-          output_load_op = cJSON_GetObjectItemCaseSensitive( pass_output, "op" );
+
           output_scale = cJSON_GetObjectItemCaseSensitive( pass_output, "scale" );
-          CRUDE_ASSERT( output_format && output_load_op && output_scale );
+          CRUDE_ASSERT( output_format && output_scale );
           CRUDE_ASSERT( cJSON_GetArraySize( output_scale ) == 2 );
+          
+          if ( node_creation.type == CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_GRAPHICS )
+          {
+            output_load_op = cJSON_GetObjectItemCaseSensitive( pass_output, "op" );
+            CRUDE_ASSERT( output_load_op );
+            output_creation.resource_info.texture.load_op = crude_gfx_string_to_render_pass_operation( cJSON_GetStringValue( output_load_op ) );
+          }
 
           output_creation.resource_info.texture.format = crude_gfx_string_to_format( cJSON_GetStringValue( output_format ) );
-          output_creation.resource_info.texture.load_op = crude_gfx_string_to_render_pass_operation( cJSON_GetStringValue( output_load_op ) );
           output_creation.resource_info.texture.scale.x = cJSON_GetNumberValue( cJSON_GetArrayItem( output_scale, 0 ) );
           output_creation.resource_info.texture.scale.y = cJSON_GetNumberValue( cJSON_GetArrayItem( output_scale, 1 ) );
           output_creation.resource_info.texture.depth = 1;
 
           output_creation.resource_info.texture.multisample = node_creation.multisample;
-
-          if ( crude_gfx_rhi_format_has_depth( output_creation.resource_info.texture.format ) )
+          
+          if ( node_creation.type == CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_GRAPHICS )
           {
-            cJSON const                                   *output_clear_depth;
-            cJSON const                                   *output_clear_stencil;
-
-            output_clear_depth = cJSON_GetObjectItemCaseSensitive( pass_output, "clear_depth" );
-            output_clear_stencil = cJSON_GetObjectItemCaseSensitive( pass_output, "clear_stencil" );
-            output_creation.resource_info.texture.clear_values[ 0 ] = output_clear_depth ? cJSON_GetNumberValue( output_clear_depth ) : 1.f;
-            output_creation.resource_info.texture.clear_values[ 1 ] = output_clear_stencil ? cJSON_GetNumberValue( output_clear_stencil ) : 0.f;
-          }
-          else
-          {
-            cJSON const                                   *output_clear_color;
-            output_clear_color = cJSON_GetObjectItemCaseSensitive( pass_output, "clear_color" );
-            if ( output_clear_color )
+            if ( crude_gfx_rhi_format_has_depth( output_creation.resource_info.texture.format ) )
             {
-              for ( uint32 c = 0; c < cJSON_GetArraySize( output_clear_color ); ++c )
-              {
-                output_creation.resource_info.texture.clear_values[ c ] = cJSON_GetNumberValue( cJSON_GetArrayItem( output_clear_color, c ) );
-              }
+              cJSON const                                   *output_clear_depth;
+              cJSON const                                   *output_clear_stencil;
+
+              output_clear_depth = cJSON_GetObjectItemCaseSensitive( pass_output, "clear_depth" );
+              output_clear_stencil = cJSON_GetObjectItemCaseSensitive( pass_output, "clear_stencil" );
+              output_creation.resource_info.texture.clear_values[ 0 ] = output_clear_depth ? cJSON_GetNumberValue( output_clear_depth ) : 1.f;
+              output_creation.resource_info.texture.clear_values[ 1 ] = output_clear_stencil ? cJSON_GetNumberValue( output_clear_stencil ) : 0.f;
             }
             else
             {
-              if ( output_creation.resource_info.texture.load_op == CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR )
+              cJSON const                                   *output_clear_color;
+              output_clear_color = cJSON_GetObjectItemCaseSensitive( pass_output, "clear_color" );
+              if ( output_clear_color )
               {
-                CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Error parsing output texture %s: load operation is clear, but clear color not specified. Defaulting to 0,0,0,0.\n", output_creation.name );
+                for ( uint32 c = 0; c < cJSON_GetArraySize( output_clear_color ); ++c )
+                {
+                  output_creation.resource_info.texture.clear_values[ c ] = cJSON_GetNumberValue( cJSON_GetArrayItem( output_clear_color, c ) );
+                }
               }
-              output_creation.resource_info.texture.clear_values[ 0 ] = 0.0f;
-              output_creation.resource_info.texture.clear_values[ 1 ] = 0.0f;
-              output_creation.resource_info.texture.clear_values[ 2 ] = 0.0f;
-              output_creation.resource_info.texture.clear_values[ 3 ] = 0.0f;
+              else
+              {
+                if ( output_creation.resource_info.texture.load_op == CRUDE_GFX_RENDER_PASS_OPERATION_CLEAR )
+                {
+                  CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Error parsing output texture %s: load operation is clear, but clear color not specified. Defaulting to 0,0,0,0.\n", output_creation.name );
+                }
+                output_creation.resource_info.texture.clear_values[ 0 ] = 0.0f;
+                output_creation.resource_info.texture.clear_values[ 1 ] = 0.0f;
+                output_creation.resource_info.texture.clear_values[ 2 ] = 0.0f;
+                output_creation.resource_info.texture.clear_values[ 3 ] = 0.0f;
+              }
             }
           }
           break;
@@ -227,23 +252,9 @@ crude_gfx_render_graph_parse_from_file
     CRUDE_ASSERT( pass_name );
 
     pass_enabled = cJSON_GetObjectItemCaseSensitive( pass, "enabled" );
-    pass_pipeline_type = cJSON_GetObjectItemCaseSensitive( pass, "type" );
 
     node_creation.name = crude_string_buffer_append_use_f( &temporary_string_buffer, "%s", cJSON_GetStringValue( pass_name ) );
     node_creation.enabled = pass_enabled ? cJSON_GetNumberValue( pass_enabled ) : 1;
-    
-    node_creation.type = CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_GRAPHICS;
-    if ( pass_pipeline_type )
-    {
-      if ( crude_string_cmp( cJSON_GetStringValue( pass_pipeline_type ), "compute" ) == 0 )
-      {
-        node_creation.type = CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_COMPUTE;
-      }
-      else if ( crude_string_cmp( cJSON_GetStringValue( pass_pipeline_type ), "ray_tracing" ) == 0 )
-      {
-        node_creation.type = CRUDE_GFX_RENDER_GRAPH_NODE_TYPE_RAY_TRACING;
-      }
-    }
 
     crude_gfx_render_graph_node_handle node_handle = crude_gfx_render_graph_builder_create_node( render_graph->builder, &node_creation );
     CRUDE_ARRAY_PUSH( render_graph->nodes, node_handle );

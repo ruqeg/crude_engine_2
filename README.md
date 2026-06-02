@@ -3,12 +3,12 @@
 ![Hey sweetie, have you heard about crude engine](https://github.com/ruqeg/crude_engine_2/blob/main/docs/images/intro.png?raw=true)
 
 ## Overview
-CE2 is a 3D game engine with gpu driven rendering created to have fun at free time, written in C++ due to some dependencies, but I use C99-style to reduce headache with extra abstraction. The renderer is based on Vulkan with no current plans to support other graphics APIs. Currently CE2 only supports Windows, but Linux support is planned at the future. The project is still under active development, but I think that readme won't hurt.
+CE2 is a 3D game engine with gpu driven rendering architecture created to have fun at free time, written in C++ due to some dependencies, but I use C99-style to reduce headache with extra abstraction. The renderer is based on Vulkan, also I'm also working on DX12 support whenever I'm in the mood for it. Currently CE2 only supports Windows, but Linux support is planned at the future. The project is still under active development, but I think that readme won't hurt.
 
 ## Features
-- GPU driven renderer architecture, Render Graph, Clustered Shading, Occlusion Culling, Tetrahedron Shadow Mapping, Automatic Exposure, SSR, etc
+- GPU driven renderer architecture, Render Graph, Clustered Shading, Occlusion Culling, Tetrahedron Shadow Mapping, Automatic Exposure, SSR, DDGI, RHI, etc
 - Asynchronous Resources Loading, Multi-Threading Commands Recording
-- Physics, Editor, Animations, Json Scene, GLTF Models
+- Editor, Physics, Animations, Json Scene, GLTF Models
 - GPU Profiler, Shader Hot Reloading, Task/Mesh Shader, ECS, etc
 
 ## Setup

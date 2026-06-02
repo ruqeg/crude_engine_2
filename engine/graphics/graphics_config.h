@@ -75,6 +75,8 @@
 #define CRUDE_GFX_GPU_AV_ENABLE                            0
 #endif
 
+#define CRUDE_GFX_OPTIMIZE_SHADERS                         1
+
 #define CRUDE_GFX_MESH_SHADER_DISBLED                      0
 #define CRUDE_GFX_FRAGMENT_SHADING_RATE_DISBLED            0
 #define CRUDE_GFX_DEFERRED_HOST_OPERATIONS_DISBLED         0

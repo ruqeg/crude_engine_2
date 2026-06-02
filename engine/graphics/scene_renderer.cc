@@ -413,9 +413,15 @@ crude_gfx_scene_renderer_update_instances_from_node
   {
     crude_gfx_indirect_light_pass_on_offsets_reset( &scene_renderer->indirect_light_pass );
   }
+
   if ( !ddgi_enabled_prev && scene_renderer->ddgi_enabled )
   {
     crude_gfx_indirect_light_pass_on_offsets_reset( &scene_renderer->indirect_light_pass );
+  }
+  
+  if ( ddgi_enabled_prev && !scene_renderer->ddgi_enabled )
+  {
+    crude_gfx_indirect_light_pass_on_disabled( &scene_renderer->indirect_light_pass );
   }
 
   should_recreated_tlas = false;

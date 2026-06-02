@@ -227,9 +227,7 @@
           "type": "attachment",
           "name": "indirect_radiance",
           "format": "FORMAT_R16G16B16A16_SFLOAT",
-          "scale": [ 1, 1 ],
-          "op": "clear",
-          "clear_color": [ 0, 0, 0, 1 ]
+          "scale": [ 1, 1 ]
         },
         {
           "type": "marker",
@@ -422,9 +420,7 @@
           "type": "attachment",
           "name": "ray_tracing_solid",
           "format": "FORMAT_R8G8B8A8_UNORM",
-          "scale": [ 1, 1 ],
-          "op": "clear",
-          "clear_color": [ 0, 0, 0, 1 ]
+          "scale": [ 1, 1 ]
         }
       ]
     },

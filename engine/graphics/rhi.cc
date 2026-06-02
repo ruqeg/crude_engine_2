@@ -1162,8 +1162,8 @@ crude_gfx_rhi_create_device
   vk_device_creation.queueCreateInfoCount = CRUDE_STATIC_CAST( uint32, device->transfer_queue.vk_queue_family < vk_queue_family_count ? 2 : 1 );
   vk_device_creation.pQueueCreateInfos = vk_queue_create_infos;
 #if CRUDE_GRAPHICS_VALIDATION_LAYERS_ENABLED
-  vk_device_creation.enabledLayerCount = CRUDE_COUNTOF( vk_required_debug_layers );
-  vk_device_creation.ppEnabledLayerNames = vk_required_debug_layers;
+  vk_device_creation.enabledLayerCount = 0;
+  vk_device_creation.ppEnabledLayerNames = NULL;
 #endif
   vk_device_creation.enabledExtensionCount = vk_device_extensions_count;
   vk_device_creation.ppEnabledExtensionNames = vk_device_extensions;

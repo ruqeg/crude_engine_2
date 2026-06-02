@@ -342,4 +342,19 @@ crude_gfx_indirect_light_pass_on_offsets_reset
   crude_gfx_submit_immediate( immediate_cmd );
 }
 
+void
+crude_gfx_indirect_light_pass_on_disabled
+(
+  _In_ crude_gfx_indirect_light_pass                      *pass
+)
+{
+  crude_gfx_cmd_buffer                                    *immediate_cmd;
+
+  immediate_cmd = crude_gfx_access_cmd_buffer( pass->scene_renderer->gpu, pass->scene_renderer->gpu->immediate_transfer_cmd_buffer );
+  crude_gfx_cmd_begin_primary( immediate_cmd );
+  crude_gfx_cmd_add_image_barrier( immediate_cmd, CRUDE_GFX_PASS_TEXTURE_HANDLE( indirect_light.indirect_radiance_texture ), CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, 0, 1, false );
+  crude_gfx_cmd_clear_texture( immediate_cmd, CRUDE_GFX_PASS_TEXTURE_HANDLE( indirect_light.indirect_radiance_texture ), CRUDE_COMPOUNT_EMPTY( XMFLOAT4 ) );
+  crude_gfx_submit_immediate( immediate_cmd );
+}
+
 #endif /* CRUDE_GFX_RAY_TRACING_DDGI_ENABLED */

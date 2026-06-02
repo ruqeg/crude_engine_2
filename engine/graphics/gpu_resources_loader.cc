@@ -238,7 +238,7 @@ parse_gpu_pipeline_
 
       pipeline_creation->shaders.name = pipeline_creation->name;
 
-#if CRUDE_OPTIMIZE_SHADERS
+#if CRUDE_GFX_OPTIMIZE_SHADERS
       pipeline_creation->shaders.spv_input = true;
 #else
       pipeline_creation->shaders.spv_input = false;

@@ -75,4 +75,10 @@ crude_gfx_indirect_light_pass_on_offsets_reset
   _In_ crude_gfx_indirect_light_pass                      *pass
 );
 
+CRUDE_API void
+crude_gfx_indirect_light_pass_on_disabled
+(
+  _In_ crude_gfx_indirect_light_pass                      *pass
+);
+
 #endif /* CRUDE_GFX_RAY_TRACING_DDGI_ENABLED */
