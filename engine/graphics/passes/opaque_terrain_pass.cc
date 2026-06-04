@@ -1,12 +1,12 @@
 #include <engine/graphics/scene_renderer.h>
 
-#define TERRAIN
+#define OPAQUE_TERRAIN
 #include <engine/graphics/shaders/geometry.crude_shader>
 
 void
-crude_gfx_terrain_pass_initialize
+crude_gfx_opaque_terrain_pass_initialize
 (
-  _In_ crude_gfx_terrain_pass                             *pass,
+  _In_ crude_gfx_opaque_terrain_pass                      *pass,
   _In_ crude_gfx_scene_renderer                           *scene_renderer
 )
 {
@@ -14,30 +14,30 @@ crude_gfx_terrain_pass_initialize
 }
 
 void
-crude_gfx_terrain_pass_deinitialize
+crude_gfx_opaque_terrain_pass_deinitialize
 (
-  _In_ crude_gfx_terrain_pass                             *pass
+  _In_ crude_gfx_opaque_terrain_pass                      *pass
 )
 {
 }
 
 void
-crude_gfx_terrain_pass_render
+crude_gfx_opaque_terrain_pass_render
 (
   _In_ void                                               *ctx,
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
-  crude_gfx_terrain_pass                                  *pass;
+  _In_ crude_gfx_opaque_terrain_pass                      *pass;
   crude_gfx_device                                        *gpu;
   crude_gfx_pipeline_handle                                pipeline;
   XMFLOAT2                                                 inv_radiance_texture_resolution;
 
-  pass = CRUDE_REINTERPRET_CAST( crude_gfx_terrain_pass*, ctx );
+  pass = CRUDE_REINTERPRET_CAST( crude_gfx_opaque_terrain_pass*, ctx );
 
   gpu = pass->scene_renderer->gpu;
 
-  pipeline = crude_gfx_access_technique_pass_by_name( gpu, "geometry", gpu->mesh_shaders_extension_present ? "translucent_no_cull" : "translucent_no_cull_classic" )->pipeline;
+  pipeline = crude_gfx_access_technique_pass_by_name( gpu, "geometry", "opaque_terrain_meshlet" )->pipeline;
   crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
 
   crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );
@@ -86,13 +86,13 @@ crude_gfx_terrain_pass_render
 }
 
 crude_gfx_render_graph_pass_container
-crude_gfx_terrain_pass_pack
+crude_gfx_opaque_terrain_pass_pack
 (
-  _In_ crude_gfx_terrain_pass                             *pass
+  _In_ crude_gfx_opaque_terrain_pass                      *pass
 )
 {
   crude_gfx_render_graph_pass_container container = crude_gfx_render_graph_pass_container_empty();
   container.ctx = pass;
-  container.render = crude_gfx_terrain_pass_render;
+  container.render = crude_gfx_opaque_terrain_pass_render;
   return container;
 }

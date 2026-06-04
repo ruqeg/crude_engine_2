@@ -258,7 +258,7 @@ crude_gfx_scene_renderer_initialize
 #endif
   crude_gfx_postprocessing_pass_initialize( &scene_renderer->postprocessing_pass, scene_renderer );
   crude_gfx_translucent_pass_initialize( &scene_renderer->translucent_pass, scene_renderer );
-  crude_gfx_terrain_pass_initialize( &scene_renderer->terrain_pass, scene_renderer );
+  crude_gfx_opaque_terrain_pass_initialize( &scene_renderer->opaque_terrain_pass, scene_renderer );
   crude_gfx_light_lut_pass_initialize( &scene_renderer->light_lut_pass, scene_renderer );
   //crude_gfx_ssr_pass_initialize( &scene_renderer->ssr_pass, scene_renderer );
 #if CRUDE_GFX_RAY_TRACING_SOLID_DEBUG_ENABLED
@@ -300,7 +300,7 @@ crude_gfx_scene_renderer_deinitialize
   crude_gfx_compose_pass_deinitialize( &scene_renderer->compose_pass );
 #endif
   crude_gfx_postprocessing_pass_deinitialize( &scene_renderer->postprocessing_pass );
-  crude_gfx_terrain_pass_deinitialize( &scene_renderer->terrain_pass );
+  crude_gfx_opaque_terrain_pass_deinitialize( &scene_renderer->opaque_terrain_pass );
   crude_gfx_translucent_pass_deinitialize( &scene_renderer->translucent_pass );
   crude_gfx_light_lut_pass_deinitialize( &scene_renderer->light_lut_pass );
   //crude_gfx_ssr_pass_deinitialize( &scene_renderer->ssr_pass );
@@ -654,7 +654,7 @@ crude_gfx_scene_renderer_register_passes
 #endif
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "postprocessing_pass" ), crude_gfx_postprocessing_pass_pack( &scene_renderer->postprocessing_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "translucent_pass" ), crude_gfx_translucent_pass_pack( &scene_renderer->translucent_pass ) );
-  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "terrain_pass" ), crude_gfx_terrain_pass_pack( &scene_renderer->terrain_pass ) );
+  crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "opaque_terrain_pass" ), crude_gfx_opaque_terrain_pass_pack( &scene_renderer->opaque_terrain_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "light_lut_pass" ), crude_gfx_light_lut_pass_pack( &scene_renderer->light_lut_pass ) );
   //crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "ssr_pass" ), crude_gfx_ssr_pass_pack( &scene_renderer->ssr_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "pointlight_shadows_pass" ), crude_gfx_pointlight_shadow_pass_pack( &scene_renderer->pointlight_shadow_pass ) );

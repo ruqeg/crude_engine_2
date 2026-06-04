@@ -1,7 +1,6 @@
 
 #if defined( CRUDE_VALIDATOR_LINTING ) || defined( __cplusplus )
 #if !defined( __cplusplus )
-#define Vulkan
 #extension GL_GOOGLE_include_directive : enable
 #endif /* !__cplusplus */
 //#define CALCULATE_PROBE_OFFSETS

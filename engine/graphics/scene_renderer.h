@@ -21,7 +21,7 @@
 #include <engine/graphics/passes/translucent_pass.h>
 #include <engine/graphics/passes/light_lut_pass.h>
 #include <engine/graphics/passes/ssr_pass.h>
-#include <engine/graphics/passes/terrain_pass.h>
+#include <engine/graphics/passes/opaque_terrain_pass.h>
 #include <engine/graphics/model_renderer_resources_manager.h>
 
 #if CRUDE_DEVELOP
@@ -224,16 +224,16 @@ typedef struct crude_gfx_scene_renderer
   crude_gfx_culling_late_pass                              culling_late_pass;
   crude_gfx_opaque_early_pass                              opaque_early_pass;
   crude_gfx_opaque_late_pass                               opaque_late_pass;
+  crude_gfx_opaque_terrain_pass                            opaque_terrain_pass;
+  crude_gfx_translucent_pass                               translucent_pass;
   crude_gfx_imgui_pass                                     imgui_pass;
   crude_gfx_depth_pyramid_pass                             depth_pyramid_pass;
   crude_gfx_pointlight_shadow_pass                         pointlight_shadow_pass;
   crude_gfx_debug_pass                                     debug_pass;
   crude_gfx_compose_pass                                   compose_pass;
   crude_gfx_postprocessing_pass                            postprocessing_pass;
-  crude_gfx_translucent_pass                               translucent_pass;
   crude_gfx_light_lut_pass                                 light_lut_pass;
   crude_gfx_ssr_pass                                       ssr_pass;
-  crude_gfx_terrain_pass                                   terrain_pass;
 #if CRUDE_GFX_RAY_TRACING_SOLID_DEBUG_ENABLED
   crude_gfx_ray_tracing_solid_pass                         ray_tracing_solid_pass;
 #endif

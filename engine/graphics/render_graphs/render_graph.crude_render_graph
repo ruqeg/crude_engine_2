@@ -93,11 +93,15 @@
           "scale": [ 1, 1 ],
           "op": "clear",
           "clear_depth": 1.0
+        },
+        {
+          "type": "marker",
+          "name": "opaque_early_pass_marker"
         }
       ]
     },
     {
-      "name": "terrain_pass",
+      "name": "opaque_terrain_pass",
       "multisample": 1,
       "inputs": [
         {
@@ -136,7 +140,7 @@
         },
         {
           "type": "marker",
-          "name": "terrain_pass_marker"
+          "name": "opaque_terrain_pass_marker"
         }
       ]
     },
@@ -150,7 +154,11 @@
         },
         {
           "type": "reference",
-          "name": "terrain_pass_marker"
+          "name": "opaque_early_pass_marker"
+        },
+        {
+          "type": "reference",
+          "name": "opaque_terrain_pass_marker"
         }
       ],
       "outputs": [
@@ -225,7 +233,7 @@
         },
         {
           "type": "marker",
-          "name": "MESHLET_LATE_PASS_MARKER"
+          "name": "opaque_late_pass_marker"
         }
       ]
     },
@@ -235,7 +243,7 @@
       "inputs": [
         {
           "type": "reference",
-          "name": "MESHLET_LATE_PASS_MARKER"
+          "name": "opaque_late_pass_marker"
         },
         {
           "type": "texture",
@@ -408,6 +416,7 @@
     {
       "name": "ray_tracing_solid_pass",
       "type": "ray_tracing",
+      "enabled": 0,
       "inputs": [
         {
           "type": "reference",
@@ -442,10 +451,6 @@
         {
           "type": "texture",
           "name": "game_final"
-        },
-        {
-          "type": "texture",
-          "name": "ray_tracing_solid"
         }
       ],
       "outputs": [

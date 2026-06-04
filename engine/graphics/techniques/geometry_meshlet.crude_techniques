@@ -13,12 +13,38 @@
       ]
     }
   ],
-  "pipelines" : [
+  "pipelines": [
     {
       "name": "opaque_meshlet",
       "multisample": "enabled",
       "render_pass_output": {
         "reference": "opaque_early_pass"
+      },
+      "depth": {
+        "write": 1,
+        "test": "less_or_equal"
+      },
+      "cull": "back",
+      "shaders": [
+        {
+          "stage": "mesh",
+          "buffer": "geometry"
+        },
+        {
+          "stage": "task",
+          "buffer": "geometry"
+        },
+        {
+          "stage": "fragment",
+          "buffer": "geometry"
+        }
+      ]
+    },
+    {
+      "name": "opaque_terrain_meshlet",
+      "multisample": "enabled",
+      "render_pass_output": {
+        "reference": "opaque_terrain_pass"
       },
       "depth": {
         "write": 1,

@@ -4,13 +4,14 @@
 #extension GL_GOOGLE_include_directive : enable
 #endif
 //#define TRANSLUCENT_NO_CULL_CLASSIC
-#define OPAQUE_MESHLET
+#define OPAQUE_TERRAIN_MESHLET
+//#define OPAQUE_MESHLET
 //#define DEFERRED_CLASSIC
 //#define TRANSLUCENT_NO_CULL
 //#define CRUDE_STAGE_TASK
-#define CRUDE_STAGE_MESH
+//#define CRUDE_STAGE_MESH
 //#define CRUDE_STAGE_VERTEX
-//#define CRUDE_STAGE_FRAGMENT
+#define CRUDE_STAGE_FRAGMENT
 #include "common/platform.h"
 #include "common/debug.h"
 #include "common/scene.h"
@@ -113,6 +114,35 @@ CRUDE_PUSH_CONSTANT( crude_gfx_translucent_no_cull_pass_push_constant_ )
   CulledLightsWorldToTextureRef                            culled_lights_world_to_texture;
 };
 #endif /* TRANSLUCENT_NO_CULL */
+
+#if defined( OPAQUE_TERRAIN_MESHLET )
+CRUDE_PUSH_CONSTANT( crude_gfx_opaque_terrain_meshlet_pass_push_constant_ )
+{
+  SceneRef                                                 scene;
+  MeshDrawsRef                                             mesh_draws;
+
+  MeshInstancesDrawsRef                                    mesh_instance_draws;
+  MeshletsRef                                              meshlets;
+  
+  VerticesRef                                              vertices;
+  VerticesPositionsRef                                     vertices_positions;
+
+  VerticesJointsRef                                        vertices_joints;
+  TrianglesIndicesRef                                      triangles_indices;
+
+  VerticesIndicesRef                                       vertices_indices;
+  MeshDrawCountRef                                         visible_mesh_count;
+
+  MeshDrawCommandsRef                                      mesh_draw_commands;
+  DebugLinesVerticesRef                                    debug_line_vertices;
+
+  DebugCountsRef                                           debug_counts;
+  JointMatricesRef                                         joint_matrices;
+
+  CulledLightsRef                                          culled_lights;
+  CulledLightsWorldToTextureRef                            culled_lights_world_to_texture;
+};
+#endif /* OPAQUE_TERRAIN_MESHLET */
 
 #ifndef __cplusplus
 
@@ -279,7 +309,51 @@ void main()
 #endif /* CRUDE_STAGE_MESH */
 #endif /* OPAQUE_MESHLET || TRANSLUCENT_NO_CULL */
 
-#if defined( CRUDE_STAGE_VERTEX ) && ( defined( DEFERRED_CLASSIC ) || defined( TRANSLUCENT_NO_CULL_CLASSIC ) )
+
+#if defined( OPAQUE_TERRAIN_MESHLET ) 
+
+#extension GL_ARB_shader_draw_parameters : require
+#extension GL_KHR_shader_subgroup_ballot: require
+
+//#if defined( CRUDE_STAGE_TASK ) || defined( CRUDE_STAGE_MESH )
+//taskPayloadSharedEXT struct
+//{
+//} shared_data;
+//#endif
+
+#if defined( CRUDE_STAGE_TASK )
+
+layout(local_size_x=32) in;
+
+void main()
+{
+  EmitMeshTasksEXT( 1, 1, 1 );
+}
+#endif /* CRUDE_STAGE_TASK */
+
+#if defined( CRUDE_STAGE_MESH )
+layout(local_size_x=64, local_size_y=1, local_size_z=1) in;
+layout(triangles) out;
+layout(max_vertices=128, max_primitives=124) out;
+
+layout(location=0) out vec2 out_texcoord[];
+layout(location=1) out vec3 out_normals[];
+layout(location=2) out vec3 out_tangents[];
+layout(location=3) out vec3 out_bitangents[];
+layout(location=4) out vec3 out_world_positions[];
+layout(location=5) out vec3 out_view_surface_normal[];
+layout(location=6) out vec3 out_view_position[];
+layout(location=7) out flat uint out_mesh_draw_index[];
+
+void main()
+{
+  SetMeshOutputsEXT( 0, 0 );
+}
+#endif /* CRUDE_STAGE_MESH */
+#endif /* OPAQUE_TERRAIN_MESHLET */
+
+#if defined( DEFERRED_CLASSIC ) || defined( TRANSLUCENT_NO_CULL_CLASSIC )
+#if defined( CRUDE_STAGE_VERTEX )
 
 layout(location=0) out vec2 out_texcoord;
 layout(location=1) out vec3 out_normal;
@@ -335,9 +409,10 @@ void main()
   out_view_surface_normal = view_normal;
   out_view_position = scene.data.camera.position - world_position.xyz;
 }
-#endif /* CRUDE_STAGE_VERTEX && ( DEFERRED_CLASSIC || TRANSLUCENT_NO_CULL_CLASSIC ) */
+#endif /* CRUDE_STAGE_VERTEX */
+#endif /* DEFERRED_CLASSIC || TRANSLUCENT_NO_CULL_CLASSIC */
 
-#if defined( OPAQUE_MESHLET ) || defined( DEFERRED_CLASSIC )
+#if defined( OPAQUE_MESHLET ) || defined( DEFERRED_CLASSIC ) || defined( OPAQUE_TERRAIN_MESHLET )
 #if defined( CRUDE_STAGE_FRAGMENT )
 
 layout(location = 0) out vec4 out_direct_radiance;
@@ -408,7 +483,7 @@ void main()
 }
 
 #endif /* CRUDE_STAGE_FRAGMENT */
-#endif /* OPAQUE_MESHLET || DEFERRED_CLASSIC*/
+#endif /* OPAQUE_MESHLET || DEFERRED_CLASSIC || OPAQUE_TERRAIN_MESHLET */
 
 #if defined( TRANSLUCENT_NO_CULL ) || defined( TRANSLUCENT_NO_CULL_CLASSIC )
 #if defined( CRUDE_STAGE_FRAGMENT )

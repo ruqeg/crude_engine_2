@@ -52,6 +52,12 @@ crude_gui_debug_queue_draw
 
   ImGui::Checkbox( "DDGI Debug", &debug->engine->scene_renderer.ddgi_debug );
   ImGui::DragFloat( "DDGI Rotation Scaler", &debug->engine->scene_renderer.rotation_scaler );
+
+  {
+    crude_gfx_render_graph_node                           *ray_tracing_solid_pass_node;
+    ray_tracing_solid_pass_node = crude_gfx_render_graph_builder_access_node_by_name( &debug->engine->render_graph_builder, "ray_tracing_solid_pass" );
+    ImGui::Checkbox( "Ray Tracing Solid Debug", &ray_tracing_solid_pass_node->enabled );
+  }
 }
 
 #endif /* CRUDE_DEVELOP */

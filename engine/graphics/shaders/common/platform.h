@@ -2,7 +2,11 @@
 #ifndef CRUDE_PLATFORM_GLSL
 #define CRUDE_PLATFORM_GLSL
 
-#ifdef __cplusplus
+#if !defined( __cplusplus )
+#define Vulkan
+#endif
+
+#if defined( __cplusplus )
 #include <engine/core/alias.h>
 #include <engine/core/math.h>
 #include <engine/graphics/rhi.h>
@@ -30,13 +34,13 @@
 #define CRUDE_MESH_DRAW_FLAGS_HAS_TANGENTS ( 1 << 4 )
 #define CRUDE_MESH_DRAW_FLAGS_INDEX_16 ( 1 << 5 )
 
-#ifdef __cplusplus
+#if defined( __cplusplus )
 #define CRUDE_SHADER_STRUCT( name ) typedef CRUDE_ALIGNED_STRUCT( 16 ) name
 #else
 #define CRUDE_SHADER_STRUCT( name ) struct name
 #endif
 
-#ifdef __cplusplus
+#if defined( __cplusplus )
 #define CRUDE_SHADER_RBUFFER_REF( name, type )  typedef crude_gfx_rhi_device_address name;
 #define CRUDE_SHADER_RBUFFER_REF_ARRAY( name, type )  typedef crude_gfx_rhi_device_address name;
 #define CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( name, type ) typedef crude_gfx_rhi_device_address name;
@@ -48,13 +52,13 @@
 #define CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( name, type ) layout(buffer_reference, row_major, scalar) readonly buffer name { type data[]; };
 #endif
 
-#ifndef __cplusplus
+#if !defined( __cplusplus )
 #define CRUDE_PUSH_CONSTANT(name) layout(push_constant) uniform name
 #else
 #define CRUDE_PUSH_CONSTANT(name) CRUDE_ALIGNED_STRUCT( 16 ) name
 #endif
 
-#ifndef __cplusplus
+#if !defined( __cplusplus )
 
 #define float32 float
 #define int8 int8_t
