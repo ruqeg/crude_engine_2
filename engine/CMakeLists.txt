@@ -4,7 +4,7 @@ project(crude_engine)
 
 find_package(Vulkan REQUIRED)
 
-file(GLOB_RECURSE SRC *.cc *.crude_shader *.crude_techniques)
+file(GLOB_RECURSE SRC *.cc *.crude_shader *.crude_techniques *.crude_render_graph)
 file(GLOB_RECURSE HEADERS *.h *.inl)
 
 set(CRUDE_SOURCES ${SRC} ${HEADERS})

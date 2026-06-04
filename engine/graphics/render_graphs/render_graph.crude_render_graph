@@ -40,11 +40,7 @@
       "outputs": [
         {
           "type": "marker",
-          "name": "mesh_task_indirect_commands_early"
-        },
-        {
-          "type": "marker",
-          "name": "mesh_task_indirect_count_early"
+          "name": "culling_early_pass_marker"
         }
       ]
     },
@@ -58,11 +54,7 @@
         },
         {
           "type": "reference",
-          "name": "mesh_task_indirect_commands_early"
-        },
-        {
-          "type": "reference",
-          "name": "mesh_task_indirect_count_early"
+          "name": "culling_early_pass_marker"
         },
         {
           "type": "reference",
@@ -105,6 +97,50 @@
       ]
     },
     {
+      "name": "terrain_pass",
+      "multisample": 1,
+      "inputs": [
+        {
+          "type": "attachment",
+          "name": "direct_radiance"
+        },
+        {
+          "type": "attachment",
+          "name": "direct_normal"
+        },
+        {
+          "type": "attachment",
+          "name": "direct_albedo"
+        },
+        {
+          "type": "attachment",
+          "name": "depth"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "reference",
+          "name": "direct_radiance"
+        },
+        {
+          "type": "reference",
+          "name": "direct_normal"
+        },
+        {
+          "type": "reference",
+          "name": "direct_albedo"
+        },
+        {
+          "type": "reference",
+          "name": "depth"
+        },
+        {
+          "type": "marker",
+          "name": "terrain_pass_marker"
+        }
+      ]
+    },
+    {
       "name": "depth_pyramid_early_pass",
       "type": "compute",
       "inputs": [
@@ -114,11 +150,7 @@
         },
         {
           "type": "reference",
-          "name": "mesh_task_indirect_commands_early"
-        },
-        {
-          "type": "reference",
-          "name": "mesh_task_indirect_count_early"
+          "name": "terrain_pass_marker"
         }
       ],
       "outputs": [
@@ -141,11 +173,7 @@
       "outputs": [
         {
           "type": "marker",
-          "name": "mesh_task_indirect_commands_late"
-        },
-        {
-          "type": "marker",
-          "name": "mesh_task_indirect_count_late"
+          "name": "culling_late_pass_marker"
         }
       ]
     },
@@ -159,11 +187,7 @@
         },
         {
           "type": "reference",
-          "name": "mesh_task_indirect_commands_late"
-        },
-        {
-          "type": "reference",
-          "name": "mesh_task_indirect_count_late"
+          "name": "culling_late_pass_marker"
         },
         {
           "type": "attachment",
@@ -272,31 +296,6 @@
       ]
     },
     {
-      "name": "depth_pyramid_late_pass",
-      "type": "compute",
-      "inputs": [
-        {
-          "type": "texture",
-          "name": "depth"
-        },
-        {
-          "type": "reference",
-          "name": "MESHLET_LATE_PASS_MARKER"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "texture",
-          "name": "depth_pyramid",
-          "external": true
-        },
-        {
-          "type": "marker",
-          "name": "depth_pyramid_late_pass_marker"
-        }
-      ]
-    },
-    {
       "name": "indirect_light_debug_pass",
       "multisample": 1,
       "inputs": [
@@ -342,7 +341,7 @@
         },
         {
           "type": "reference",
-          "name": "depth_pyramid_late_pass_marker"
+          "name": "compose_pass_marker"
         },
         {
           "type": "reference",
