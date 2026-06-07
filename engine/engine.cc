@@ -6,7 +6,6 @@
 #include <engine/core/file.h>
 #include <engine/platform/platform.h>
 #include <engine/graphics/gpu_resources_loader.h>
-#include <engine/engine/environment.h>
 
 #include <engine/engine.h>
 
@@ -593,10 +592,7 @@ crude_engine_initialize_graphics_
   device_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_device_creation );
   device_creation.sdl_window = engine->platform.sdl_window;
   device_creation.allocator = &engine->common_allocator;
-  device_creation.shaders_absolute_directory = engine->environment.directories.shaders_absolute_directory;
-  device_creation.techniques_absolute_directory = engine->environment.directories.techniques_absolute_directory;
-  device_creation.compiled_shaders_absolute_directory = engine->environment.directories.compiled_shaders_absolute_directory;
-  device_creation.temporary_absolute_directory = engine->environment.directories.temporary_absolute_directory;
+  device_creation.environment = &engine->environment;
   crude_gfx_device_initialize( &engine->gpu, &device_creation );
   
   crude_gfx_render_graph_builder_initialize( &engine->render_graph_builder, &engine->gpu );

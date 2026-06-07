@@ -1,5 +1,5 @@
 {
-	"name":	"test",
+	"name":	"player",
 	"components":	[{
 			"type":	"crude_transform",
 			"translation":	[0, 0, 0],
@@ -7,12 +7,30 @@
 			"scale":	[1, 1, 1]
 		}],
 	"children":	[{
-			"name":	"world",
+			"name":	"camera",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[0, 3.74579668045044, 0],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_camera",
+					"fov_radians":	1,
+					"near_z":	1,
+					"far_z":	300,
+					"aspect_ratio":	1.7999999523162842
+				}],
+			"children":	[]
+		}, {
+			"name":	"terrain",
 			"components":	[{
 					"type":	"crude_transform",
 					"translation":	[0, 0, 0],
 					"rotation":	[0, 0, 0, 1],
 					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_terrain",
+					"height_texture":	"game\\dev\\GrandMountainHeightMapShared\\HeightMapPNG.png"
 				}],
 			"children":	[]
 		}]

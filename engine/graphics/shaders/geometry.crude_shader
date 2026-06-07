@@ -9,9 +9,9 @@
 //#define DEFERRED_CLASSIC
 //#define TRANSLUCENT_NO_CULL
 //#define CRUDE_STAGE_TASK
-//#define CRUDE_STAGE_MESH
+#define CRUDE_STAGE_MESH
 //#define CRUDE_STAGE_VERTEX
-#define CRUDE_STAGE_FRAGMENT
+//#define CRUDE_STAGE_FRAGMENT
 #include "common/platform.h"
 #include "common/debug.h"
 #include "common/scene.h"
@@ -309,11 +309,15 @@ void main()
 #endif /* CRUDE_STAGE_MESH */
 #endif /* OPAQUE_MESHLET || TRANSLUCENT_NO_CULL */
 
-
 #if defined( OPAQUE_TERRAIN_MESHLET ) 
 
 #extension GL_ARB_shader_draw_parameters : require
 #extension GL_KHR_shader_subgroup_ballot: require
+
+#define CLUSTER_GRID_SIZE 9
+#define CLUSTER_PRIMITIVES_IN_COL ( 2 * CLUSTER_GRID_SIZE - 2 )
+#define CLUSTER_VERTICES_COUNT ( CLUSTER_GRID_SIZE * CLUSTER_GRID_SIZE )
+#define CLUSTER_PRIMITIVES_COUNT 128
 
 //#if defined( CRUDE_STAGE_TASK ) || defined( CRUDE_STAGE_MESH )
 //taskPayloadSharedEXT struct
@@ -334,7 +338,7 @@ void main()
 #if defined( CRUDE_STAGE_MESH )
 layout(local_size_x=64, local_size_y=1, local_size_z=1) in;
 layout(triangles) out;
-layout(max_vertices=128, max_primitives=124) out;
+layout(max_vertices=81, max_primitives=128) out;
 
 layout(location=0) out vec2 out_texcoord[];
 layout(location=1) out vec3 out_normals[];
@@ -347,7 +351,29 @@ layout(location=7) out flat uint out_mesh_draw_index[];
 
 void main()
 {
-  SetMeshOutputsEXT( 0, 0 );
+  SetMeshOutputsEXT( CLUSTER_VERTICES_COUNT, CLUSTER_PRIMITIVES_COUNT );
+  
+  for ( uint i = gl_LocalInvocationID.x; i < CLUSTER_VERTICES_COUNT; i += gl_WorkGroupSize.x )
+  {
+    vec3                                                   vertex;
+    
+    vertex.x = i / CLUSTER_GRID_SIZE;
+    vertex.y = 0;
+    vertex.z = i % CLUSTER_GRID_SIZE;
+    
+    gl_MeshVerticesEXT[ i ].gl_Position = vec4( vertex, 1 ) * scene.data.camera.world_to_clip;
+  }
+  
+  for ( uint i = gl_LocalInvocationID.x; i < CLUSTER_PRIMITIVES_COUNT / 2; i += gl_WorkGroupSize.x )
+  {
+    uint row = i / ( CLUSTER_GRID_SIZE - 1 );
+    uint col = i % ( CLUSTER_GRID_SIZE - 1 );
+
+    uint v0 = row * CLUSTER_GRID_SIZE + col;
+
+    gl_PrimitiveTriangleIndicesEXT[ 2 * i + 0 ] = uvec3( v0, v0 + 1, v0 + CLUSTER_GRID_SIZE );
+    gl_PrimitiveTriangleIndicesEXT[ 2 * i + 1 ] = uvec3( v0 + 1, v0 + CLUSTER_GRID_SIZE + 1, v0 + CLUSTER_GRID_SIZE );
+  }
 }
 #endif /* CRUDE_STAGE_MESH */
 #endif /* OPAQUE_TERRAIN_MESHLET */

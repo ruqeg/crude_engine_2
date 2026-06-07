@@ -75,7 +75,7 @@ crude_string_buffer_close_current_string
  * String Utils
  * 
  ***********************************************/
-CRUDE_API void
+CRUDE_API int32
 crude_snprintf
 (
   _Out_ char                                              *buffer,

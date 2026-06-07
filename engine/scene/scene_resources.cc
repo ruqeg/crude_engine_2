@@ -66,6 +66,16 @@ crude_node_external_empty
   return node_external;
 }
 
+crude_terrain
+crude_terrain_empty
+(
+)
+{
+  crude_terrain terrain = CRUDE_COMPOUNT_EMPTY( crude_terrain );
+  terrain.height_texture_handle = CRUDE_GFX_TEXTURE_HANDLE_INVALID;
+  return terrain;
+}
+
 XMMATRIX
 crude_transform_node_to_world
 (

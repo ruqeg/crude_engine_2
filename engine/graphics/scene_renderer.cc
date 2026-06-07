@@ -661,9 +661,11 @@ crude_gfx_scene_renderer_register_passes
 #if CRUDE_GFX_RAY_TRACING_SOLID_DEBUG_ENABLED
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "ray_tracing_solid_pass" ), crude_gfx_ray_tracing_solid_pass_pack( &scene_renderer->ray_tracing_solid_pass ) );
 #endif
+
 #if CRUDE_GFX_RAY_TRACING_DDGI_ENABLED
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "indirect_light_pass" ), crude_gfx_indirect_light_pass_pack( &scene_renderer->indirect_light_pass ) );
   crude_gfx_render_graph_builder_register_render_pass( render_graph->builder, CRUDE_STRING_NODE( "indirect_light_debug_pass" ), crude_gfx_indirect_light_debug_pass_pack( &scene_renderer->indirect_light_debug_pass ) );
+  crude_gfx_indirect_light_pass_on_disabled( &scene_renderer->indirect_light_pass );
 #endif
 }
 

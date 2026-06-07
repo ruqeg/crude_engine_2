@@ -105,10 +105,7 @@ crude_gfx_device_initialize
   gpu->swapchain_resized_last_frame = false;
   gpu->timestamps_enabled = false;
 
-  gpu->temporary_absolute_directory = creation->temporary_absolute_directory;
-  gpu->techniques_absolute_directory = creation->techniques_absolute_directory;
-  gpu->compiled_shaders_absolute_directory = creation->compiled_shaders_absolute_directory;
-  gpu->shaders_absolute_directory = creation->shaders_absolute_directory;
+  gpu->environment = creation->environment;
 
   crude_gfx_rhi_create_instance( &gpu->rhi_instance );
   crude_gfx_rhi_create_surface( gpu->rhi_instance, gpu->sdl_window, &gpu->rhi_surface );
@@ -769,8 +766,8 @@ crude_gfx_compile_shader
   glsl_to_spirv_desc.code_size = code_size;
   glsl_to_spirv_desc.stage = stage;
   glsl_to_spirv_desc.pass_name = name;
-  glsl_to_spirv_desc.temporary_absolute_directory = gpu->temporary_absolute_directory;
-  glsl_to_spirv_desc.compiled_absolute_directory = gpu->compiled_shaders_absolute_directory;
+  glsl_to_spirv_desc.temporary_absolute_directory = gpu->environment->directories.temporary_absolute_directory;
+  glsl_to_spirv_desc.compiled_absolute_directory = gpu->environment->directories.compiled_shaders_absolute_directory;
   glsl_to_spirv_desc.optimized = optimized;
   crude_gfx_rhi_compile_shader_glsl_to_spirv( &glsl_to_spirv_desc, allocator, spirv_absolute_filepath );
 

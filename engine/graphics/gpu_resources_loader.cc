@@ -85,8 +85,8 @@ crude_gfx_technique_load_from_file
   crude_string_buffer_initialize( &buffer_name_buffer, 1024 * 1024, crude_stack_allocator_pack( temporary_allocator ) );
 #endif /* CRUDE_COMPILE_SHADERS */
 
-  crude_string_buffer_initialize( &technique_buffer, crude_string_length( gpu->techniques_absolute_directory ) + crude_string_length( technique_relative_filepath ) + 1, crude_heap_allocator_pack( gpu->allocator ) );
-  json_path = crude_string_buffer_append_use_f( &technique_buffer, "%s%s", gpu->techniques_absolute_directory, technique_relative_filepath );;
+  crude_string_buffer_initialize( &technique_buffer, gpu->environment->directories.techniques_absolute_directory_length + crude_string_length( technique_relative_filepath ) + 1, crude_heap_allocator_pack( gpu->allocator ) );
+  json_path = crude_string_buffer_append_use_f( &technique_buffer, "%s%s", gpu->environment->directories.techniques_absolute_directory, technique_relative_filepath );;
   if ( !crude_file_exist( json_path ) )
   {
     CRUDE_LOG_ERROR( CRUDE_CHANNEL_GRAPHICS, "Cannot find a file \"%s\" to parse render graph", json_path );
@@ -149,12 +149,12 @@ crude_gfx_technique_load_from_file
         for ( size_t include_index = 0; include_index < cJSON_GetArraySize( includes_json ); ++include_index )
         {
           filename = cJSON_GetStringValue( cJSON_GetArrayItem( includes_json, include_index ) );
-          load_shader_to_string_buffer_( filename, gpu->shaders_absolute_directory, &total_code_size, &shader_code_buffer, &path_buffer, temporary_allocator );
+          load_shader_to_string_buffer_( filename, gpu->environment->directories.shaders_absolute_directory, &total_code_size, &shader_code_buffer, &path_buffer, temporary_allocator );
         }
       }
       
       filename = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( buffer_json, "filename" ) );
-      load_shader_to_string_buffer_( filename, gpu->shaders_absolute_directory, &total_code_size, &shader_code_buffer, &path_buffer, temporary_allocator );
+      load_shader_to_string_buffer_( filename, gpu->environment->directories.shaders_absolute_directory, &total_code_size, &shader_code_buffer, &path_buffer, temporary_allocator );
       
       buffer_name = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( buffer_json, "name" ) );
 

@@ -18,7 +18,8 @@ static char const* crude_gui_node_tree_node_types_names_[ CRUDE_GUI_NODE_TYPE_CO
   "Audio Relative",
   "Audio Listener",
   "DDGI Area",
-  "World Environment"
+  "World Environment",
+  "Terrain"
 };
 
 static bool
@@ -228,6 +229,12 @@ crude_gui_node_tree_queue_draw
           case CRUDE_GUI_NODE_TYPE_WORLD_ENVIRONMENT:
           {
             CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_world_environment, { } );
+            break;
+          }
+          case CRUDE_GUI_NODE_TYPE_TERRAIN:
+          {
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_terrain, { crude_terrain_empty( ) } );
+            CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_transform, { crude_transform_empty( ) } );
             break;
           }
           }

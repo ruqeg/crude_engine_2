@@ -9,12 +9,12 @@ crude_gfx_texture_manager_initialize
 (
   _In_ crude_gfx_texture_manager                          *manager,
   _In_ crude_gfx_asynchronous_loader                      *asynchronous_loader,
-  _In_ crude_heap_allocator                               *texture_manager_allocator
+  _In_ crude_heap_allocator                               *allocator
 )
 {
   manager->asynchronous_loader = asynchronous_loader;
-  manager->texture_manager_allocator = texture_manager_allocator;
-  CRUDE_HASHMAPSTR_INITIALIZE( manager->texture_relative_filepath_to_handle, crude_heap_allocator_pack( texture_manager_allocator ) );
+  manager->allocator = allocator;
+  CRUDE_HASHMAPSTR_INITIALIZE( manager->texture_relative_filepath_to_handle, crude_heap_allocator_pack( allocator ) );
 }
 
 void
@@ -42,26 +42,38 @@ crude_gfx_texture_manager_clear
     manager->texture_relative_filepath_to_handle[ i ].key.key_hash = CRUDE_HASHMAPSTR_BACKET_STATE_EMPTY;
   }
   CRUDE_HASHMAPSTR_DEINITIALIZE( manager->texture_relative_filepath_to_handle );
-  CRUDE_HASHMAPSTR_INITIALIZE( manager->texture_relative_filepath_to_handle, crude_heap_allocator_pack( manager->texture_manager_allocator ) );
+  CRUDE_HASHMAPSTR_INITIALIZE( manager->texture_relative_filepath_to_handle, crude_heap_allocator_pack( manager->allocator ) );
 }
 
 crude_gfx_texture_handle
 crude_gfx_texture_manager_get_texture
 (
   _In_ crude_gfx_texture_manager                          *manager,
-  _In_ char const                                         *relative_filepath,
-  _In_ char const                                         *absolute_filepath
+  _In_ char const                                         *relative_filepath
 )
 {
+  char const                                            *absolute_filepath;
+  crude_environment                                     *environment;
+  crude_string_buffer                                    absolute_filepath_string_buffer;
   crude_gfx_texture_handle                               texture_handle;
   crude_gfx_texture_creation                             texture_creation;
   int32                                                  texture_index, comp, width, height;
   
+  environment = manager->asynchronous_loader->gpu->environment;
+
   texture_index = CRUDE_HASHMAPSTR_GET_INDEX( manager->texture_relative_filepath_to_handle, relative_filepath );
   if ( texture_index != -1 )
   {
     return manager->texture_relative_filepath_to_handle[ texture_index ].value;
   }
+
+  crude_string_buffer_initialize(
+    &absolute_filepath_string_buffer,
+    environment->directories.resources_absolute_directory_length + crude_string_length( relative_filepath ) + 1,
+    crude_heap_allocator_pack( manager->allocator ) );
+
+  absolute_filepath = crude_string_buffer_append_use_f( &absolute_filepath_string_buffer, "%s%s", environment->directories.resources_absolute_directory, relative_filepath );
+  crude_string_buffer_close_current_string( &absolute_filepath_string_buffer );
 
   stbi_info( absolute_filepath, &width, &height, &comp );
     
@@ -82,6 +94,8 @@ crude_gfx_texture_manager_get_texture
   crude_gfx_asynchronous_loader_request_texture_data( manager->asynchronous_loader, absolute_filepath, texture_handle );
 
   CRUDE_HASHMAPSTR_SET( manager->texture_relative_filepath_to_handle, CRUDE_COMPOUNT( crude_string_link, { texture_creation.name } ), texture_handle );
+  
+  crude_string_buffer_deinitialize( &absolute_filepath_string_buffer );
 
   return texture_handle;
 }

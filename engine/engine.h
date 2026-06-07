@@ -1,6 +1,6 @@
 #pragma once
 
-#include <engine/engine/environment.h>
+#include <engine/core/environment.h>
 #include <engine/engine/engine_commands_manager.h>
 #include <engine/graphics/asynchronous_loader_manager.h>
 #include <engine/scene/node_manager.h>

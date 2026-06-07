@@ -6,6 +6,7 @@
 #include <engine/core/hashmapstr.h>
 #include <engine/core/string.h>
 #include <engine/core/assert.h>
+#include <engine/core/environment.h>
 #include <engine/graphics/command_buffer.h>
 #include <engine/graphics/gpu_memory.h>
 #include <engine/graphics/gpu_crash_tracker.h>
@@ -35,21 +36,17 @@ typedef struct crude_gfx_device_creation
 {
   SDL_Window                                              *sdl_window;
   crude_heap_allocator                                    *allocator;
-  
-  char const                                              *temporary_absolute_directory;
-  char const                                              *techniques_absolute_directory;
-  char const                                              *compiled_shaders_absolute_directory;
-  char const                                              *shaders_absolute_directory;
+  crude_environment                                       *environment;
 } crude_gfx_device_creation;
 
 typedef struct crude_gfx_device
 {
-  char const                                              *temporary_absolute_directory;
-  char const                                              *techniques_absolute_directory;
-  char const                                              *compiled_shaders_absolute_directory;
-  char const                                              *shaders_absolute_directory;
-
+  /* Context */
+  crude_environment                                       *environment;
   SDL_Window                                              *sdl_window;
+  crude_heap_allocator                                    *allocator;
+
+  /* Smth */
   uint32                                                   previous_frame;
   uint32                                                   current_frame;
   uint32                                                   absolute_frame;
@@ -134,10 +131,6 @@ typedef struct crude_gfx_device
   crude_gfx_rhi_descriptor_pool                            rhi_bindless_descriptor_pool;
   crude_gfx_descriptor_set_layout_handle                   bindless_descriptor_set_layout_handle;
   crude_gfx_descriptor_set_handle                          bindless_descriptor_set_handle;
-  /**
-   * Allocators and callbacks
-   */                           
-  crude_heap_allocator                                    *allocator;
 
   /**
    * !TODO 

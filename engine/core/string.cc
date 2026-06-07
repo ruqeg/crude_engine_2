@@ -120,7 +120,7 @@ crude_string_buffer_close_current_string
  * String Utils
  * 
  ***********************************************/
-void
+int32
 crude_snprintf
 (
   _Out_ char                                              *buffer,
@@ -129,10 +129,14 @@ crude_snprintf
   ...
 )
 {
-  va_list args;
+  int32                                                    length;
+  va_list                                                  args;
+
   va_start( args, format );
-  crude_vsnprintf( buffer, buffer_size, format, args );
+  length = crude_vsnprintf( buffer, buffer_size, format, args );
   va_end( args );
+
+  return length;
 }
   
 int32

@@ -27,6 +27,7 @@ ECS_COMPONENT_DECLARE( crude_gltf );
 ECS_COMPONENT_DECLARE( crude_node_external );
 ECS_COMPONENT_DECLARE( crude_ray );
 ECS_COMPONENT_DECLARE( crude_ddgi_area );
+ECS_COMPONENT_DECLARE( crude_terrain );
 ECS_COMPONENT_DECLARE( crude_world_environment );
 
 CRUDE_COMPONENT_STRING_DEFINE( crude_camera, "crude_camera" );
@@ -36,6 +37,7 @@ CRUDE_COMPONENT_STRING_DEFINE( crude_light, "crude_light" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_node_external, "crude_node_external" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_ray, "crude_ray" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_ddgi_area, "crude_ddgi_area" );
+CRUDE_COMPONENT_STRING_DEFINE( crude_terrain, "crude_terrain" );
 CRUDE_COMPONENT_STRING_DEFINE( crude_world_environment, "crude_world_environment" );
 
 void
@@ -53,6 +55,7 @@ crude_scene_components_import
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_node_external );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_ray );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_ddgi_area );
+  CRUDE_ECS_COMPONENT_DEFINE( world, crude_terrain );
   CRUDE_ECS_COMPONENT_DEFINE( world, crude_world_environment );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_transform );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_light );
@@ -61,6 +64,7 @@ crude_scene_components_import
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_node_external );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_ray );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_ddgi_area );
+  CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_terrain );
   CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_DEFINE( manager, crude_world_environment );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_transform );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_light );
@@ -68,6 +72,7 @@ crude_scene_components_import
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_gltf );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_ray );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_ddgi_area );
+  CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_terrain );
   CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_DEFINE( manager, crude_world_environment );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_transform );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_light );
@@ -75,6 +80,7 @@ crude_scene_components_import
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_gltf );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_ray );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_ddgi_area );
+  CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_terrain );
   CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_DEFINE( manager, crude_world_environment );
 
   CRUDE_ECS_OBSERVER_DEFINE( world, crude_gltf_destroy_observer_, EcsOnRemove, NULL, { 
@@ -599,6 +605,66 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_ddgi_area )
   {
     crude_gfx_indirect_light_pass_on_offsets_reset( &manager->scene_renderer->indirect_light_pass );
   }
+}
+
+CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_terrain )
+{
+  crude_gfx_texture_manager                               *texture_manager;
+  char const                                              *height_texture_relative_filepath;
+
+  crude_memory_set( component, 0, sizeof( crude_terrain ) );
+  
+  texture_manager = manager->model_renderer_resources_manager->texture_manager;
+  height_texture_relative_filepath = cJSON_GetStringValue( cJSON_GetObjectItemCaseSensitive( component_json, "height_texture" ) );
+  if ( crude_string_cmp( height_texture_relative_filepath, "none" ) != 0 )
+  {
+    component->height_texture_handle = crude_gfx_texture_manager_get_texture( texture_manager, height_texture_relative_filepath );
+  }
+
+  return true;
+}
+
+CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_terrain )
+{
+  cJSON                                                   *terrain_json;
+  crude_gfx_texture                                       *height_texture;
+
+  terrain_json = cJSON_CreateObject( );
+  cJSON_AddItemToObject( terrain_json, "type", cJSON_CreateString( CRUDE_COMPONENT_STRING( crude_terrain ) ) );
+
+  height_texture = crude_gfx_access_texture( manager->model_renderer_resources_manager->gpu, component->height_texture_handle );
+  cJSON_AddItemToObject( terrain_json, "height_texture", cJSON_CreateString( height_texture ? height_texture->name : "none" ) );
+  
+  return terrain_json;
+}
+
+CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_terrain )
+{
+  crude_gfx_texture                                       *heigth_texture;
+  
+  CRUDE_IMGUI_START_OPTIONS;
+
+  heigth_texture = crude_gfx_access_texture( manager->model_renderer_resources_manager->gpu, component->height_texture_handle );
+
+  CRUDE_IMGUI_OPTION( "Height Texture", {
+    ImGui::Text( "\"%s\"", heigth_texture ? heigth_texture->name : "Empty" );
+    if ( ImGui::BeginDragDropTarget( ) )
+    {
+      ImGuiPayload const                                  *im_payload;
+      char                                                *replace_relative_filepath;
+    
+      im_payload = ImGui::AcceptDragDropPayload( "crude_content_browser_file" );
+      if ( im_payload )
+      {
+        replace_relative_filepath = CRUDE_CAST( char*, im_payload->Data );
+        if ( strstr( replace_relative_filepath, ".png" ) )
+        {
+          component->height_texture_handle = crude_gfx_texture_manager_get_texture( manager->model_renderer_resources_manager->texture_manager, replace_relative_filepath );
+        }
+      }
+      ImGui::EndDragDropTarget();
+    }
+  } );
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_world_environment )

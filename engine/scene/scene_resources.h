@@ -87,6 +87,11 @@ typedef struct crude_ddgi_area
   bool                                                     use_half_resolution;
 } crude_ddgi_area;
 
+typedef struct crude_terrain
+{
+  crude_gfx_texture_handle                                 height_texture_handle;
+} crude_terrain;
+
 CRUDE_API XMMATRIX
 crude_camera_view_to_clip
 (
@@ -115,6 +120,11 @@ crude_camera_empty
 
 CRUDE_API crude_node_external
 crude_node_external_empty
+(
+);
+
+CRUDE_API crude_terrain
+crude_terrain_empty
 (
 );
 
