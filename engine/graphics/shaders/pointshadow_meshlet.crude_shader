@@ -157,10 +157,6 @@ layout(local_size_x=64, local_size_y=1, local_size_z=1) in;
 layout(triangles) out;
 layout(max_vertices=128, max_primitives=124) out;
 
-layout(location=0) out vec2 out_texcoord[];
-layout(location=1) out flat uint out_mesh_draw_index[];
-layout(location=2) out vec3 out_normals[];
-
 void main()
 {
   uint task_index = gl_LocalInvocationID.x;
