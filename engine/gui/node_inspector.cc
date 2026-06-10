@@ -10,6 +10,8 @@ crude_gui_node_inspector_initialize
 {
   node_inspector->components_serialization_manager = components_serialization_manager;
   node_inspector->node_manager = node_manager;
+  node_inspector->current_node = 0;
+  node_inspector->current_node_changed_name[ 0 ] = 0;
 }
 
 void
@@ -43,10 +45,21 @@ crude_gui_node_inspector_queue_draw
     return;
   }
 
+  if ( node_inspector->current_node != node )
+  {
+    crude_string_copy( node_inspector->current_node_changed_name, crude_entity_get_name( world, node ), sizeof( node_inspector->current_node_changed_name ) );
+    node_inspector->current_node = node;
+  }
+
   CRUDE_IMGUI_START_OPTIONS;
   
   CRUDE_IMGUI_OPTION( "Name", {
-    ImGui::InputText( "##Name", CRUDE_CAST( char*, crude_entity_get_name( world, node ) ), 4096, ImGuiInputTextFlags_ReadOnly );
+    ImGui::InputText( "##Name", node_inspector->current_node_changed_name, sizeof( node_inspector->current_node_changed_name ) );
+    ImGui::SameLine( );
+    if ( ImGui::Button( "Apply" ) )
+    {
+      crude_entity_set_name( world, node, node_inspector->current_node_changed_name );
+    }
   } );
 
   node_external = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, node, crude_node_external );

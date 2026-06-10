@@ -140,16 +140,16 @@ crude_gui_viewport_queue_draw
     camera_transform = CRUDE_ENTITY_GET_MUTABLE_COMPONENT( world, camera_node, crude_transform  );
     selected_node_parent = crude_entity_get_parent( world, selected_node );
     
-    if ( ImGui::IsKeyPressed( ImGuiKey_Z ) )
+    if ( viewport->editor->engine->platform.input.mouse.right.current && ImGui::IsKeyPressed( ImGuiKey_Z ) )
     {
       viewport->selected_gizmo_operation = ImGuizmo::TRANSLATE;
     }
     
-    if ( ImGui::IsKeyPressed( ImGuiKey_X ) )
+    if ( viewport->editor->engine->platform.input.mouse.right.current && ImGui::IsKeyPressed( ImGuiKey_X ) )
     {
       viewport->selected_gizmo_operation = ImGuizmo::ROTATE;
     }
-    if ( ImGui::IsKeyPressed( ImGuiKey_C ) )
+    if ( viewport->editor->engine->platform.input.mouse.right.current && ImGui::IsKeyPressed( ImGuiKey_C ) )
     {
       viewport->selected_gizmo_operation = ImGuizmo::SCALE;
     }
@@ -217,7 +217,70 @@ crude_gui_viewport_queue_draw
       ImGuizmo::DrawGrid( &camera_world_to_view._11, &camera_view_to_clip._11, &identity_matrix._11, 100.f );
     }
   }
+  
 
+  if ( ImGui::BeginDragDropTargetCustom( ImGui::GetCurrentWindow( )->ContentRegionRect, ImGui::GetCurrentWindow( )->ID ) )
+  {
+    ImGuiPayload const                                  *im_payload;
+    char                                                *replace_relative_filepath;
+  
+    im_payload = ImGui::AcceptDragDropPayload( "crude_content_browser_file" );
+    if ( im_payload )
+    {
+      replace_relative_filepath = CRUDE_CAST( char*, im_payload->Data );
+      if ( strstr( replace_relative_filepath, ".gltf" ) )
+      {
+        crude_gfx_model_renderer_resources                *model_renderer_resources;
+        crude_gfx_model_renderer_resources_handle          model_renderer_resources_handle;
+        crude_entity                                       new_node;
+        crude_ray_cast_result                              ray_cast_result;
+        crude_gltf                                         gltf;
+        crude_transform                                    transform;
+        bool                                               hitted;
+        
+        gltf = crude_gltf_empty( );          
+        transform = crude_transform_empty( );
+        
+        new_node = crude_entity_create_empty_without_name( viewport->editor->engine->world );
+        if ( selected_node )
+        {
+          crude_entity_set_parent( viewport->editor->engine->world, new_node, viewport->editor->engine->main_node );
+        }
+        crude_entity_set_name( viewport->editor->engine->world, new_node, replace_relative_filepath );
+        
+        model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( &viewport->editor->engine->model_renderer_resources_manager, replace_relative_filepath );
+
+        crude_gfx_model_renderer_resources_instance_initialize(
+          &gltf.model_renderer_resources_instance,
+          &viewport->editor->engine->model_renderer_resources_manager,
+          model_renderer_resources_handle );
+        
+        CRUDE_ENTITY_SET_COMPONENT( viewport->editor->engine->world, new_node, crude_gltf, { gltf } );
+        
+        hitted = crude_ray_cast( &viewport->editor->engine->physics, viewport->editor->engine->world, camera_node, &ray_cast_result );
+
+        if ( hitted )
+        {
+          transform.translation = ray_cast_result.point;
+        }
+        else
+        {
+          crude_transform const                           *selected_node_transform;
+
+          selected_node_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( viewport->editor->engine->world, selected_node, crude_transform );
+
+          if ( selected_node_transform )
+          {
+            transform = *selected_node_transform;
+          }
+        }
+        CRUDE_ENTITY_SET_COMPONENT( viewport->editor->engine->world, new_node, crude_transform, { transform } );
+
+        viewport->editor->selected_node = new_node;
+      }
+    }
+    ImGui::EndDragDropTarget();
+  }
 }
 
 #endif /* CRUDE_DEVELOP */

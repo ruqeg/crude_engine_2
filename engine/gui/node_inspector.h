@@ -8,6 +8,8 @@ typedef struct crude_gui_node_inspector
 {
   crude_components_serialization_manager                  *components_serialization_manager;
   crude_node_manager                                      *node_manager;
+  crude_entity                                             current_node;
+  char                                                     current_node_changed_name[ CRUDE_NODE_RELATIVE_FILEPATH_LENGTH_MAX ];
 } crude_gui_node_inspector;
 
 CRUDE_API void

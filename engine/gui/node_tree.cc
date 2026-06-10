@@ -39,6 +39,13 @@ crude_gui_node_tree_queue_draw_internal_
   _Inout_ crude_entity                                    *selected_node
 );
 
+static void
+crude_gui_node_tree_rename_node_
+(
+  _In_ crude_gui_node_tree                                *node_tree,
+  _In_ crude_ecs                                          *world
+);
+
 void
 crude_gui_node_tree_initialize
 (
@@ -246,7 +253,7 @@ crude_gui_node_tree_queue_draw
         {
           node_tree->node_reference = CRUDE_COMPOUNT_EMPTY( crude_entity );
         }
-        ImGui::EndPopup();
+        ImGui::EndPopup( );
       }
       if ( ImGui::Button( "Rename" ) )
       {
@@ -255,26 +262,14 @@ crude_gui_node_tree_queue_draw
       }
       if ( ImGui::BeginPopupModal( "Node Popup Rename", NULL, ImGuiWindowFlags_MenuBar ) )
       {
-        ImGui::Text( "Rename node \"%s\"", crude_entity_get_name( world, node_tree->node_reference ) );
-        ImGui::InputText( "Name", node_tree->new_node_name, sizeof( node_tree->new_node_name ) );
-        ImGui::Separator( );
-        if ( ImGui::Button( "Apply" ) )
-        {
-          crude_entity_set_name( world, node_tree->node_reference, node_tree->new_node_name );
-          node_tree->node_reference = CRUDE_COMPOUNT_EMPTY( crude_entity );
-        }
-        ImGui::SameLine( );
-        if ( ImGui::Button( "Cancel" ) )
-        {
-          node_tree->node_reference = CRUDE_COMPOUNT_EMPTY( crude_entity );
-        }
-        ImGui::EndPopup();
+        crude_gui_node_tree_rename_node_( node_tree, world );
+        ImGui::EndPopup( );
       }
       if ( ImGui::Button( "Cancel" ) )
       {
         node_tree->node_reference = CRUDE_COMPOUNT_EMPTY( crude_entity );
       }
-      ImGui::EndPopup();
+      ImGui::EndPopup( );
     }
   }
 
@@ -398,6 +393,33 @@ crude_gui_node_tree_queue_draw_internal_
     }
     
     ImGui::TreePop( );
+  }
+}
+
+void
+crude_gui_node_tree_rename_node_
+(
+  _In_ crude_gui_node_tree                                *node_tree,
+  _In_ crude_ecs                                          *world
+)
+{
+  if ( !node_tree->node_reference )
+  {
+    return;
+  }
+
+  ImGui::Text( "Rename node \"%s\"", crude_entity_get_name( world, node_tree->node_reference ) );
+  ImGui::InputText( "Name", node_tree->new_node_name, sizeof( node_tree->new_node_name ) );
+  ImGui::Separator( );
+  if ( ImGui::Button( "Apply" ) )
+  {
+    crude_entity_set_name( world, node_tree->node_reference, node_tree->new_node_name );
+    node_tree->node_reference = CRUDE_COMPOUNT_EMPTY( crude_entity );
+  }
+  ImGui::SameLine( );
+  if ( ImGui::Button( "Cancel" ) )
+  {
+    node_tree->node_reference = CRUDE_COMPOUNT_EMPTY( crude_entity );
   }
 }
 

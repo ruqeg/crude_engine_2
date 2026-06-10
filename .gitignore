@@ -5,7 +5,7 @@ shaders/include/crude_shaders/*
 compiled_shaders/
 resources/debug/
 resources/game/sounds/
-#resources/game/dev/
+resources/game/dev/
 resources/game/gltf/
 resources/game/original/
 resources/___crude_engine_autosave/autosave.crude_node

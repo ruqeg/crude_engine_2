@@ -1,5 +1,5 @@
 {
-	"name":	"player",
+	"name":	"test",
 	"components":	[{
 			"type":	"crude_transform",
 			"translation":	[0, 0, 0],

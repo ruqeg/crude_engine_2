@@ -273,7 +273,7 @@ crude_editor_handle_input
 {
   if ( !CRUDE_ECS_GAME_STAGE_IS_ENABLED( editor->engine->world ) )
   {
-    if ( editor->engine->platform.input.keys[ SDL_SCANCODE_F ].pressed )
+    if ( editor->engine->platform.input.mouse.right.current && editor->engine->platform.input.keys[ SDL_SCANCODE_F ].pressed )
     {
       crude_transform                                     *editor_transform;
       crude_transform                                     *selected_node_transform;
@@ -364,6 +364,7 @@ crude_editor_initialize_systems_
 {
   crude_transform                                          editor_camera_node_transform;
   crude_camera                                             editor_camera_node_camera;
+  crude_ray                                                editor_camera_ray;
   crude_editor_camera                                      editor_camera;
 
   editor->editor_camera_system_context = CRUDE_COMPOUNT_EMPTY( crude_editor_camera_system_context );
@@ -382,6 +383,11 @@ crude_editor_initialize_systems_
   editor_camera_node_camera.near_z = 1;
   editor_camera_node_camera.far_z = 300;
 
+  editor_camera_ray = CRUDE_COMPOUNT_EMPTY( crude_ray );
+  editor_camera_ray.broad_phase_mask = 0xFFFFFFFF;
+  editor_camera_ray.layer_mask = 0xFFFFFFFF;
+  editor_camera_ray.distance = 10000000;
+
   editor_camera = CRUDE_COMPOUNT_EMPTY( crude_editor_camera );
   editor_camera.walk_speed = 10.f;
   editor_camera.rotate_speed = 0.004f;
@@ -391,6 +397,7 @@ crude_editor_initialize_systems_
   CRUDE_ENTITY_SET_COMPONENT( editor->engine->world, editor->editor_camera_node, crude_transform, { editor_camera_node_transform } );
   CRUDE_ENTITY_SET_COMPONENT( editor->engine->world, editor->editor_camera_node, crude_camera, { editor_camera_node_camera } );
   CRUDE_ENTITY_SET_COMPONENT( editor->engine->world, editor->editor_camera_node, crude_editor_camera, { editor_camera } );
+  CRUDE_ENTITY_SET_COMPONENT( editor->engine->world, editor->editor_camera_node, crude_ray, { editor_camera_ray } );
 
   editor->engine->camera_node = editor->editor_camera_node;
 }

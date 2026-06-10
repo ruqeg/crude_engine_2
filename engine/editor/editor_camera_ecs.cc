@@ -96,18 +96,21 @@ crude_editor_camera_update_system_
     {
       move_speed *= 2.f;
     }
-
-    if ( move_direction.x )
+    
+    if ( input->mouse.right.current )
     {
-      translation = XMVectorAdd( translation, XMVectorScale( basis_right, move_direction.x * move_speed * it->delta_time * 1.f ) );
-    }
-    if ( move_direction.y )
-    {
-      translation = XMVectorAdd( translation, XMVectorScale( basis_up, move_direction.y * move_speed * it->delta_time * 1.f ) );
-    }
-    if ( move_direction.z )
-    {
-      translation = XMVectorAdd( translation, XMVectorScale( basis_forward, move_direction.z * move_speed * it->delta_time * -1.f ) );
+      if ( move_direction.x )
+      {
+        translation = XMVectorAdd( translation, XMVectorScale( basis_right, move_direction.x * move_speed * it->delta_time * 1.f ) );
+      }
+      if ( move_direction.y )
+      {
+        translation = XMVectorAdd( translation, XMVectorScale( basis_up, move_direction.y * move_speed * it->delta_time * 1.f ) );
+      }
+      if ( move_direction.z )
+      {
+        translation = XMVectorAdd( translation, XMVectorScale( basis_forward, move_direction.z * move_speed * it->delta_time * -1.f ) );
+      }
     }
 
     XMStoreFloat3( &transform->translation, translation );
