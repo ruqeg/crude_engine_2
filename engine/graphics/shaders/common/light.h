@@ -2,6 +2,8 @@
 #ifndef CRUDE_LIGHT_GLSLI
 #define CRUDE_LIGHT_GLSLI
 
+#define CRUDE_LIGHT_PCF_ENALBED       1
+#define CRUDE_LIGHT_NEARZ             ( 0.2f )
 #define CRUDE_MAX_MESHLETS_PER_LIGHT  ( 45000 )
 #define CRUDE_LIGHT_Z_BINS            ( 16 )
 #define CRUDE_LIGHTS_MAX_COUNT        ( 256 )
@@ -157,22 +159,24 @@ crude_calculate_point_light_shadow_contribution
   return visiblity;
 #else /* CRUDE_RAYTRACED_SHADOWS */
   vec4                                                     proj_pos;
-  vec3                                                     vertex_to_light;
+  vec3                                                     vertex_to_light, vertex_to_light_normalized;
   vec2                                                     proj_uv, filter_radius;
   uint                                                     face_index;
-  float                                                    bias, current_depth, shadow_factor;
+  float                                                    vertex_to_light_distance, current_depth, shadow_factor;
 
   vertex_to_light = light.world_position - vertex_position.xyz;
+  vertex_to_light_distance = length( vertex_to_light );
+  vertex_to_light_normalized = vertex_to_light / vertex_to_light_distance;
+  
   face_index = crude_get_tetrahedron_face_index( normalize( -vertex_to_light ) );
-  proj_pos = vec4( vertex_position.xyz, 1.0 ) * culled_lights_world_to_texture.data[ light_index * 4 + face_index ];
+  proj_pos = vec4( vertex_position, 1.0 ) * culled_lights_world_to_texture.data[ light_index * 4 + face_index ];
   proj_pos.xyz /= proj_pos.w;
     
   proj_uv = ( proj_pos.xy * 0.5 ) + 0.5;
   proj_uv.y = 1.f - proj_uv.y;
 
-  bias = 0.001f;
   current_depth = proj_pos.z;
-    
+#if CRUDE_LIGHT_PCF_ENALBED
   filter_radius = scene.data.inv_shadow_map_size.xy * CRUDE_SHADOW_FILTER_RADIUS; 
   
   shadow_factor = 0;
@@ -180,10 +184,16 @@ crude_calculate_point_light_shadow_contribution
   {
     vec2 texcoords = proj_uv.xy + ( filter_kernel[ i ] * filter_radius );
     float closest_depth = texture( global_textures[ nonuniformEXT( scene.data.culled_tiled_shadowmap_texture_index ) ], texcoords ).r;
-    shadow_factor += current_depth - bias < closest_depth ? 1 : 0;
+    shadow_factor += current_depth < closest_depth ? 1 : 0;
   }
 
   return shadow_factor / CRUDE_SHADOW_FILTER_NUM_SAMPLES;
+#else
+  vec2 texcoords = proj_uv.xy;
+  float closest_depth = texture( global_textures[ nonuniformEXT( scene.data.culled_tiled_shadowmap_texture_index ) ], texcoords ).r;
+  shadow_factor = current_depth < closest_depth ? 1 : 0;
+  return shadow_factor;
+#endif /* CRUDE_LIGHT_PCF_ENALBED */
 #endif /* CRUDE_RAYTRACED_SHADOWS */
 }
 

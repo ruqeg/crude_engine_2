@@ -375,6 +375,14 @@ parse_gpu_pipeline_
       CRUDE_ASSERT( false );
     }
   }
+  cJSON const *bias_json = cJSON_GetObjectItemCaseSensitive( pipeline_json, "bias" );
+  if ( bias_json )
+  {
+    pipeline_creation->rasterization.depth_bias_enable = true;
+    pipeline_creation->rasterization.depth_bias_constant_factor = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( bias_json, "constant_factor" ) );
+    pipeline_creation->rasterization.depth_bias_clamp = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( bias_json, "clamp" ) );
+    pipeline_creation->rasterization.depth_bias_slope_factor = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( bias_json, "slope_factor" ) );
+  }
   
   cJSON const *topology_json = cJSON_GetObjectItemCaseSensitive( pipeline_json, "topology" );
   if ( topology_json != NULL )

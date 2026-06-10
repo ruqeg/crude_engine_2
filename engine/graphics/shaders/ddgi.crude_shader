@@ -64,7 +64,8 @@ CRUDE_SHADER_STRUCT( crude_gfx_ddgi_constants )
   float32                                                  shadow_weight_power;
 
   int32                                                    probe_update_per_frame;
-  XMFLOAT3                                                 padding;
+  float32                                                  probe_debug_model_scale;
+  XMFLOAT2                                                 padding;
 };
 
 CRUDE_SHADER_RBUFFER_REF( DDGIRef, crude_gfx_ddgi_constants );
@@ -936,7 +937,7 @@ void main()
     ivec3 probe_grid_indices = probe_index_to_grid_indices( ddgi, probe_index );
     vec3 probe_world_offset = grid_indices_to_world( ddgi, probe_grid_indices, probe_index );
 
-    vec3 world_position = vertices[ li ] + probe_world_offset;
+    vec3 world_position = vec3( ddgi.data.probe_debug_model_scale ) * vertices[ li ] + probe_world_offset;
     
     gl_MeshVerticesEXT[ i ].gl_Position = vec4( world_position, 1 ) * scene.data.camera.world_to_clip;
     

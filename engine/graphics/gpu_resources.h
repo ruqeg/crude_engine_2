@@ -351,6 +351,10 @@ typedef struct crude_gfx_rasterization_creation
   crude_gfx_rhi_cull_mode_flags_bits                       cull_mode;
   crude_gfx_rhi_front_face                                 front;
   crude_gfx_fill_mode                                      fill;
+  float32                                                  depth_bias_constant_factor;
+  float32                                                  depth_bias_clamp;
+  float32                                                  depth_bias_slope_factor;
+  bool                                                     depth_bias_enable;
 } crude_gfx_rasterization_creation;
 
 typedef struct crude_gfx_texture_subresource

@@ -85,6 +85,7 @@ typedef struct crude_ddgi_area
   int32                                                    probe_rays;
   int32                                                    offsets_calculations_count;
   bool                                                     use_half_resolution;
+  float32                                                  probe_debug_model_scale;
 } crude_ddgi_area;
 
 typedef struct crude_terrain

@@ -4,6 +4,38 @@
 
 #ifndef __cplusplus
 
+
+/* GPU Pro 6 Tile-Based Omnidirectional Shadows Hawar Doghramachi */
+const vec3 tetrahedron_plane_normals[ 12 ] =
+{
+  vec3(0.00000000, -0.03477280, -0.99939519),
+  vec3(-0.47510946, -0.70667917, -0.52428567),
+  vec3(0.47510946, -0.70667917, -0.52428567),
+  vec3(0.00000000, -0.03477280, 0.99939519),
+  vec3(0.47510946, -0.70667917, 0.52428567),
+  vec3(-0.47510946, -0.70667917, 0.52428567),
+  vec3(0.52428567, 0.70667917, -0.47510946),
+  vec3(0.99939519, 0.03477280, 0.00000000),
+  vec3(0.52428567, 0.70667917, 0.47510946),
+  vec3(-0.52428567, 0.70667917, -0.47510946),
+  vec3(-0.52428567, 0.70667917, 0.47510946),
+  vec3(-0.99939519, 0.03477280, 0.00000000)
+};
+
+float
+crude_tetrahedron_get_clip_distance
+(
+  in vec3                                                  light_position,
+  in vec3                                                  vertex_position,
+  in uint                                                  plane_index
+)
+{
+  vec3 normal = tetrahedron_plane_normals[ plane_index ];
+  //return dot( vertex_position - light_position, normal );
+  return dot( vertex_position, normal ) + dot( light_position, -normal );
+}
+
+
 bool
 crude_clustered_backface_culling
 (
@@ -188,6 +220,25 @@ crude_get_cube_face_mask
   return fpx | ( fnx << 1 ) | ( fpy << 2 ) | ( fny << 3 ) | ( fpz << 4 ) | ( fnz << 5 );
 }
 
+bool
+crude_sphere_visible_to_tetrahedron_face
+( 
+  in vec3                                                  center,
+  in float32                                               radius,
+  in vec3                                                  light_position,
+  in uint                                                  face_index
+)
+{
+  for ( uint side = 0; side < 3; ++side )
+  {
+    float d = crude_tetrahedron_get_clip_distance( light_position, center, 3 * face_index + side );
+    if ( d < -radius )
+    {
+      return false;
+    }
+  }
+  return true;
+}
 #endif
 
 #endif /* CRUDE_CULLING_GLSL */

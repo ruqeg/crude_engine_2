@@ -33,6 +33,7 @@ typedef struct crude_gfx_ddgi_area_cpu
   int32                                                    probe_rays;
   int32                                                    offsets_calculations_count;
   bool                                                     use_half_resolution;
+  float32                                                  probe_debug_model_scale;
 } crude_gfx_ddgi_area_cpu;
 
 typedef struct crude_gfx_world_environment_cpu

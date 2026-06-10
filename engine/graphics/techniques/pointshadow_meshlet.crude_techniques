@@ -47,6 +47,11 @@
         "test": "less_or_equal"
       },
       "cull": "back",
+      "bias": {
+        "slope_factor": 1.5,
+        "constant_factor": 0.5,
+        "clamp": 0
+      },
       "shaders": [
         {
           "stage": "mesh",

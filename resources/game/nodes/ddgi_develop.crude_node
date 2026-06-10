@@ -1,0 +1,61 @@
+{
+	"name":	"ddgi_develop",
+	"components":	[{
+			"type":	"crude_transform",
+			"translation":	[0, 0, 0],
+			"rotation":	[0, 0, 0, 1],
+			"scale":	[1, 1, 1]
+		}],
+	"children":	[{
+			"name":	"Sponza",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[0, 0, 0],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_gltf",
+					"path":	"Sponza\\glTF\\Sponza.gltf",
+					"animations_instances":	[{
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}, {
+							"index":	1,
+							"nodes_enabled_bits":	[-1, -1, -1, -1, -1, -1, -1, -1]
+						}]
+				}],
+			"children":	[]
+		}, {
+			"name":	"light",
+			"components":	[{
+					"type":	"crude_transform",
+					"translation":	[0, 22.464748382568359, -5.59600019454956],
+					"rotation":	[0, 0, 0, 1],
+					"scale":	[1, 1, 1]
+				}, {
+					"type":	"crude_light",
+					"radius":	64,
+					"color":	[1, 1, 1],
+					"intensity":	54
+				}],
+			"children":	[]
+		}]
+}

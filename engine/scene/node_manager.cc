@@ -88,7 +88,7 @@ crude_entity
 crude_node_manager_create_node
 (
   _In_ crude_node_manager                                 *manager,
-  _In_ char const                                         *node_realtive_filepath,
+  _In_ char const                                          node_realtive_filepath[ CRUDE_NODE_RELATIVE_FILEPATH_LENGTH_MAX ],
   _In_ crude_ecs                                          *world
 )
 {
@@ -123,7 +123,7 @@ crude_node_manager_save_node_to_file
   _In_ crude_node_manager                                 *manager,
   _In_ crude_ecs                                          *world,
   _In_ crude_entity                                        node,
-  _In_ char const                                         *saved_relative_filepath
+  _In_ char const                                          saved_relative_filepath[ CRUDE_NODE_RELATIVE_FILEPATH_LENGTH_MAX ]
 )
 {
   char const                                              *saved_absolute_filepath;

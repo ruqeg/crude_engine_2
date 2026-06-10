@@ -1875,10 +1875,10 @@ crude_gfx_create_pipeline
     rhi_rasterization_creation.polygon_mode = CRUDE_GFX_RHI_POLYGON_MODE_FILL;
     rhi_rasterization_creation.cull_mode = creation->rasterization.cull_mode;
     rhi_rasterization_creation.front_face = creation->rasterization.front;
-    rhi_rasterization_creation.depth_bias_enable = false;
-    rhi_rasterization_creation.depth_bias_constant_factor = 0.0f;
-    rhi_rasterization_creation.depth_bias_clamp = 0.0f;
-    rhi_rasterization_creation.depth_bias_slope_factor = 0.0f;
+    rhi_rasterization_creation.depth_bias_enable = creation->rasterization.depth_bias_enable;
+    rhi_rasterization_creation.depth_bias_constant_factor = creation->rasterization.depth_bias_constant_factor;
+    rhi_rasterization_creation.depth_bias_clamp = creation->rasterization.depth_bias_clamp;
+    rhi_rasterization_creation.depth_bias_slope_factor = creation->rasterization.depth_bias_slope_factor;
     rhi_rasterization_creation.line_width = 1.0f;
     
     rhi_viewport_creation = CRUDE_COMPOUNT_EMPTY( crude_gfx_rhi_pipeline_viewport_state_create_info ); 

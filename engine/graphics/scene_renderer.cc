@@ -734,6 +734,7 @@ crude_gfx_scene_renderer_update_dynamic_buffers_
     ddgi_constants->infinite_bounces_multiplier = scene_renderer->ddgi_area.infinite_bounces_multiplier;
     ddgi_constants->probe_spacing = scene_renderer->ddgi_area.probe_spacing;
     ddgi_constants->probe_update_per_frame = scene_renderer->ddgi_area.probe_update_per_frame;
+    ddgi_constants->probe_debug_model_scale = scene_renderer->ddgi_area.probe_debug_model_scale;
     ddgi_constants->reciprocal_probe_spacing = CRUDE_COMPOUNT( XMFLOAT3, {
       1.f / scene_renderer->ddgi_area.probe_spacing.x,
       1.f / scene_renderer->ddgi_area.probe_spacing.y,
@@ -1052,6 +1053,7 @@ crude_scene_renderer_register_nodes_instances_
     scene_renderer->ddgi_area.max_probe_offset = ddgi_area->max_probe_offset;
     scene_renderer->ddgi_area.shadow_weight_power = ddgi_area->shadow_weight_power;
     scene_renderer->ddgi_area.probe_update_per_frame = ddgi_area->probe_update_per_frame;
+    scene_renderer->ddgi_area.probe_debug_model_scale = ddgi_area->probe_debug_model_scale;
     scene_renderer->ddgi_area.probe_count = ddgi_area->probe_count;
     scene_renderer->ddgi_area.probe_rays = ddgi_area->probe_rays;
     scene_renderer->ddgi_area.offsets_calculations_count = ddgi_area->offsets_calculations_count;

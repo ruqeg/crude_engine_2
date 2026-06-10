@@ -593,13 +593,16 @@ crude_gfx_model_renderer_resources_manager_gltf_load_images_
     crude_gfx_texture_handle                               texture_handle;
     crude_gfx_texture_creation                             texture_creation;
     cgltf_image const                                     *image;
-    char                                                  *image_absolute_filename;
+    char                                                  *image_relative_filepath;
     int                                                    comp, width, height;
     
     image = &gltf->images[ image_index ];
-    image_absolute_filename = crude_string_buffer_append_use_f( &manager->image_absolute_filepath_string_buffer, "%s%s", gltf_directory, image->uri );
-    CRUDE_ASSERT( false );
-    texture_handle = crude_gfx_texture_manager_get_texture( manager->texture_manager, image->uri );
+    image_relative_filepath = crude_string_buffer_append_use_f(
+      &manager->image_absolute_filepath_string_buffer,
+      "%s%s",
+      gltf_directory + manager->gpu->environment->directories.resources_absolute_directory_length - 1,
+      image->uri );
+    texture_handle = crude_gfx_texture_manager_get_texture( manager->texture_manager, image_relative_filepath );
     CRUDE_ARRAY_PUSH( manager->images, texture_handle );
     crude_string_buffer_clear( &manager->image_absolute_filepath_string_buffer );
   }

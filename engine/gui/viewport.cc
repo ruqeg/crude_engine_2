@@ -241,12 +241,9 @@ crude_gui_viewport_queue_draw
         gltf = crude_gltf_empty( );          
         transform = crude_transform_empty( );
         
-        new_node = crude_entity_create_empty_without_name( viewport->editor->engine->world );
-        if ( selected_node )
-        {
-          crude_entity_set_parent( viewport->editor->engine->world, new_node, viewport->editor->engine->main_node );
-        }
-        crude_entity_set_name( viewport->editor->engine->world, new_node, replace_relative_filepath );
+        new_node = crude_entity_create_empty_without_name( world );
+        crude_entity_set_parent( world, new_node, crude_entity_valid( world, selected_node ) ? selected_node : viewport->editor->engine->main_node );
+        crude_entity_set_name( world, new_node, replace_relative_filepath );
         
         model_renderer_resources_handle = crude_gfx_model_renderer_resources_manager_get_gltf_model( &viewport->editor->engine->model_renderer_resources_manager, replace_relative_filepath );
 
@@ -255,9 +252,9 @@ crude_gui_viewport_queue_draw
           &viewport->editor->engine->model_renderer_resources_manager,
           model_renderer_resources_handle );
         
-        CRUDE_ENTITY_SET_COMPONENT( viewport->editor->engine->world, new_node, crude_gltf, { gltf } );
+        CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_gltf, { gltf } );
         
-        hitted = crude_ray_cast( &viewport->editor->engine->physics, viewport->editor->engine->world, camera_node, &ray_cast_result );
+        hitted = crude_ray_cast( &viewport->editor->engine->physics, world, camera_node, &ray_cast_result );
 
         if ( hitted )
         {
@@ -267,14 +264,14 @@ crude_gui_viewport_queue_draw
         {
           crude_transform const                           *selected_node_transform;
 
-          selected_node_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( viewport->editor->engine->world, selected_node, crude_transform );
+          selected_node_transform = CRUDE_ENTITY_GET_IMMUTABLE_COMPONENT( world, crude_entity_valid( world, selected_node ) ? selected_node : viewport->editor->engine->main_node, crude_transform );
 
           if ( selected_node_transform )
           {
             transform = *selected_node_transform;
           }
         }
-        CRUDE_ENTITY_SET_COMPONENT( viewport->editor->engine->world, new_node, crude_transform, { transform } );
+        CRUDE_ENTITY_SET_COMPONENT( world, new_node, crude_transform, { transform } );
 
         viewport->editor->selected_node = new_node;
       }

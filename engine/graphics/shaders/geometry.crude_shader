@@ -194,7 +194,7 @@ void main()
 #if defined( OPAQUE_MESHLET )
   if ( ( mesh_instance_draws.data[ draw_id ].flags & CRUDE_GFX_MESH_INSTANCE_DRAW_FLAG_ANIMATED ) == 0)
   {
-    accept = true;//!crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, scene.data.camera.position );
+    accept = !crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, scene.data.camera.position );
     
     vec4 view_center = world_center * scene.data.camera.world_to_view;
     

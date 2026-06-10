@@ -111,6 +111,7 @@ crude_engine_commands_manager_update
       
       crude_gfx_rhi_wait_idle( &manager->engine->gpu.rhi_device );
       
+      crude_string_copy( manager->engine->main_node_relative_filepath, manager->commands_queue[ i ].load_node.relative_filepath, sizeof( manager->engine->main_node_relative_filepath ) );
       manager->engine->main_node = crude_node_manager_create_node( &manager->engine->node_manager, manager->commands_queue[ i ].load_node.relative_filepath, manager->engine->world );
       
       crude_gfx_scene_renderer_update_instances_from_node( &manager->engine->scene_renderer, manager->engine->world, manager->engine->main_node );

@@ -429,6 +429,7 @@ crude_engine_initialize_ecs_
   engine->player_controller_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
   engine->camera_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
   engine->main_node = CRUDE_COMPOUNT_EMPTY( crude_entity );
+  engine->main_node_relative_filepath[ 0 ] = 0;
 
   engine->world = crude_ecs_create( );
   

@@ -304,8 +304,8 @@ crude_gfx_pointlight_shadow_pass_render
 
         XMStoreFloat4( &pointlight_spheres[ i ], XMVectorSet( light_cpu->translation.x, light_cpu->translation.y, light_cpu->translation.z, light->radius ) );
    
-        view_to_clip[ 0 ] = XMMatrixPerspectiveFovRH( XMConvertToRadians( fov1 ), tanf( XMConvertToRadians( fov0 ) * 0.5f ) / tanf( XMConvertToRadians( fov1 ) * 0.5f ), 0.2f, light->radius );
-        view_to_clip[ 1 ] = XMMatrixPerspectiveFovRH( XMConvertToRadians( fov0 ), tanf( XMConvertToRadians( fov1 ) * 0.5f ) / tanf( XMConvertToRadians( fov0 ) * 0.5f ), 0.2f, light->radius );
+        view_to_clip[ 0 ] = XMMatrixPerspectiveFovRH( XMConvertToRadians( fov1 ), tanf( XMConvertToRadians( fov0 ) * 0.5f ) / tanf( XMConvertToRadians( fov1 ) * 0.5f ), CRUDE_LIGHT_NEARZ, light->radius );
+        view_to_clip[ 1 ] = XMMatrixPerspectiveFovRH( XMConvertToRadians( fov0 ), tanf( XMConvertToRadians( fov1 ) * 0.5f ) / tanf( XMConvertToRadians( fov0 ) * 0.5f ), CRUDE_LIGHT_NEARZ, light->radius );
   
         world_to_view = XMMatrixTranslation( -1.f * light_cpu->translation.x, -1.f * light_cpu->translation.y, -1.f * light_cpu->translation.z );
   

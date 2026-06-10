@@ -63,7 +63,8 @@ typedef struct crude_engine
    *
    ******************************/
   crude_ecs                                               *world;
-
+  
+  char                                                     main_node_relative_filepath[ CRUDE_NODE_RELATIVE_FILEPATH_LENGTH_MAX ];
   crude_entity                                             main_node;
   crude_entity                                             camera_node;
   crude_entity                                             player_controller_node;

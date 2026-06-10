@@ -290,6 +290,11 @@ crude_editor_handle_input
     }
   }
 
+  if ( editor->engine->platform.input.keys[ SDL_SCANCODE_LCTRL ].current && editor->engine->platform.input.keys[ SDL_SCANCODE_LALT ].current && editor->engine->platform.input.keys[ SDL_SCANCODE_S ].pressed )
+  {
+    crude_node_manager_save_node_to_file( &editor->engine->node_manager, editor->engine->world, editor->engine->main_node, editor->engine->main_node_relative_filepath );
+  }
+
   if ( editor->engine->platform.input.keys[ SDL_SCANCODE_F5 ].pressed )
   {
     if ( !CRUDE_ECS_GAME_STAGE_IS_ENABLED( editor->engine->world ) )
