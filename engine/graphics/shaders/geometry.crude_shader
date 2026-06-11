@@ -46,6 +46,9 @@ CRUDE_PUSH_CONSTANT( crude_gfx_opaque_meshlet_pass_push_constant_ )
   CulledLightsRef                                          culled_lights;
   CulledLightsWorldToTextureRef                            culled_lights_world_to_texture;
 };
+#if CRUDE_RAYTRACED_SHADOWS
+CRUDE_ACCELERATION_STRUCTURE_DEFINE( acceleration_structure );
+#endif /* CRUDE_RAYTRACED_SHADOWS */
 #endif /* OPAQUE_MESHLET */
 
 #if defined( OPAQUE_CLASSIC ) 
@@ -113,6 +116,9 @@ CRUDE_PUSH_CONSTANT( crude_gfx_translucent_no_cull_pass_push_constant_ )
   CulledLightsRef                                          culled_lights;
   CulledLightsWorldToTextureRef                            culled_lights_world_to_texture;
 };
+#if CRUDE_RAYTRACED_SHADOWS
+CRUDE_ACCELERATION_STRUCTURE_DEFINE( acceleration_structure );
+#endif /* CRUDE_RAYTRACED_SHADOWS */
 #endif /* TRANSLUCENT_NO_CULL */
 
 #if defined( OPAQUE_TERRAIN_MESHLET )
@@ -142,6 +148,9 @@ CRUDE_PUSH_CONSTANT( crude_gfx_opaque_terrain_meshlet_pass_push_constant_ )
   CulledLightsRef                                          culled_lights;
   CulledLightsWorldToTextureRef                            culled_lights_world_to_texture;
 };
+#if CRUDE_RAYTRACED_SHADOWS
+CRUDE_ACCELERATION_STRUCTURE_DEFINE( acceleration_structure );
+#endif /* CRUDE_RAYTRACED_SHADOWS */
 #endif /* OPAQUE_TERRAIN_MESHLET */
 
 #ifndef __cplusplus
@@ -194,7 +203,7 @@ void main()
 #if defined( OPAQUE_MESHLET )
   if ( ( mesh_instance_draws.data[ draw_id ].flags & CRUDE_GFX_MESH_INSTANCE_DRAW_FLAG_ANIMATED ) == 0)
   {
-    accept = !crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, scene.data.camera.position );
+    accept = true;//!crude_clustered_backface_culling( world_center.xyz, radius, cone_axis, cone_cutoff, scene.data.camera.position );
     
     vec4 view_center = world_center * scene.data.camera.world_to_view;
     
@@ -493,7 +502,10 @@ void main()
   vec3 direct_radiance = vec3( 0.f, 0.f, 0.f );
   if ( depth != 1.f )
   {
-    direct_radiance = crude_calculate_lighting( 
+    direct_radiance = crude_calculate_lighting(
+#if CRUDE_RAYTRACED_SHADOWS
+      acceleration_structure,
+#endif /* CRUDE_RAYTRACED_SHADOWS */
       albedo, roughness_metalness.x, roughness_metalness.y, normal, in_world_position, scene.data.camera.position, scene, culled_lights, culled_lights_world_to_texture );
   }
   else
@@ -560,6 +572,9 @@ void main()
   if ( depth != 1.f )
   {
     radiance = crude_calculate_lighting( 
+#if CRUDE_RAYTRACED_SHADOWS
+      acceleration_structure,
+#endif /* CRUDE_RAYTRACED_SHADOWS */
       albedo, roughness_metalness.x, roughness_metalness.y, normal, in_world_position, scene.data.camera.position, scene, culled_lights, culled_lights_world_to_texture );
   }
   else

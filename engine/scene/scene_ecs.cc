@@ -515,14 +515,11 @@ CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_ddgi_area )
   component->shadow_weight_power = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "shadow_weight_power" ) );
   component->infinite_bounces_multiplier = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "infinite_bounces_multiplier" ) );
   component->probe_update_per_frame = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "probe_update_per_frame" ) );
-  component->probe_debug_model_scale = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "probe_debug_model_scale" ) );
   component->offsets_calculations_count = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "offsets_calculations_count" ) );
   component->probe_rays = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "probe_rays" ) );
   component->probe_count.x = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "probe_count_x" ) );
   component->probe_count.y = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "probe_count_y" ) );
   component->probe_count.z = cJSON_GetNumberValue( cJSON_GetObjectItemCaseSensitive( component_json, "probe_count_z" ) );
-  
-  component->editor_probe_count = component->probe_count;
 
   return true;
 }
@@ -542,7 +539,6 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_ddgi_area )
   cJSON_AddItemToObject( ddgi_area_json, "infinite_bounces_multiplier", cJSON_CreateNumber( component->infinite_bounces_multiplier ) );
   cJSON_AddItemToObject( ddgi_area_json, "probe_update_per_frame", cJSON_CreateNumber( component->probe_update_per_frame  ) );
   cJSON_AddItemToObject( ddgi_area_json, "offsets_calculations_count", cJSON_CreateNumber( component->offsets_calculations_count  ) );
-  cJSON_AddItemToObject( ddgi_area_json, "probe_debug_model_scale", cJSON_CreateNumber( component->probe_debug_model_scale  ) );
   cJSON_AddItemToObject( ddgi_area_json, "probe_rays", cJSON_CreateNumber( component->probe_rays  ) );
   cJSON_AddItemToObject( ddgi_area_json, "probe_count_x", cJSON_CreateNumber( component->probe_count.x ) );
   cJSON_AddItemToObject( ddgi_area_json, "probe_count_y", cJSON_CreateNumber( component->probe_count.y ) );
@@ -552,6 +548,7 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_ddgi_area )
 
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_ddgi_area )
 {
+  static crude_ddgi_area                                  *prev_component = NULL;
   bool                                                     offsets_calculations_changed;
 
   CRUDE_IMGUI_START_OPTIONS;
@@ -562,6 +559,12 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_ddgi_area )
     ImGui::DragInt( "##Probe Rays", &component->probe_rays );
   } );
 
+  if ( prev_component != component )
+  {
+    component->editor_probe_count = component->probe_count;
+    prev_component = component;
+  }
+
   CRUDE_IMGUI_OPTION( "Probe Count", {
     ImGui::DragInt3( "##Probe Count", &component->editor_probe_count.x );
     ImGui::SameLine( );
@@ -569,6 +572,11 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_ddgi_area )
     if ( ImGui::Button( "Apply" ) )
     {
       component->probe_count = component->editor_probe_count;
+    }
+    ImGui::SameLine( );
+    if ( ImGui::Button( "Reset" ) )
+    {
+      component->editor_probe_count = component->probe_count;
     }
     ImGui::PopID();
   } );
@@ -603,10 +611,6 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_ddgi_area )
   
   CRUDE_IMGUI_OPTION( "Offsets Calculations Count", {
     offsets_calculations_changed |= ImGui::DragInt( "##Offsets Calculations Count", &component->offsets_calculations_count );
-  } );
-  
-  CRUDE_IMGUI_OPTION( "Probe Debug Model Scale", {
-    ImGui::DragFloat( "##Probe Debug Model Scale", &component->probe_debug_model_scale );
   } );
 
   if ( offsets_calculations_changed )

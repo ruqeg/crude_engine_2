@@ -28,7 +28,8 @@ crude_gfx_opaque_terrain_pass_render
   _In_ crude_gfx_cmd_buffer                               *primary_cmd
 )
 {
-  _In_ crude_gfx_opaque_terrain_pass                      *pass;
+  return;
+  crude_gfx_opaque_terrain_pass                           *pass;
   crude_gfx_device                                        *gpu;
   crude_gfx_pipeline_handle                                pipeline;
   XMFLOAT2                                                 inv_radiance_texture_resolution;

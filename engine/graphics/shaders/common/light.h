@@ -2,6 +2,8 @@
 #ifndef CRUDE_LIGHT_GLSLI
 #define CRUDE_LIGHT_GLSLI
 
+#define CRUDE_RAYTRACED_SHADOWS       1
+
 #define CRUDE_LIGHT_PCF_ENALBED       1
 #define CRUDE_LIGHT_NEARZ             ( 0.2f )
 #define CRUDE_MAX_MESHLETS_PER_LIGHT  ( 45000 )
@@ -130,6 +132,39 @@ crude_get_tetrahedron_face_index
 }
 
 float
+crude_calculate_point_light_shadow_contribution_raycast
+(
+  in crude_gfx_light                                       light,
+  in vec3                                                  vertex_position,
+  in accelerationStructureEXT                              as
+)
+{
+  rayQueryEXT                                              ray_query;
+  float                                                    vertex_to_light_distance;
+  vec3                                                     ligth_position, vertex_to_light, vertex_to_light_normalized;
+  
+  ligth_position = light.world_position;
+  
+#if CRUDE_RIGHT_HAND
+  ligth_position.z = -ligth_position.z;
+  vertex_position.z = -vertex_position.z;
+#endif /* CRUDE_RIGHT_HAND */
+
+  vertex_to_light = ligth_position - vertex_position;
+  vertex_to_light_distance = length( vertex_to_light );
+  vertex_to_light_normalized = vertex_to_light / vertex_to_light_distance;
+
+  float visiblity = 0.f;
+  if ( vertex_to_light_distance <= light.radius )
+  {
+    rayQueryInitializeEXT( ray_query, as, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, 0xff, vertex_position, 0.05, vertex_to_light_normalized, vertex_to_light_distance );
+    rayQueryProceedEXT( ray_query );
+    visiblity = float( rayQueryGetIntersectionTypeEXT( ray_query, true ) == gl_RayQueryCommittedIntersectionNoneEXT );
+  }
+  return visiblity;
+}
+
+float
 crude_calculate_point_light_shadow_contribution
 (
   in crude_gfx_light                                       light,
@@ -140,24 +175,6 @@ crude_calculate_point_light_shadow_contribution
   in CulledLightsWorldToTextureRef                         culled_lights_world_to_texture
 )
 {
-#ifdef CRUDE_RAYTRACED_SHADOWS
-  rayQueryEXT                                              ray_query;
-  float                                                    vertex_to_light_distance;
-  vec3                                                     vertex_to_light, vertex_to_light_normalized;
-
-  vertex_to_light = light.world_position - vertex_position.xyz;
-  vertex_to_light_distance = length( vertex_to_light );
-  vertex_to_light_normalized = vertex_to_light / vertex_to_light_distance;
-
-  float visiblity = 0.f;
-  if ( vertex_to_light_distance <= light.radius )
-  {
-    rayQueryInitializeEXT( ray_query, acceleration_structure, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, 0xff, vertex_position, 0.05, vertex_to_light_normalized, vertex_to_light_distance );
-    rayQueryProceedEXT( ray_query );
-    visiblity = float( rayQueryGetIntersectionTypeEXT( ray_query, true ) == gl_RayQueryCommittedIntersectionNoneEXT );
-  }
-  return visiblity;
-#else /* CRUDE_RAYTRACED_SHADOWS */
   vec4                                                     proj_pos;
   vec3                                                     vertex_to_light, vertex_to_light_normalized;
   vec2                                                     proj_uv, filter_radius;
@@ -194,7 +211,6 @@ crude_calculate_point_light_shadow_contribution
   shadow_factor = current_depth < closest_depth ? 1 : 0;
   return shadow_factor;
 #endif /* CRUDE_LIGHT_PCF_ENALBED */
-#endif /* CRUDE_RAYTRACED_SHADOWS */
 }
 
 vec3
@@ -236,6 +252,9 @@ crude_calculate_point_light_contribution
 vec3
 crude_calculate_lighting
 (
+#if CRUDE_RAYTRACED_SHADOWS
+  in accelerationStructureEXT                              acceleration_structure,
+#endif /* CRUDE_RAYTRACED_SHADOWS */
   in vec4                                                  albedo,
   in float                                                 roughness,
   in float                                                 metalness,
@@ -269,8 +288,12 @@ crude_calculate_lighting
     light_to_vertex = culled_lights.data[ i ].world_position - vertex_position;
     if ( dot( light_to_vertex, light_to_vertex ) < culled_lights.data[ i ].radius * culled_lights.data[ i ].radius )
     {
-      float shadow = crude_calculate_point_light_shadow_contribution( culled_lights.data[ i ], i, vertex_position, normal, scene, culled_lights_world_to_texture );
-      direct_radiance += shadow * crude_calculate_point_light_contribution( culled_lights.data[ i ], albedo.rgb, roughness, metalness, normal, vertex_position, camera_position, f0 );
+#if CRUDE_RAYTRACED_SHADOWS
+      float visibility = crude_calculate_point_light_shadow_contribution_raycast( culled_lights.data[ i ], vertex_position, acceleration_structure );
+#else
+      float visibility = crude_calculate_point_light_shadow_contribution( culled_lights.data[ i ], i, vertex_position, normal, scene, culled_lights_world_to_texture );
+#endif /* CRUDE_RAYTRACED_SHADOWS */
+      direct_radiance += visibility * crude_calculate_point_light_contribution( culled_lights.data[ i ], albedo.rgb, roughness, metalness, normal, vertex_position, camera_position, f0 );
     }
   }
 

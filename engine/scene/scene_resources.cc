@@ -213,6 +213,8 @@ crude_ddgi_area_empty
 )
 {
   crude_ddgi_area                                          ddgi_area;
+
+  ddgi_area = CRUDE_COMPOUNT_EMPTY( crude_ddgi_area );
   ddgi_area.probe_spacing = XMFLOAT3{ 2.0, 2.0, 2.0 };
   ddgi_area.self_shadow_bias = 0.3f;
   ddgi_area.infinite_bounces_multiplier = 0.75f;
@@ -225,7 +227,6 @@ crude_ddgi_area_empty
   ddgi_area.probe_count.z = 20;
   ddgi_area.offsets_calculations_count = 24;
   ddgi_area.probe_rays = 128;
-  ddgi_area.probe_debug_model_scale = 0.2;
   ddgi_area.use_half_resolution = false;
   return ddgi_area;
 }

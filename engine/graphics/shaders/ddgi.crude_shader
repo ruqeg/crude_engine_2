@@ -64,8 +64,7 @@ CRUDE_SHADER_STRUCT( crude_gfx_ddgi_constants )
   float32                                                  shadow_weight_power;
 
   int32                                                    probe_update_per_frame;
-  float32                                                  probe_debug_model_scale;
-  XMFLOAT2                                                 padding;
+  XMFLOAT3                                                 padding;
 };
 
 CRUDE_SHADER_RBUFFER_REF( DDGIRef, crude_gfx_ddgi_constants );
@@ -81,6 +80,9 @@ CRUDE_PUSH_CONSTANT( crude_gfx_probe_raytracer_push_constant_ )
 
   TotalLightsRef                                           total_lights;
   VerticesRef                                              vertices;
+
+  DebugLinesVerticesRef                                    debug_line_vertices;
+  DebugCountsRef                                           debug_counts;
 };
 #endif /* PROBE_RAYTRACER */
 
@@ -342,7 +344,6 @@ sample_irradiance
 #if defined( PROBE_RAYTRACER )
 
 #extension GL_EXT_ray_tracing : enable
-#extension GL_EXT_ray_query : require
 #extension GL_EXT_ray_tracing_position_fetch  : require
 
 struct ray_payload
@@ -462,37 +463,19 @@ void main()
       light = total_lights.data[ i ];
       position_to_light = light.world_position - world_position;
       position_to_light_distance = length( position_to_light );
-      position_to_light_normalized = position_to_light / position_to_light_distance;
+      position_to_light_normalized = position_to_light / max( 0.000001, position_to_light_distance );
     
       light_intensity = vec3( 0.f );
 
       if ( position_to_light_distance <= light.radius )
       {
-        float                                              shadow, ndotl;
+        float                                              visiblity, ndotl;
         
-        rayQueryInitializeEXT(
-          ray_query, acceleration_structure,
-          gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT,
-          0xff,
-          world_position,
-          0.05,
-          position_to_light_normalized,
-          position_to_light_distance );
-
-        rayQueryProceedEXT( ray_query );
-        
-        if ( rayQueryGetIntersectionTypeEXT( ray_query, true ) != gl_RayQueryCommittedIntersectionNoneEXT )
-        {
-          shadow += rayQueryGetIntersectionTEXT( ray_query, true ) < position_to_light_distance ? 0.0f : 1.0f;
-        }
-        else
-        {
-          shadow += 1.0f;
-        }
-
+        visiblity = crude_calculate_point_light_shadow_contribution_raycast( light, world_position, acceleration_structure );
+      
         ndotl = clamp( dot( normal, position_to_light_normalized ), 0.0, 1.0 );
-        
-        light_intensity = shadow * crude_light_attenuation( position_to_light_distance, light.radius ) * ndotl * light.color * light.intensity;
+          
+        light_intensity = visiblity * crude_light_attenuation( position_to_light_distance, light.radius ) * ndotl * light.color * light.intensity;
       }
     
       diffuse += albedo * light_intensity;
@@ -504,8 +487,8 @@ void main()
     distance = gl_RayTminEXT + gl_HitTEXT;
   }
 
-  payload.radiance = radiance;
-  payload.distance = distance;
+  payload.radiance = vec3(1,1,1);
+  payload.distance = 1;
 }
 
 #endif /* CRUDE_CLOSEST_HIT */
@@ -937,7 +920,7 @@ void main()
     ivec3 probe_grid_indices = probe_index_to_grid_indices( ddgi, probe_index );
     vec3 probe_world_offset = grid_indices_to_world( ddgi, probe_grid_indices, probe_index );
 
-    vec3 world_position = vec3( ddgi.data.probe_debug_model_scale ) * vertices[ li ] + probe_world_offset;
+    vec3 world_position = vec3( 0.5 ) * vertices[ li ] + probe_world_offset;
     
     gl_MeshVerticesEXT[ i ].gl_Position = vec4( world_position, 1 ) * scene.data.camera.world_to_clip;
     

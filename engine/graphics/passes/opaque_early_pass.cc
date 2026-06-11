@@ -61,10 +61,21 @@ crude_gfx_opaque_early_pass_render
   
   gpu = pass->scene_renderer->gpu;
   
+#if CRUDE_RAYTRACED_SHADOWS
+  if ( CRUDE_RESOURCE_HANDLE_IS_INVALID( pass->scene_renderer->acceleration_stucture_ds ) )
+  {
+    return;
+  }
+#endif /* CRUDE_RAYTRACED_SHADOWS */
+
   pipeline = crude_gfx_access_technique_pass_by_name( gpu, "geometry", gpu->mesh_shaders_extension_present ? "opaque_meshlet" : "opaque_classic" )->pipeline;
   crude_gfx_cmd_bind_pipeline( primary_cmd, pipeline );
   crude_gfx_cmd_bind_bindless_descriptor_set( primary_cmd );
   
+#if CRUDE_RAYTRACED_SHADOWS
+  crude_gfx_cmd_bind_acceleration_structure_descriptor_set( primary_cmd, pass->scene_renderer->acceleration_stucture_ds );
+#endif /* CRUDE_RAYTRACED_SHADOWS */
+
   if ( gpu->mesh_shaders_extension_present )
   {
     crude_gfx_opaque_meshlet_pass_push_constant_           push_constant;

@@ -52,6 +52,12 @@
 #define CRUDE_SHADER_RBUFFER_REF_ARRAY_SCALAR( name, type ) layout(buffer_reference, row_major, scalar) readonly buffer name { type data[]; };
 #endif
 
+#if defined( __cplusplus )
+#define CRUDE_ACCELERATION_STRUCTURE_DEFINE( name ) 
+#else
+#define CRUDE_ACCELERATION_STRUCTURE_DEFINE( name ) layout(set=CRUDE_ACCELERATION_STRUCTURE_DESCRIPTOR_SET_INDEX, binding=CRUDE_ACCELERATION_STRUCTURE_BINDING) uniform accelerationStructureEXT name;
+#endif
+
 #if !defined( __cplusplus )
 #define CRUDE_PUSH_CONSTANT(name) layout(push_constant) uniform name
 #else
@@ -98,6 +104,8 @@
 #extension GL_EXT_buffer_reference : require
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_scalar_block_layout : require
+
+#extension GL_EXT_ray_query : require
 
 #define CRUDE_TEXTURE( ti, uv ) texture( global_textures[ nonuniformEXT( ti ) ], uv )
 #define CRUDE_TEXTURE_FETCH( ti, coords, mip ) texelFetch( global_textures[ nonuniformEXT( ti ) ], coords, mip )
@@ -428,8 +436,6 @@ void crude_calculate_geometric_tbn
 #if defined( CRUDE_CLOSEST_HIT ) || defined( CRUDE_RAYGEN ) || defined( CRUDE_MISS )
 #extension GL_EXT_ray_tracing : require
 #endif
-
-#define CRUDE_ACCELERATION_STRUCTURE_DEFINE( name ) layout(set=CRUDE_ACCELERATION_STRUCTURE_DESCRIPTOR_SET_INDEX, binding=CRUDE_ACCELERATION_STRUCTURE_BINDING) uniform accelerationStructureEXT name;
 
 #endif
 

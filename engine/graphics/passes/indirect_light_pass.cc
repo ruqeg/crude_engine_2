@@ -40,7 +40,7 @@ crude_gfx_indirect_light_pass_initialize
   texture_creation.flags = CRUDE_GFX_TEXTURE_MASK_COMPUTE;
   crude_string_copy( texture_creation.name, "probe_rt_radiance", sizeof( texture_creation.name ) );
   pass->probe_raytrace_radiance_texture_handle = crude_gfx_create_texture( pass->scene_renderer->gpu, &texture_creation );
-  
+
   texture_creation = crude_gfx_texture_creation_empty( );
   texture_creation.width = 1;
   texture_creation.height = 1;
@@ -144,8 +144,8 @@ crude_gfx_indirect_light_pass_render
     push_constant.mesh_instance_draws = pass->scene_renderer->meshes_instances_draws_hga.gpu_address;
     push_constant.ddgi = pass->scene_renderer->ddgi_hga.gpu_address;
     push_constant.vertices = pass->scene_renderer->model_renderer_resources_manager->meshlets_vertices_hga.gpu_address;
-    //push_constant.debug_counts = pass->scene_renderer->debug_commands_hga.gpu_address;
-    //push_constant.debug_line_vertices = pass->scene_renderer->debug_line_vertices_hga.gpu_address;
+    push_constant.debug_counts = pass->scene_renderer->debug_commands_hga.gpu_address;
+    push_constant.debug_line_vertices = pass->scene_renderer->debug_line_vertices_hga.gpu_address;
     crude_gfx_cmd_push_constant( primary_cmd, &push_constant, sizeof( push_constant ) );
      
     crude_gfx_cmd_add_image_barrier( primary_cmd, pass->probe_raytrace_radiance_texture_handle, CRUDE_GFX_RHI_RESOURCE_STATE_UNORDERED_ACCESS, 0, 1, false );
@@ -357,8 +357,17 @@ crude_gfx_indirect_light_pass_on_disabled
 
   immediate_cmd = crude_gfx_access_cmd_buffer( pass->scene_renderer->gpu, pass->scene_renderer->gpu->immediate_transfer_cmd_buffer );
   crude_gfx_cmd_begin_primary( immediate_cmd );
+  
   crude_gfx_cmd_add_image_barrier( immediate_cmd, CRUDE_GFX_PASS_TEXTURE_HANDLE( indirect_light.indirect_radiance_texture ), CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, 0, 1, false );
+  crude_gfx_cmd_add_image_barrier( immediate_cmd, pass->probe_raytrace_radiance_texture_handle, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, 0, 1, false );
+  crude_gfx_cmd_add_image_barrier( immediate_cmd, pass->probe_grid_visibility_texture_handle, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, 0, 1, false );
+  crude_gfx_cmd_add_image_barrier( immediate_cmd, pass->probe_grid_irradiance_texture_handle, CRUDE_GFX_RHI_RESOURCE_STATE_COPY_DEST, 0, 1, false );
+  
   crude_gfx_cmd_clear_texture( immediate_cmd, CRUDE_GFX_PASS_TEXTURE_HANDLE( indirect_light.indirect_radiance_texture ), CRUDE_COMPOUNT_EMPTY( XMFLOAT4 ) );
+  crude_gfx_cmd_clear_texture( immediate_cmd, pass->probe_raytrace_radiance_texture_handle, CRUDE_COMPOUNT_EMPTY( XMFLOAT4 ) );
+  crude_gfx_cmd_clear_texture( immediate_cmd, pass->probe_grid_visibility_texture_handle, CRUDE_COMPOUNT_EMPTY( XMFLOAT4 ) );
+  crude_gfx_cmd_clear_texture( immediate_cmd, pass->probe_grid_irradiance_texture_handle, CRUDE_COMPOUNT_EMPTY( XMFLOAT4 ) );
+    
   crude_gfx_submit_immediate( immediate_cmd );
 }
 
