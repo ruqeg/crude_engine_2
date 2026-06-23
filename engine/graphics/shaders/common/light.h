@@ -141,23 +141,16 @@ crude_calculate_point_light_shadow_contribution_raycast
 {
   rayQueryEXT                                              ray_query;
   float                                                    vertex_to_light_distance;
-  vec3                                                     ligth_position, vertex_to_light, vertex_to_light_normalized;
+  vec3                                                     vertex_to_light, vertex_to_light_normalized;
   
-  ligth_position = light.world_position;
-  
-#if CRUDE_RIGHT_HAND
-  ligth_position.z = -ligth_position.z;
-  vertex_position.z = -vertex_position.z;
-#endif /* CRUDE_RIGHT_HAND */
-
-  vertex_to_light = ligth_position - vertex_position;
+  vertex_to_light = light.world_position - vertex_position;
   vertex_to_light_distance = length( vertex_to_light );
   vertex_to_light_normalized = vertex_to_light / vertex_to_light_distance;
 
   float visiblity = 0.f;
   if ( vertex_to_light_distance <= light.radius )
   {
-    rayQueryInitializeEXT( ray_query, as, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, 0xff, vertex_position, 0.05, vertex_to_light_normalized, vertex_to_light_distance );
+    rayQueryInitializeEXT( ray_query, as, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, 0xff, vertex_position, 0.05, vertex_to_light_normalized, 10000000 );
     rayQueryProceedEXT( ray_query );
     visiblity = float( rayQueryGetIntersectionTypeEXT( ray_query, true ) == gl_RayQueryCommittedIntersectionNoneEXT );
   }

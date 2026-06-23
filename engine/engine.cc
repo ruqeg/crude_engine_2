@@ -241,6 +241,8 @@ crude_engine_gui_queue_draw_
   {
     engine->imgui_draw_custom_fn( engine->imgui_draw_custom_ctx );
   }
+
+  ImGui::EndFrame( );
   CRUDE_PROFILER_ZONE_END;
 }
 
