@@ -2,7 +2,7 @@
 #ifndef CRUDE_LIGHT_GLSLI
 #define CRUDE_LIGHT_GLSLI
 
-#define CRUDE_RAYTRACED_SHADOWS       1
+#define CRUDE_RAYTRACED_SHADOWS       0
 
 #define CRUDE_LIGHT_PCF_ENALBED       1
 #define CRUDE_LIGHT_NEARZ             ( 0.2f )
@@ -150,7 +150,7 @@ crude_calculate_point_light_shadow_contribution_raycast
   float visiblity = 0.f;
   if ( vertex_to_light_distance <= light.radius )
   {
-    rayQueryInitializeEXT( ray_query, as, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, 0xff, vertex_position, 0.05, vertex_to_light_normalized, 10000000 );
+    rayQueryInitializeEXT( ray_query, as, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, 0xff, vertex_position, 0.05, vertex_to_light_normalized, vertex_to_light_distance );
     rayQueryProceedEXT( ray_query );
     visiblity = float( rayQueryGetIntersectionTypeEXT( ray_query, true ) == gl_RayQueryCommittedIntersectionNoneEXT );
   }

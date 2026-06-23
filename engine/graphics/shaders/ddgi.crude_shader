@@ -487,8 +487,8 @@ void main()
     distance = gl_RayTminEXT + gl_HitTEXT;
   }
 
-  payload.radiance = vec3(1,1,1);
-  payload.distance = 1;
+  payload.radiance = radiance;
+  payload.distance = distance;
 }
 
 #endif /* CRUDE_CLOSEST_HIT */
