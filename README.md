@@ -54,6 +54,7 @@ To edit shaders in VSCode, download the [GLSL Lints](https://marketplace.visuals
 
 ## Screenshots
 ![Editor](https://github.com/ruqeg/crude_engine_2/blob/main/docs/images/editor.png?raw=true)
+![Editor1](https://github.com/ruqeg/crude_engine_2/blob/main/docs/images/editor1.png?raw=true)
 
 ## Games
 
