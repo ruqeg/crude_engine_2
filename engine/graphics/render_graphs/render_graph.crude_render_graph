@@ -65,7 +65,7 @@
         {
           "type": "attachment",
           "name": "direct_radiance",
-          "format": "FORMAT_R16G16B16A16_UNORM",
+          "format": "FORMAT_R16G16B16A16_SFLOAT",
           "scale": [ 1, 1 ],
           "op": "clear",
           "clear_color": [ 0, 0, 0, 1 ]
