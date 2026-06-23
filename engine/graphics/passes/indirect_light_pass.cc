@@ -325,6 +325,8 @@ crude_gfx_indirect_light_pass_on_ddgi_area_resized
     pass->probe_offsets_texture_handle,
     ddgi_area_cpu->probe_count.x * ddgi_area_cpu->probe_count.y,
     ddgi_area_cpu->probe_count.z );
+
+  crude_gfx_indirect_light_pass_on_disabled( pass );
 }
 
 void
