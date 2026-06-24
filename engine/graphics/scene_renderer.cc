@@ -395,32 +395,35 @@ crude_gfx_scene_renderer_update_instances_from_node
 
   crude_scene_renderer_register_nodes_instances_( scene_renderer, world, main_node );
 
-  if ( scene_renderer->ddgi_area.probe_count.x != scene_renderer->prev_ddgi_area.probe_count.x
+  bool probes_count_changed = scene_renderer->ddgi_area.probe_count.x != scene_renderer->prev_ddgi_area.probe_count.x
     || scene_renderer->ddgi_area.probe_count.y != scene_renderer->prev_ddgi_area.probe_count.y 
-    || scene_renderer->ddgi_area.probe_count.z != scene_renderer->prev_ddgi_area.probe_count.z )
-  {
-    crude_gfx_indirect_light_pass_on_ddgi_area_resized( &scene_renderer->indirect_light_pass );
-    crude_gfx_indirect_light_pass_on_offsets_reset( &scene_renderer->indirect_light_pass );
-  }
-  
-  if ( scene_renderer->ddgi_area.probe_spacing.x != scene_renderer->prev_ddgi_area.probe_spacing.x
+    || scene_renderer->ddgi_area.probe_count.z != scene_renderer->prev_ddgi_area.probe_count.z;
+
+  bool probes_spaching_changed = scene_renderer->ddgi_area.probe_spacing.x != scene_renderer->prev_ddgi_area.probe_spacing.x
     || scene_renderer->ddgi_area.probe_spacing.y != scene_renderer->prev_ddgi_area.probe_spacing.y 
-    || scene_renderer->ddgi_area.probe_spacing.z != scene_renderer->prev_ddgi_area.probe_spacing.z )
-  {
-    crude_gfx_indirect_light_pass_on_offsets_reset( &scene_renderer->indirect_light_pass );
-  }
-  if ( scene_renderer->ddgi_area.probe_grid_position.x != scene_renderer->prev_ddgi_area.probe_grid_position.x
+    || scene_renderer->ddgi_area.probe_spacing.z != scene_renderer->prev_ddgi_area.probe_spacing.z;
+
+  bool probes_grid_changed = scene_renderer->ddgi_area.probe_grid_position.x != scene_renderer->prev_ddgi_area.probe_grid_position.x
     || scene_renderer->ddgi_area.probe_grid_position.y != scene_renderer->prev_ddgi_area.probe_grid_position.y 
-    || scene_renderer->ddgi_area.probe_grid_position.z != scene_renderer->prev_ddgi_area.probe_grid_position.z )
+    || scene_renderer->ddgi_area.probe_grid_position.z != scene_renderer->prev_ddgi_area.probe_grid_position.z;
+
+  bool offsets_reseted = false;
+  offsets_reseted |= scene_renderer->ddgi_area.max_probe_offset != scene_renderer->prev_ddgi_area.max_probe_offset;
+  offsets_reseted |= scene_renderer->ddgi_area.offsets_calculations_count != scene_renderer->prev_ddgi_area.offsets_calculations_count;
+  offsets_reseted |= probes_count_changed;
+  offsets_reseted |= probes_spaching_changed;
+  offsets_reseted |= probes_grid_changed;
+  offsets_reseted |= !ddgi_enabled_prev && scene_renderer->ddgi_enabled;
+  if ( offsets_reseted )
   {
     crude_gfx_indirect_light_pass_on_offsets_reset( &scene_renderer->indirect_light_pass );
   }
 
-  if ( !ddgi_enabled_prev && scene_renderer->ddgi_enabled )
+  if ( probes_count_changed )
   {
-    crude_gfx_indirect_light_pass_on_offsets_reset( &scene_renderer->indirect_light_pass );
+    crude_gfx_indirect_light_pass_on_ddgi_area_resized( &scene_renderer->indirect_light_pass );
   }
-  
+
   if ( ddgi_enabled_prev && !scene_renderer->ddgi_enabled )
   {
     crude_gfx_indirect_light_pass_on_disabled( &scene_renderer->indirect_light_pass );

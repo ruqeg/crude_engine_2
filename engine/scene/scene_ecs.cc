@@ -549,12 +549,9 @@ CRUDE_PARSE_COMPONENT_TO_JSON_FUNC_IMPLEMENTATION( crude_ddgi_area )
 CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_ddgi_area )
 {
   static crude_ddgi_area                                  *prev_component = NULL;
-  bool                                                     offsets_calculations_changed;
 
   CRUDE_IMGUI_START_OPTIONS;
   
-  offsets_calculations_changed = false;
-
   CRUDE_IMGUI_OPTION( "Probe Rays", {
     ImGui::DragInt( "##Probe Rays", &component->probe_rays );
   } );
@@ -610,13 +607,8 @@ CRUDE_PARSE_COMPONENT_TO_IMGUI_FUNC_IMPLEMENTATION( crude_ddgi_area )
   } );
   
   CRUDE_IMGUI_OPTION( "Offsets Calculations Count", {
-    offsets_calculations_changed |= ImGui::DragInt( "##Offsets Calculations Count", &component->offsets_calculations_count );
+    ImGui::DragInt( "##Offsets Calculations Count", &component->offsets_calculations_count );
   } );
-
-  if ( offsets_calculations_changed )
-  {
-    crude_gfx_indirect_light_pass_on_offsets_reset( &manager->scene_renderer->indirect_light_pass );
-  }
 }
 
 CRUDE_PARSE_JSON_TO_COMPONENT_FUNC_IMPLEMENTATION( crude_terrain )
