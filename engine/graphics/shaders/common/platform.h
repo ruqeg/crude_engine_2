@@ -113,6 +113,9 @@
 #define CRUDE_IMAGE_STORE( ti, coords, data ) imageStore( global_images_2d[ nonuniformEXT( ti ) ], coords, data )
 #define CRUDE_IMAGE_LOAD( ti, coords ) imageLoad( global_images_2d[ nonuniformEXT( ti ) ], coords )
 
+#define CRUDE_TEXTURE_3D( ti, coord ) texture( global_textures_3d[ nonuniformEXT( ti ) ], coord )
+#define CRUDE_IMAGE_STORE_3D( ti, coords, data ) imageStore( global_images_3d[ nonuniformEXT( ti ) ], coords, data )
+
 #define CRUDE_IMAGE_STORE_FORMATTED_DEFINE( ti, coords, data, format ) imageStore( global_images_2d_##format[ nonuniformEXT( ti ) ], coords, data )
 #define CRUDE_IMAGE_LOAD_FORMATTED_DEFINE( ti, coords, format ) imageLoad( global_images_2d_##format[ nonuniformEXT( ti ) ], coords )
 

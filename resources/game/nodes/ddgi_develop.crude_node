@@ -112,7 +112,7 @@
 					"shadow_weight_power":	2.5,
 					"infinite_bounces_multiplier":	0.75,
 					"probe_update_per_frame":	1000,
-					"offsets_calculations_count":	0,
+					"offsets_calculations_count":	-1,
 					"probe_rays":	128,
 					"probe_count_x":	10,
 					"probe_count_y":	10,
