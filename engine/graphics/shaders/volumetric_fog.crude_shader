@@ -31,21 +31,23 @@ CRUDE_PUSH_CONSTANT( crude_gfx_volumetric_fog_compute_inject_data_push_constant_
   float32                                                  volumetric_noise_position_multiplier;
   uint32                                                   volumetric_noise_texture_index;
   
-  vec3                                                     box_position;
-  float                                                    density_modifier;
+  XMFLOAT3                                                 box_position;
+  float32                                                  density_modifier;
   
-  vec3                                                     box_size;
-  float                                                    height_fog_density;
+  XMFLOAT3                                                 box_size;
+  float32                                                  height_fog_density;
   
-  vec3                                                     box_color;
-  float                                                    height_fog_falloff;
+  XMFLOAT3                                                 box_color;
+  float32                                                  height_fog_falloff;
     
-  mat4                                                     froxel_inverse_view_projection;
+  XMFLOAT4X4                                               froxel_inverse_view_projection;
   
-  float                                                    box_fog_density;
+  float32                                                  box_fog_density;
   XMFLOAT3                                                 padding;
 };
 #endif /* COMPUTE_INJECT_DATA */
+
+#ifndef __cplusplus
 
 #if defined( COMPUTE_INJECT_DATA )
 
@@ -214,4 +216,6 @@ void main()
   CRUDE_IMAGE_STORE_3D( froxel_data_texture_index, froxel_coord, scattering_extinction );
 }
 
-#endif
+#endif /* COMPUTE_INJECT_DATA */
+
+#endif /* __cplusplus */

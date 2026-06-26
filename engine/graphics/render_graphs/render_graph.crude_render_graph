@@ -2,9 +2,24 @@
   "name": "main_graph",
   "passes": [
     {
-      "name": "light_lut_pass",
+      "name": "volumetric_fog_pass",
       "type": "compute",
       "inputs": [],
+      "outputs": [
+        {
+          "type": "marker",
+          "name": "volumetric_fog_pass_marker"
+        }
+      ]
+    },
+    {
+      "name": "light_lut_pass",
+      "type": "compute",
+      "inputs": [
+        {
+          "type": "reference",
+          "name": "volumetric_fog_pass_marker"
+        }],
       "outputs": [
         {
           "type": "marker",
